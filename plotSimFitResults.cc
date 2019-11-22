@@ -123,6 +123,20 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   double ctDiffErrL  [n_years][nBins];
   double wtDiffErrL  [n_years][nBins];
   double DiffErrL    [n_years][nBins];
+
+  double q2ValReco  [n_years][nBins];
+  double q2ErrHReco [nBins];
+  double q2ErrLReco [nBins];
+
+  double deltaQ = 0;
+  for (int i=0; i<nBins; ++i) {
+    deltaQ = (binBorders[i+1]-binBorders[i]) / n_years;
+    for (unsigned int iy = 0; iy < n_years; iy++) {
+      q2ValReco[iy][i] = deltaQ/2 + deltaQ*iy + binBorders[i];
+    }
+      q2ErrHReco[i] = 0.5 * deltaQ;
+      q2ErrLReco[i] = 0.5 * deltaQ;
+  }
   
   std::vector<TGraphAsymmErrors*> GrCT, GrWT, Gr, GrDiffCT, GrDiffWT, GrDiff;
 
@@ -204,13 +218,13 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
     setGraphProperties(Gr[iy], iy, year, ParIndx, "Full");
     
     // create TGraphs with difference to GEN Results
-    GrDiffCT.push_back( new TGraphAsymmErrors(nBins, q2Val, ctDiff[iy], q2ErrH, q2ErrL, ctDiffErrL[iy], ctDiffErrH[iy]) );
+    GrDiffCT.push_back( new TGraphAsymmErrors(nBins, q2ValReco[iy], ctDiff[iy], q2ErrHReco, q2ErrLReco, ctDiffErrL[iy], ctDiffErrH[iy]) );
     setGraphProperties(GrDiffCT[iy], iy, year, ParIndx, "DiffCT");
 
-    GrDiffWT.push_back( new TGraphAsymmErrors(nBins, q2Val, wtDiff[iy], q2ErrH, q2ErrL, wtDiffErrL[iy], wtDiffErrH[iy]) );
+    GrDiffWT.push_back( new TGraphAsymmErrors(nBins, q2ValReco[iy], wtDiff[iy], q2ErrHReco, q2ErrLReco, wtDiffErrL[iy], wtDiffErrH[iy]) );
     setGraphProperties(GrDiffWT[iy], iy, year, ParIndx, "DiffWT");
 
-    GrDiff.push_back( new TGraphAsymmErrors(nBins, q2Val, Diff[iy], q2ErrH, q2ErrL, DiffErrL[iy], DiffErrH[iy]) );
+    GrDiff.push_back( new TGraphAsymmErrors(nBins, q2ValReco[iy], Diff[iy], q2ErrHReco, q2ErrLReco, DiffErrL[iy], DiffErrH[iy]) );
     setGraphProperties(GrDiff[iy], iy, year, ParIndx, "Diff");
     
   }
@@ -260,6 +274,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   TLine *line = new TLine(GrGen->GetXaxis()->GetXmin(),0,GrGen->GetXaxis()->GetXmax(),0);
   line->SetLineColor(14);
   line->SetLineStyle(7);
+
 
   c[ParIndx] = new TCanvas(Form("c%i",ParIndx),Form("c%i",ParIndx),800,800);
   c[ParIndx]->cd();
@@ -312,6 +327,15 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   setAxisProperties(auxE2);
   auxE2->Draw();
 
+  // Bin lines
+  std::vector<TLine*> lines;
+  for (int i=0; i<nBins; ++i) {
+      lines.push_back( new TLine(binBorders[i], -1*diffMax, binBorders[i], diffMax));
+      lines[i]->SetLineStyle(3);
+      lines[i]->SetLineColor(kGray);
+      lines[i]->Draw();
+  }
+  
   for (unsigned int iy = 0; iy < years.size() ; iy++) {
     if (plotCT)  GrDiffCT[iy] -> Draw("P");    
     if (plotWT)  GrDiffWT[iy] -> Draw("P");    
@@ -341,6 +365,8 @@ void plotSimFitResults(int parity, int ParIndx = -1, bool plotCT = true, bool pl
   years.push_back("2016");
   years.push_back("2017");
   years.push_back("2018");
+  
+  if (datalike) diffMax = 0.1999;
   
   if ( ParIndx==-1 )
     for (ParIndx=0; ParIndx<nPars; ++ParIndx)
