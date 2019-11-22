@@ -25,9 +25,9 @@ cd UML-fit
 <a name="createDatasets"/>
 
 ## Create datasets
-If needed, change the [location of the ntuples](createDataset.cc#L42-L55), which need to be produced with the code in the [B0KstMuMuNtuple repository](https://github.com/CMSKStarMuMu/B0KstMuMuNtuple).
-Then produce files with the needed datasets, that is, correctly and wrongly tagged reco'ed events from the MC. The datasets will contain the following variables: ctK, ctL, phi, mass, rand.
-Rand is a random variable uniformly generated between 0 and 1, to be used to select a given statistics from the MC sample.  
+If needed, change the [location of the ntuples](createDataset.cc#L55-L62), which need to be produced with the code in the [B0KstMuMuNtuple repository](https://github.com/CMSKStarMuMu/B0KstMuMuNtuple).  
+Then, you can produce the files which will contain the needed datasets, that is, correctly and wrongly tagged reco'ed events from the MC. The datasets will include the following variables: ctK, ctL, phi, mass, rand.
+rand is a random variable uniformly generated between 0 and 1, to be used to select a given statistics from the MC sample.  
 Example on how to run for 2017 ntuples:
 ```sh
 root -q -b 'createDataset.cc(7)'
@@ -48,9 +48,10 @@ Compile and run with:
 source simfit_recoMC_singleComponent.sh
 ```
 where you have to set the datasets to be considered (set year = 0 to not include the dataset). 
-The variable "datalike" sets the statistics to be considered:
-* datalike = 0 means consider the full MC stat (half of it actually)
-* datalike = 1 means consider a data-like statistics.
+The variable "datalike" sets the statistics to be considered:  
+* datalike = 0 means consider the full MC stat (half of it actually)  
+* datalike = 1 means consider a data-like statistics.  
+
 The code will produce a root file `simFitResults/fitResult_recoMC_singleComponentXXXX.root` containing the RooFitResult objects, where XXXX describes the considered datasets.
 Corresponding fit projection plots are created in `plotSimFit_d/fitResult_recoMC_singleComponent_*.pdf`.
 
