@@ -5,7 +5,7 @@
 **Table of contents**  
 [Setup working area](#setup)  
 [Create datasets](#createDatasets)  
-[Fit to signal MC](#fitMC)  
+[Fit to signal MC](#performFit)  
 
 <a name="setup"/>
 
