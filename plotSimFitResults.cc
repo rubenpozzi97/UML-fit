@@ -149,7 +149,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   // first fill for gen results
   for (int i=0; i<nBins; ++i) {
     RooFitResult* fitResultGen = (RooFitResult*)finGen->Get(Form("fitResult_b%ip%i",i,parity));
-    if (fitResultGen && !fitResultGen->IsZombie() && fitResultGen->status()==0) {
+    if (fitResultGen && !fitResultGen->IsZombie() && fitResultGen->status()==0 && fitResultGen->covQual()==3) {
       fillVectors(fitResultGen, ParIndx, genRes, genErrH, genErrL, i);
     }
   }
@@ -178,9 +178,8 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
 
       // fill for CT events
       if ( plotCT && finReco && !finReco->IsZombie() ) {
-         
 	RooFitResult* fitResultCT = (RooFitResult*)finReco->Get(Form("simFitResult_b%ip%it1",i,parity));
-	if (fitResultCT && !fitResultCT->IsZombie() && fitResultCT->status()==0) {
+	if (fitResultCT && !fitResultCT->IsZombie() && fitResultCT->status()==0 && fitResultCT->covQual()==3) {
           fillVectors(fitResultCT, ParIndx, ctRes, ctErrH, ctErrL, ctDiff, ctDiffErrH, ctDiffErrL, genRes, genErrH, genErrL,  iy, i);
 	}
       }    
@@ -188,7 +187,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
       // fill for WT events
       if ( plotWT && finReco && !finReco->IsZombie() ) {
 	RooFitResult* fitResultWT = (RooFitResult*)finReco->Get(Form("simFitResult_b%ip%it0",i,parity));
-	if (fitResultWT && !fitResultWT->IsZombie() && fitResultWT->status()==0) {
+	if (fitResultWT && !fitResultWT->IsZombie() && fitResultWT->status()==0 && fitResultWT->covQual()==3) {
           fillVectors(fitResultWT, ParIndx, wtRes, wtErrH, wtErrL, wtDiff, wtDiffErrH, wtDiffErrL, genRes, genErrH, genErrL,  iy, i);
 	}
       }    
@@ -196,7 +195,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
       // fill for full angular fit
       if ( plotRECO && finFullReco && !finFullReco->IsZombie() ) {
         RooFitResult* fitResult = (RooFitResult*)finFullReco->Get(Form("FitResult_b%ip%i",i,parity));
-        if (fitResult && !fitResult->IsZombie() && fitResult->status()==0) {
+        if (fitResult && !fitResult->IsZombie() && fitResult->status()==0 && fitResult->covQual()==3) {
           fillVectors(fitResult, ParIndx, Res, ErrH, ErrL, Diff, DiffErrH, DiffErrL, genRes, genErrH, genErrL,  iy, i);
         }
       }
@@ -339,7 +338,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   for (unsigned int iy = 0; iy < years.size() ; iy++) {
     if (plotCT)  GrDiffCT[iy] -> Draw("P");    
     if (plotWT)  GrDiffWT[iy] -> Draw("P");    
-    if (plotRECO)  GrDiff[iy]   -> Draw("P");    
+    if (plotRECO)  GrDiff[iy] -> Draw("P");    
   }
   line->Draw();
   resDiffCover->Draw("e2");
