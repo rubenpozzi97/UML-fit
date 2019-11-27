@@ -38,6 +38,7 @@ root -q -b 'createDataset.cc(7)'
 
 ## Perform fits to MC dataset with PDF*eff
 
+### Fit to the angular variables only
 The fit is performed by the simfit_recoMC_singleComponent code.
 It requires in input:
 * a root file containing the workspace with the roodatasets to be fitted (produced in the step above)
@@ -52,10 +53,10 @@ The variable "datalike" sets the statistics to be considered:
 * datalike = 0 means consider the full MC stat (half of it actually)  
 * datalike = 1 means consider a data-like statistics.  
 
-The code will produce a root file `simFitResults/fitResult_recoMC_singleComponentXXXX.root` containing the RooFitResult objects, where XXXX describes the considered datasets.
-Corresponding fit projection plots are created in `plotSimFit_d/fitResult_recoMC_singleComponent_*.pdf`.
+The code will produce a root file `simFitResults/simfitResult_recoMC_singleComponentXXXX.root` containing the RooFitResult objects, where XXXX describes the considered datasets.
+Corresponding fit projection plots are created in `plotSimFit_d/simfitResult_recoMC_singleComponent_*.pdf`.
 
-### Plot and compare fit results
+#### Plot and compare fit results
 ```sh
 root -b -q 'plotSimFitResults.cc(1)' # for fit with odd efficiency on even dataset and full MC stat
 ```
@@ -64,3 +65,22 @@ while use
 root -b -q 'plotSimFitResults.cc(1,-1,true, false, false,true)' 
 ```
 to plot the results for the data-like stat fits.
+
+### Fit to the angular variables + mass variable
+The fit is performed by the simfit4d_recoMC_singleComponent code.
+It requires in input:
+* a root file containing the workspace with the roodatasets to be fitted (produced in the step above)
+* the files containing the KDE modeling of the efficiency and, if possible, the corresponding partial integrals. These are produced by the workflow described in the eff-KDE repository. 
+* a root file containing the workspace with the RooFitResults to the MC mass distributions (as produced by [this code](https://github.com/CMSKStarMuMu/selection_and_fits/blob/master/perBin_massFit.py))
+
+Compile and run with:
+```sh
+source simfit4d_recoMC_singleComponent.sh
+```
+where you have to set the datasets to be considered (set year = 0 to not include the dataset). 
+The variable "datalike" sets the statistics to be considered:  
+* datalike = 0 means consider the full MC stat (half of it actually)  
+* datalike = 1 means consider a data-like statistics.  
+
+The code will produce a root file `simFit4dResults/simfit4dResult_recoMC_singleComponentXXXX.root` containing the RooFitResult objects, where XXXX describes the considered datasets.
+Corresponding fit projection plots are created in `plotSimFit4d_d/simfitResult_recoMC_singleComponent_*.pdf`.

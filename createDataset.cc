@@ -28,11 +28,11 @@ void createDataset(int year, int q2Bin = -1, bool plot = false)
   RooRealVar phi ("phi","#phi",-TMath::Pi(),TMath::Pi());
   RooArgSet vars (ctK, ctL, phi);
   RooRealVar wei ("weight","weight",1);
-  RooRealVar mass("mass","mass", 0,10);
+  RooRealVar tagged_mass("tagged_mass","tagged_mass", 0,10);
   // random variable [0,1] to keep or reject the event when performing data-like stat. studies
   RooRealVar rand("rand", "rand", 0,1);
   TRandom rand_gen(1029);
-  RooArgSet reco_vars (ctK, ctL, phi, wei, mass, rand);
+  RooArgSet reco_vars (ctK, ctL, phi, wei, tagged_mass, rand);
 
 
   // flags to mark which q2 bins should be filled
@@ -150,7 +150,7 @@ void createDataset(int year, int q2Bin = -1, bool plot = false)
     ctK.setVal(recoCosThetaK);
     ctL.setVal(recoCosThetaL);
     phi.setVal(recoPhi);
-    mass.setVal(recoB0Mass);
+    tagged_mass.setVal(recoB0Mass);
     rand.setVal(rand_gen.Uniform(1));
     if (genSignal != tagB0+1) { // correctly tagged events
       if (eventN%2==0) data_ctRECO_ev[xBin]->add(reco_vars,PUweight);
@@ -183,7 +183,7 @@ void createDataset(int year, int q2Bin = -1, bool plot = false)
       ws_od[i]->import( *data_ctRECO_od[i] );
       ws_ev[i]->import( *data_wtRECO_ev[i] );
       ws_od[i]->import( *data_wtRECO_od[i] );
-      TFile* fout = new TFile( ( "recoMCDataset_"+shortString[i]+ "_" + year_str + ".root" ).c_str(), "RECREATE" );
+      TFile* fout = new TFile( ( "recoMCDataset_"+shortString[i]+ "_" + year_str + "_tagged.root" ).c_str(), "RECREATE" );
       ws_ev[i]->Write();
       ws_od[i]->Write();
       fout->Close();
