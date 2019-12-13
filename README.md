@@ -6,8 +6,8 @@
 [Setup working area](#setup)  
 [Create datasets](#createDatasets)  
 [Fit to signal MC](#performFit)  
-    [Fit to angular variables](#angular)  
-    [Fit to angular + mass variables](#angMass)  
+* [Fit to angular variables](#angular)  
+* [Fit to angular + mass variables](#angMass)  
 
 <a name="setup"/>
 
