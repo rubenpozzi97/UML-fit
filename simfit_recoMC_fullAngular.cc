@@ -19,6 +19,7 @@
 #include <RooNumIntConfig.h>
 
 #include "PdfSigAng.h"
+#include "ParBound.h"
 
 using namespace RooFit;
 using namespace std;
@@ -216,10 +217,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
                          Index(sample),
                          Import(map)); 
 
+  // Define the PDF defining the physical region, used as exexternal contraint in the fit
+  RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   // perform fit in two steps:
   // first with strategy=0 and no MINOS, to get close to the likilihood maximum
   simPdf->fitTo( combData,
+		 ExternalConstraints(*PDF_phys_bound),
                  Minimizer("Minuit2","migrad"), 
                  Extended(false), 
                  Timer(true),
@@ -229,11 +233,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
                  Offset(true));
   // second with full accuracy (strategy=2) and MINOS, to get the best result
   RooFitResult* fitResult = simPdf->fitTo( combData,
+					   ExternalConstraints(*PDF_phys_bound),
                                            Minimizer("Minuit2","migrad"),
                                            Extended(false), 
                                            Save(true),
 //                                            Timer(true),
-                                           NumCPU(1),
+                                           // NumCPU(1),
                                            Hesse(true),
                                            Strategy(2),
                                            Minos(true),
