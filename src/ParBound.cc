@@ -68,17 +68,6 @@ Double_t ParBound::evaluate() const
   }
   if ( ctL2phi3>0 ) std::cout<<"ERROR! ctL2phi2 and ctL2phi3 have different sign! ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
 
-  double ctL3phi1 = P8p*P8p*(1-P1) + P4p*P4p*(1+P1) - 4*P3*P4p*P8p - 1 + P1*P1 + 4*P3*P3;
-  double ctL3phi2 = P8p*P8p - 1 - P1;
-  double ctL3phi3 = P4p*P4p - 1 + P1;
-  // std::cout<<" ctL3phi1="<<ctL3phi1<<" ctL3phi2="<<ctL3phi2<<" ctL3phi3="<<ctL3phi3<<std::endl;
-
-  if ( ctL3phi1>0 || ctL3phi2>0 ) {
-    // std::cout<<" ctL3phi1="<<ctL3phi1<<" ctL3phi2="<<ctL3phi2<<" ctL3phi3="<<ctL3phi3<<std::endl;
-    return 1-erf(-999*TMath::Max(ctL3phi1,TMath::Max(ctL3phi2,ctL3phi3)));
-  }
-  if ( ctL3phi3>0 ) std::cout<<"ERROR! ctL3phi2 and ctL3phi3 have different sign! ctL3phi2="<<ctL3phi2<<" ctL3phi3="<<ctL3phi3<<std::endl;
-
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
   double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
 
