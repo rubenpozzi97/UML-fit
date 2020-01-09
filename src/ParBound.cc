@@ -54,7 +54,7 @@ Double_t ParBound::evaluate() const
   
   if ( ctL4phi1>0 ) {
     // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
-    return 1-erf(999*ctL4phi1);
+    return erfc(999*ctL4phi1);
   }
 
   double ctL2phi1 = P5p*P5p*(1-P1) + P6p*P6p*(1+P1) - 4*P3*P5p*P6p - 1 + P1*P1 + 4*P3*P3;
@@ -64,7 +64,7 @@ Double_t ParBound::evaluate() const
 
   if ( ctL2phi1>0 || ctL2phi2>0 ) {
     // std::cout<<" ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
-    return 1-erf(999*TMath::Max(ctL2phi1,TMath::Max(ctL2phi2,ctL2phi3)));
+    return erfc(999*TMath::Max(ctL2phi1,TMath::Max(ctL2phi2,ctL2phi3)));
   }
   if ( ctL2phi3>0 ) std::cout<<"ERROR! ctL2phi2 and ctL2phi3 have different sign! ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
 
@@ -102,7 +102,7 @@ Double_t ParBound::evaluate() const
     ctL1 = a0*sin2*sin2 + a1*sin2*sincos + a2*sin2*cos2 + a3*sincos*cos2 + a4*cos2*cos2;
     if ( ctL1 >= 0 ) continue;
 
-    return 1-erf(-999*TMath::Max(ctL1,TMath::Max(ctL5m,ctL5p)));
+    return erfc(-999*TMath::Max(ctL1,TMath::Max(ctL5m,ctL5p)));
   }
   
   return 1.0;
