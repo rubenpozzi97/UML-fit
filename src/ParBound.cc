@@ -49,12 +49,32 @@ ParBound::ParBound(const ParBound& other, const char* name) :
 Double_t ParBound::evaluate() const 
 {
 
+  double power = 6.0;
+  double ret = 1.0;
+
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
   // std::cout<<" ctL4phi1="<<ctL4phi1<<std::endl;
   
   if ( ctL4phi1>0 ) {
     // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
-    return erfc(999*ctL4phi1);
+    ret = exp(-690*pow(ctL4phi1/16.0,power/2));
+    if (ret==0) {
+      std::cout<<"ERROR! Precision not sufficient for ctL4phi1="<<ctL4phi1
+	       <<" ret=exp("<<-690*pow(ctL4phi1/16.0,power/2)<<")"<<std::endl;
+      return 1e-300;
+    }
+  }
+
+  double ctK2 = P1*P1 + 4*P2*P2 + 4*P3*P3 -1;
+
+  if ( ctK2>0 ) {
+    double local_ret = exp(-690*pow(ctK2/2.0,power/2));
+    if (local_ret==0) {
+      std::cout<<"ERROR! Precision not sufficient for ctK2="<<ctK2
+	       <<" ret=exp("<<-690*pow(ctK2/2.0,power/2)<<")"<<std::endl;
+      return 1e-300;
+    }
+    if ( ret > local_ret ) ret = local_ret;
   }
 
   double ctL2phi1 = P5p*P5p*(1-P1) + P6p*P6p*(1+P1) - 4*P3*P5p*P6p - 1 + P1*P1 + 4*P3*P3;
@@ -62,11 +82,30 @@ Double_t ParBound::evaluate() const
   double ctL2phi3 = P5p*P5p - 1 - P1;
   // std::cout<<" ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
 
-  if ( ctL2phi1>0 || ctL2phi2>0 ) {
-    // std::cout<<" ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
-    return erfc(999*TMath::Max(ctL2phi1,TMath::Max(ctL2phi2,ctL2phi3)));
+  if ( ctL2phi1>0 ) {
+    // std::cout<<"ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
+    double local_ret = exp(-690*pow(ctL2phi1/9.0,power/3));
+    if (local_ret==0) {
+      std::cout<<"ERROR! Precision not sufficient for ctL2phi1="<<ctL2phi1
+	       <<" ret=exp("<<-690*pow(ctL2phi1/9.0,power/3)<<")"<<std::endl;
+      return 1e-300;
+    }
+    if ( ret > local_ret ) ret = local_ret;
   }
-  if ( ctL2phi3>0 ) std::cout<<"ERROR! ctL2phi2 and ctL2phi3 have different sign! ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
+  if ( ctL2phi2>0 || ctL2phi3>0 ) {
+    double local_ret = exp(-690*pow(TMath::Max(ctL2phi2,ctL2phi3)/2.0,power/2));
+    if (local_ret==0) {
+      std::cout<<"ERROR! Precision not sufficient for ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3
+	       <<" ret=exp("<<-690*pow(TMath::Max(ctL2phi2,ctL2phi3)/2.0,power/2)<<")"<<std::endl;
+      return 1e-300;
+    }
+    if ( ret > local_ret ) ret = local_ret;
+  }
+  if ( ctL2phi1<0 && ctL2phi2*ctL2phi3<0 ) std::cout<<"ERROR! ctL2phi2 and ctL2phi3 have different sign! ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
+
+  // Avoid numerical computation when the boundary is already exceeded
+  // except when the constraint is very weak (0.01<ret<1), and a stronger one can be obtained with the following checks
+  if ( ret < 0.01 ) return ret;
 
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
   double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
@@ -102,9 +141,15 @@ Double_t ParBound::evaluate() const
     ctL1 = a0*sin2*sin2 + a1*sin2*sincos + a2*sin2*cos2 + a3*sincos*cos2 + a4*cos2*cos2;
     if ( ctL1 >= 0 ) continue;
 
-    return erfc(-999*TMath::Max(ctL1,TMath::Max(ctL5m,ctL5p)));
+    double local_ret = exp(690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2)));
+    if (local_ret==0) {
+      std::cout<<"ERROR! Precision not sufficient for ctL5p="<<ctL5p<<" ctL5m="<<ctL5m<<" ctL1="<<ctL1
+	       <<" ret=exp("<<690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2))<<")"<<std::endl;
+      return 1e-300;
+    }
+    if ( ret > local_ret ) ret = local_ret;
   }
   
-  return 1.0;
+  return ret;
 
 }
