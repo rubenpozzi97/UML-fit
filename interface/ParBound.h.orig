@@ -34,8 +34,6 @@ class ParBound : public RooAbsPdf {
   Double_t evaluate() const ;
 
  public:
-  bool verbose = false;
-  int  Q2Bin  = 0;
   ParBound() {} ; 
   ParBound(const char *name, const char *title,
 	   RooAbsReal& _P1,

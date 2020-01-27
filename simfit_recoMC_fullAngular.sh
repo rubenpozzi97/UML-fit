@@ -1,7 +1,7 @@
 #!/bin/bash
 
 par=1
-year1=2017
+year1=2016
 year2=0
 year3=0
 datalike=1

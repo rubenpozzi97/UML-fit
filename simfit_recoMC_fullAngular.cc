@@ -219,6 +219,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 
   // Define the PDF defining the physical region, used as exexternal contraint in the fit
   RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  ((ParBound*)PDF_phys_bound)->Q2Bin=q2Bin;
 
   // perform fit in two steps:
   // first with strategy=0 and no MINOS, to get close to the likilihood maximum
@@ -251,6 +252,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   // which are due to too high FCN absolute values compared to the minimisation steps
 
   fitResult->Print("v");
+  ((ParBound*)PDF_phys_bound)->verbose=true;
+  cout<<" stika = "<<PDF_phys_bound->getVal()<<endl;
 
   if (save) {
     // Save fit results in file
