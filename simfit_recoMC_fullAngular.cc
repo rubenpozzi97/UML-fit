@@ -253,7 +253,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 
   fitResult->Print("v");
   ((ParBound*)PDF_phys_bound)->verbose=true;
-  cout<<" stika = "<<PDF_phys_bound->getVal()<<endl;
+//  
+//  Boundary Checks [0 is ok, ret=final penality, ret_local4="numerically computed" penality]
+  cout<<" Boundary Checks [0 is ok] = "<<PDF_phys_bound->getVal()<<endl;
 
   if (save) {
     // Save fit results in file
