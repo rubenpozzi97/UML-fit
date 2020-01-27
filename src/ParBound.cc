@@ -55,12 +55,14 @@ Double_t ParBound::evaluate() const
   bool cond3 =false;
   bool cond4 =false;
   double power = 6.0;
-  double power2 = 4.0;
+//  double power2 = 4.0;
   double ret = 1.0;
-  double local_ret4=1.0;
+  double ret0 = 1.0;
+  double ret4= 1.0;
 //  double local_ret5=1.0;
 //  double local_ret6=1.0;
-  double shift=1.8;
+  double shift0= 1.8;
+  double shift4= 10.0;
 //
   double coef0 =80;
   double coef4 =80;
@@ -78,12 +80,12 @@ Double_t ParBound::evaluate() const
   if (Q2Bin==5) coef0 =200;
   if (Q2Bin==7) coef0 =200;
 //  
-  if (Q2Bin==0) coef4 =200;
-  if (Q2Bin==1) coef4 =200;
-  if (Q2Bin==2) coef4 =200;
-  if (Q2Bin==3) coef4 =200;
-  if (Q2Bin==5) coef4 =200;
-  if (Q2Bin==7) coef4 =200;
+  if (Q2Bin==0) coef4 =1;
+  if (Q2Bin==1) coef4 =1;
+  if (Q2Bin==2) coef4 =1;
+  if (Q2Bin==3) coef4 =1;
+  if (Q2Bin==5) coef4 =1;
+  if (Q2Bin==7) coef4 =1;
   
 //  
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
@@ -93,8 +95,8 @@ Double_t ParBound::evaluate() const
 //    cond0=true;
     // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
     //ret = exp(-200*pow(ctL4phi1/16.0,power2/2));
-    double expo = coef0*(ctL4phi1)-shift;
-    ret = 0.5*(1-expo/sqrt(1+expo*expo));
+    double expo0 = coef0*(ctL4phi1)-shift0;
+    ret0 = 0.5*(1-expo0/sqrt(1+expo0*expo0));
 //    if(Q2Bin==7)     ret = exp(-690*pow(ctL4phi1/16.0,power2/2));
 //    ret = erfc((30*ctL4phi1-1.8))/2;
 //    ret = 0.5*(1-tanh(expo));
@@ -103,9 +105,9 @@ Double_t ParBound::evaluate() const
 //      if (ret==0) {
 //        std::cout<<Form("ERROR! Precision not sufficient for ctL4phi1=%3.20f ret=%3.20f expo=%3.20f",ctL4phi1,ret,expo)<<std::endl;
 //      }    
-    if (ret==0) {
+    if (ret0==0) {
       std::cout<<"ERROR! Precision not sufficient for ctL4phi1="<<ctL4phi1
-	       <<" ret=exp("<<-690*pow(ctL4phi1/16.0,power2/2)<<")"<<std::endl;
+	       <<" ret= "<<ret<<std::endl;
       return 1e-300;
     }
 //  }
@@ -183,6 +185,7 @@ if(verbose) {
   int halfSteps = nSteps/2;
   double phi, sin2, sincos, cos2;
   double ctL1, ctL5p, ctL5m;
+  double local_ret4=1;
   for (int step = -1*halfSteps; step<halfSteps; ++step) {
     phi = 3.14159 * step / halfSteps;
     sin2 = sin(phi)*sin(phi);
@@ -198,10 +201,12 @@ if(verbose) {
 //    if ( ctL1 >= 0 ) continue;
 //
 //    local_ret4 = exp(690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2)));
-	double expo4 = coef4*(-1*ctL1)-shift;
+//	double expo4 = coef4*(-1*ctL1)-shift;
 //	double expo5 = coef4*(-1*ctL5m)-shift;
 //	double expo6 = coef4*(-1*ctL5p)-shift;
-//       double expo4 = coef4*(-1*ctL1)*(-1*ctL5m)*(-1*ctL5p)-shift;
+//       double min4 = TMath::Min(ctL1,TMath::Min(ctL5m,ctL5p));
+       double max4 = TMath::Max(ctL1,TMath::Max(ctL5m,ctL5p));
+       double expo4 = coef4*(-max4)-shift4;
 //       double expo4 = coef4*(TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2)))-shift;
        local_ret4 = 0.5*(1-expo4/sqrt(1+expo4*expo4));
 //       local_ret5 = 0.5*(1-expo5/sqrt(1+expo5*expo5));
@@ -209,19 +214,21 @@ if(verbose) {
 //       local_ret4=TMath::Min(local_ret4,TMath::Min(local_ret5,local_ret6));
     if (local_ret4==0) {
       std::cout<<"ERROR! Precision not sufficient for ctL5p="<<ctL5p<<" ctL5m="<<ctL5m<<" ctL1="<<ctL1
-	       <<" ret=exp("<<690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2))<<")"<<std::endl;
+	       <<" ret= "<<ret<<std::endl;
       return 1e-300;
     }
     if(ctL5p<0&&ctL5m<0&&ctL1<0) cond4=true;
     
-    ret=ret*local_ret4;
+    ret4=ret4*local_ret4;
 //    ret=ret*local_ret4*local_ret5*local_ret6;
     //if ( ret > local_ret4 ) ret = local_ret4;
   }
 //}
+  ret=ret0*ret4;
   
    if(verbose){
-    std::cout<<Form("Q2Bin=%d cond 0=%d 1=%d 2=%d 3=%d 4=%d ret=%3.10f local_ret4=%3.10f ctL4phi1=%3.10f",Q2Bin,cond0,cond1,cond2,cond3,cond4, ret,local_ret4,ctL4phi1)<<std::endl;
+    std::cout<<Form("Q2Bin=%d cond 0=%d 1=%d 2=%d 3=%d 4=%d ret0=%3.10f ret4=%3.10f  retTot=%3.10f ctL4phi1=%3.10f",Q2Bin,cond0,cond1,cond2,cond3,cond4,
+    ret0,ret4,ret,ctL4phi1)<<std::endl;
    } 
   return ret ;
 
