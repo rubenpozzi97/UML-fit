@@ -62,7 +62,7 @@ Double_t ParBound::evaluate() const
 //  double local_ret5=1.0;
 //  double local_ret6=1.0;
   double shift0= 1.8;
-  double shift4= 10.0;
+  double shift4= 1.8;
 //
   double coef0 =80;
   double coef4 =80;
@@ -80,12 +80,12 @@ Double_t ParBound::evaluate() const
   if (Q2Bin==5) coef0 =200;
   if (Q2Bin==7) coef0 =200;
 //  
-  if (Q2Bin==0) coef4 =1;
-  if (Q2Bin==1) coef4 =1;
-  if (Q2Bin==2) coef4 =1;
-  if (Q2Bin==3) coef4 =1;
-  if (Q2Bin==5) coef4 =1;
-  if (Q2Bin==7) coef4 =1;
+  if (Q2Bin==0) coef4 =200;
+  if (Q2Bin==1) coef4 =200;
+  if (Q2Bin==2) coef4 =200;
+  if (Q2Bin==3) coef4 =200;
+  if (Q2Bin==5) coef4 =200;
+  if (Q2Bin==7) coef4 =200;
   
 //  
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
