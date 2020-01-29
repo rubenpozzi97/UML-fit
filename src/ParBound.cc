@@ -64,8 +64,8 @@ Double_t ParBound::evaluate() const
   double shift0= 1.8;
   double shift4= 1.8;
 //
-  double coef0 =80;
-  double coef4 =80;
+  double coef0 =100;
+  double coef4 =100;
 //  
 //   if (Q2Bin==0) coef0 =80;
 //   if (Q2Bin==1) coef0 =130;
@@ -80,12 +80,12 @@ Double_t ParBound::evaluate() const
   if (Q2Bin==5) coef0 =200;
   if (Q2Bin==7) coef0 =200;
 //  
-  if (Q2Bin==0) coef4 =200;
-  if (Q2Bin==1) coef4 =200;
-  if (Q2Bin==2) coef4 =200;
-  if (Q2Bin==3) coef4 =200;
-  if (Q2Bin==5) coef4 =200;
-  if (Q2Bin==7) coef4 =200;
+  if (Q2Bin==0) coef4 =1000;
+  if (Q2Bin==1) coef4 =1000;
+  if (Q2Bin==2) coef4 =1000;
+  if (Q2Bin==3) coef4 =1000;
+  if (Q2Bin==5) coef4 =1000;
+  if (Q2Bin==7) coef4 =1000;
   
 //  
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
@@ -186,6 +186,7 @@ if(verbose) {
   double phi, sin2, sincos, cos2;
   double ctL1, ctL5p, ctL5m;
   double local_ret4=1;
+  double min_ret4=1;
   for (int step = -1*halfSteps; step<halfSteps; ++step) {
     phi = 3.14159 * step / halfSteps;
     sin2 = sin(phi)*sin(phi);
@@ -206,9 +207,9 @@ if(verbose) {
 //	double expo6 = coef4*(-1*ctL5p)-shift;
 //       double min4 = TMath::Min(ctL1,TMath::Min(ctL5m,ctL5p));
        double max4 = TMath::Max(ctL1,TMath::Max(ctL5m,ctL5p));
-       double expo4 = coef4*(-max4)-shift4;
+       double expo4 = coef4*(max4)+shift4;
 //       double expo4 = coef4*(TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2)))-shift;
-       local_ret4 = 0.5*(1-expo4/sqrt(1+expo4*expo4));
+       local_ret4 = 0.5*(1+expo4/sqrt(1+expo4*expo4));
 //       local_ret5 = 0.5*(1-expo5/sqrt(1+expo5*expo5));
 //       local_ret6 = 0.5*(1-expo6/sqrt(1+expo6*expo6));
 //       local_ret4=TMath::Min(local_ret4,TMath::Min(local_ret5,local_ret6));
@@ -217,7 +218,11 @@ if(verbose) {
 	       <<" ret= "<<ret<<std::endl;
       return 1e-300;
     }
+//
     if(ctL5p<0&&ctL5m<0&&ctL1<0) cond4=true;
+//    
+    if(min_ret4> local_ret4)  min_ret4= local_ret4; 
+//    if (ret4>local_ret4) ret4=ret4*local_ret4;
     
     ret4=ret4*local_ret4;
 //    ret=ret*local_ret4*local_ret5*local_ret6;
@@ -227,8 +232,8 @@ if(verbose) {
   ret=ret0*ret4;
   
    if(verbose){
-    std::cout<<Form("Q2Bin=%d cond 0=%d 1=%d 2=%d 3=%d 4=%d ret0=%3.10f ret4=%3.10f  retTot=%3.10f ctL4phi1=%3.10f",Q2Bin,cond0,cond1,cond2,cond3,cond4,
-    ret0,ret4,ret,ctL4phi1)<<std::endl;
+    std::cout<<Form("Q2Bin=%d cond 0=%d 1=%d 2=%d 3=%d 4=%d ret0=%3.10f ret4=%3.10f  retTot=%3.10f ctL4phi1=%3.10f local_ret4=%3.10f min_ret4=%3.10f",Q2Bin,cond0,cond1,cond2,cond3,cond4,
+    ret0,ret4,ret,ctL4phi1,local_ret4,min_ret4)<<std::endl;
    } 
   return ret ;
 
