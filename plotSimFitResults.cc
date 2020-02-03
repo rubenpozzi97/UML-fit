@@ -169,9 +169,9 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
 //     ErrH[i] = ErrL[i] = DiffErrH[i] = DiffErrL[i] = 0;
 
     TFile* finReco;
-    if (plotCT || plotWT) finReco = TFile::Open(("simFitResults/simFitResult_recoMC_singleComponent" + year + stat + ".root").c_str());
+    if (plotCT || plotWT) finReco = TFile::Open(("simFitResultsExtConstr/simFitResult_recoMC_singleComponent" + year + stat + ".root").c_str());
     TFile* finFullReco;
-    if (plotRECO) finFullReco = TFile::Open(("fitResults/fitResult_recoMC_fullAngular" + year  + stat + ".root").c_str());
+    if (plotRECO) finFullReco = TFile::Open(("simFitResultsExtConstr/simFitResult_recoMC_fullAngular" + year  + stat + "_Paolo.root").c_str());
 
     for (int i=0; i<nBins; ++i) {
       if (i==4 || i==6 || i==8) continue;
@@ -194,7 +194,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
 
       // fill for full angular fit
       if ( plotRECO && finFullReco && !finFullReco->IsZombie() ) {
-        RooFitResult* fitResult = (RooFitResult*)finFullReco->Get(Form("FitResult_b%ip%i",i,parity));
+        RooFitResult* fitResult = (RooFitResult*)finFullReco->Get(Form("simFitResult_b%ip%i",i,parity));
         if (fitResult && !fitResult->IsZombie() && fitResult->status()==0 && fitResult->covQual()==3) {
           fillVectors(fitResult, ParIndx, Res, ErrH, ErrL, Diff, DiffErrH, DiffErrL, genRes, genErrH, genErrL,  iy, i);
         }
@@ -343,11 +343,11 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   line->Draw();
   resDiffCover->Draw("e2");
 
-  string confString = "plotSimFit_d/fitResult_";
+  string confString = "plotSimFitExtConstr_d/fitResult_";
   if (plotCT) confString = confString + "ctRes_";
   if (plotWT) confString = confString + "wtRes_";
   if (plotRECO) confString = confString + "recoRes_";
-  c[ParIndx]->SaveAs( (confString + ParName[ParIndx] + "_" + years.back().c_str() + stat + ".pdf").c_str() );
+  c[ParIndx]->SaveAs( (confString + ParName[ParIndx] + "_" + years.back().c_str() + stat + "_Paolo.pdf").c_str() );
 
 }
 
@@ -365,7 +365,7 @@ void plotSimFitResults(int parity, int ParIndx = -1, bool plotCT = true, bool pl
   years.push_back("2017");
   years.push_back("2018");
   
-  if (datalike) diffMax = 0.1999;
+  if (datalike) diffMax = 0.3999;
   
   if ( ParIndx==-1 )
     for (ParIndx=0; ParIndx<nPars; ++ParIndx)

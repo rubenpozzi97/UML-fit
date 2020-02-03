@@ -1,7 +1,7 @@
 #!/bin/bash
 
 par=1
-year1=2016
+year1=2018
 year2=0
 year3=0
 datalike=1
@@ -19,6 +19,6 @@ while read -a line; do
 	bin=${line[0]}
 	
 	./simfit_recoMC_fullAngular ${bin} ${par} 1 1 ${datalike} ${year1} ${year2} ${year3}\
-	    &> logs_simFit/simfit_recoMC_fullAngular_${bin}_${par}_${year1}_${year2}_${year3}_dataStat${datalike}.out &
+	    &> logs_simFitExtConstr/simfit_recoMC_fullAngular_${bin}_${par}_${year1}_${year2}_${year3}_dataStat${datalike}_quarterStat_Paolo.out &
 
 done < ../confSF/KDE_SF.list

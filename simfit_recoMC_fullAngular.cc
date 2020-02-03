@@ -259,9 +259,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 
   if (save) {
     // Save fit results in file
-    TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
+    TFile* fout = new TFile(("simFitResultsExtConstr/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
     fitResult->Write(("simFitResult_"+shortString).c_str(),TObject::kWriteDelete);
-    fout->Close();
+    fout->Close(); 
   }
 
   if (!plot) return;
@@ -385,9 +385,9 @@ int main(int argc, char** argv)
   if ( datalike )    cout << "Considering data-like statistics" << endl;
 
   std::map<int,float> scale_to_data;
-  scale_to_data.insert(std::make_pair(2016, 0.01*2)); // *2 since we are using only odd/even events 
-  scale_to_data.insert(std::make_pair(2017, 0.01*2));
-  scale_to_data.insert(std::make_pair(2018, 0.015*2));
+  scale_to_data.insert(std::make_pair(2016, 0.01*2/4)); // *2 since we are using only odd/even events 
+  scale_to_data.insert(std::make_pair(2017, 0.01*2/4));
+  scale_to_data.insert(std::make_pair(2018, 0.015*2/4));
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
