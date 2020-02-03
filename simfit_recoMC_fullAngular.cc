@@ -12,7 +12,8 @@
 #include <RooCategory.h>
 #include <RooDataSet.h>
 #include <RooFitResult.h>
-#include <RooPlot.h>
+#include <RooMinimizer.h>
+ #include <RooPlot.h>
 #include <RooHistFunc.h>
 #include <RooDataHist.h>
 #include <RooSimultaneous.h>
@@ -221,37 +222,62 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
   ((ParBound*)PDF_phys_bound)->Q2Bin=q2Bin;
 
+  RooAbsReal* nll = simPdf->createNLL(combData,
+                                      RooFit::Extended(kFALSE),
+                                      RooFit::ExternalConstraints(*PDF_phys_bound),
+                                      RooFit::NumCPU(1)
+                                      );
+    
+  RooMinimizer m(*nll) ;
+  m.optimizeConst (kTRUE); // do not recalculate constant terms
+  m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
+  m.setVerbose(kTRUE);
+//  Minuit2.setEps(1e-16) ;
+  m.setMinimizerType("Minuit2");
+  m.setStrategy(0);
+  m.setEvalErrorWall(false);
+  m.migrad() ;
+  m.hesse() ;   
+  std::cout << std::endl;
+  std::cout << "######################### now strategy 2 #########################"<< std::endl;
+  m.setStrategy(2);
+  m.minos() ;
+  
+  RooFitResult* fitResult = m.save() ; 
+  fitResult->Print("v");
+  
+
   // perform fit in two steps:
   // first with strategy=0 and no MINOS, to get close to the likilihood maximum
-  simPdf->fitTo( combData,
-		 ExternalConstraints(*PDF_phys_bound),
-                 Minimizer("Minuit2","migrad"), 
-                 Extended(false), 
-                 Timer(true),
-                 NumCPU(1),
-                 Hesse(true),
-                 Strategy(0),
-                 Offset(true));
-  // second with full accuracy (strategy=2) and MINOS, to get the best result
-  RooFitResult* fitResult = simPdf->fitTo( combData,
-					   ExternalConstraints(*PDF_phys_bound),
-                                           Minimizer("Minuit2","migrad"),
-                                           Extended(false), 
-                                           Save(true),
-//                                            Timer(true),
-                                           // NumCPU(1),
-                                           Hesse(true),
-                                           Strategy(2),
-                                           Minos(true),
-                                           Offset(true)
-                                         );
+//   simPdf->fitTo( combData,
+// 		 ExternalConstraints(*PDF_phys_bound),
+//                  Minimizer("Minuit2","migrad"), 
+//                  Extended(false), 
+//                  Timer(true),
+//                  NumCPU(1),
+//                  Hesse(true),
+//                  Strategy(0),
+//                  Offset(true));
+//   // second with full accuracy (strategy=2) and MINOS, to get the best result
+//   RooFitResult* fitResult = simPdf->fitTo( combData,
+// 					   ExternalConstraints(*PDF_phys_bound),
+//                                            Minimizer("Minuit2","migrad"),
+//                                            Extended(false), 
+//                                            Save(true),
+// //                                            Timer(true),
+//                                            // NumCPU(1),
+//                                            Hesse(true),
+//                                            Strategy(2),
+//                                            Minos(true),
+//                                            Offset(true)
+//                                          );
   // The two step fit seemed necessary to get convergence in all q2 bins
   // if one observes that the convergence is obtained just running the second step, it is better to avoid the first step (to gain computing time)
   // Offset(true) parameter make the FCN value to be defined at 0 at the begin of the minimization
   // it is needed to get convergence in all q2 bins, and avoid the "machine precision reached" errors
   // which are due to too high FCN absolute values compared to the minimisation steps
 
-  fitResult->Print("v");
+//   fitResult->Print("v");
   ((ParBound*)PDF_phys_bound)->verbose=true;
 //  
 //  Boundary Checks [0 is ok, ret=final penality, ret_local4="numerically computed" penality]
