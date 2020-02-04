@@ -224,7 +224,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 
   RooAbsReal* nll = simPdf->createNLL(combData,
                                       RooFit::Extended(kFALSE),
-                                      RooFit::ExternalConstraints(*PDF_phys_bound),
+//                                       RooFit::ExternalConstraints(*PDF_phys_bound),
                                       RooFit::NumCPU(1)
                                       );
     
@@ -235,14 +235,16 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 //  Minuit2.setEps(1e-16) ;
   m.setMinimizerType("Minuit2");
   m.setStrategy(0);
-  m.setEvalErrorWall(false);
+//   m.setEvalErrorWall(false);
   m.migrad() ;
   m.hesse() ;   
   std::cout << std::endl;
   std::cout << "######################### now strategy 2 #########################"<< std::endl;
   m.setStrategy(2);
+  m.migrad() ;
+  m.hesse() ;   
   m.minos() ;
-  
+    
   RooFitResult* fitResult = m.save() ; 
   fitResult->Print("v");
   
@@ -289,6 +291,37 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
     fitResult->Write(("simFitResult_"+shortString).c_str(),TObject::kWriteDelete);
     fout->Close(); 
   }
+
+  RooPlot* frameFl = Fl->frame(Title("-log(L) scan vs Fl")) ;
+  nll->plotOn(frameFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP1 = P1->frame(Title("-log(L) scan vs P1")) ;
+  nll->plotOn(frameP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP2 = P2->frame(Title("-log(L) scan vs P2")) ;
+  nll->plotOn(frameP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP3 = P3->frame(Title("-log(L) scan vs P3")) ;
+  nll->plotOn(frameP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP4p = P4p->frame(Title("-log(L) scan vs P4p")) ;
+  nll->plotOn(frameP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP5p = P5p->frame(Title("-log(L) scan vs P5p")) ;
+  nll->plotOn(frameP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP6p = P6p->frame(Title("-log(L) scan vs P6p")) ;
+  nll->plotOn(frameP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  RooPlot* frameP8p = P8p->frame(Title("-log(L) scan vs P8p")) ;
+  nll->plotOn(frameP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+//   frameFl->SetMaximum(15) ;
+//   frameFl->SetMinimum(0) ;
+
+  TCanvas* cSara = new TCanvas("nllerrorhandling","nllerrorhandling",1200,900) ;
+  cSara->Divide(3,3) ;
+  cSara->cd(1) ; gPad->SetLeftMargin(0.15) ; frameFl->GetYaxis()->SetTitleOffset(1.4)  ; frameFl->Draw() ;
+  cSara->cd(2) ; gPad->SetLeftMargin(0.15) ; frameP1->GetYaxis()->SetTitleOffset(1.4)  ; frameP1->Draw() ;
+  cSara->cd(3) ; gPad->SetLeftMargin(0.15) ; frameP2->GetYaxis()->SetTitleOffset(1.4)  ; frameP2->Draw() ;
+  cSara->cd(4) ; gPad->SetLeftMargin(0.15) ; frameP3->GetYaxis()->SetTitleOffset(1.4)  ; frameP3->Draw() ;
+  cSara->cd(5) ; gPad->SetLeftMargin(0.15) ; frameP4p->GetYaxis()->SetTitleOffset(1.4) ; frameP4p->Draw() ;
+  cSara->cd(6) ; gPad->SetLeftMargin(0.15) ; frameP5p->GetYaxis()->SetTitleOffset(1.4) ; frameP5p->Draw() ;
+  cSara->cd(7) ; gPad->SetLeftMargin(0.15) ; frameP6p->GetYaxis()->SetTitleOffset(1.4) ; frameP6p->Draw() ;
+  cSara->cd(8) ; gPad->SetLeftMargin(0.15) ; frameP8p->GetYaxis()->SetTitleOffset(1.4) ; frameP8p->Draw() ;
+  cSara->SaveAs(("test_nll_Constr_" + all_years + stat + Form("_b%i_Paolo.pdf", q2Bin)).c_str());
 
   if (!plot) return;
 
