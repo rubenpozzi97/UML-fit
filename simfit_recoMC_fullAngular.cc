@@ -227,7 +227,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
 //                                       RooFit::ExternalConstraints(*PDF_phys_bound),
                                       RooFit::NumCPU(1)
                                       );
-    
+         
   RooMinimizer m(*nll) ;
   m.optimizeConst (kTRUE); // do not recalculate constant terms
   m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
@@ -283,7 +283,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   ((ParBound*)PDF_phys_bound)->verbose=true;
 //  
 //  Boundary Checks [0 is ok, ret=final penality, ret_local4="numerically computed" penality]
-  cout<<" Boundary Checks [0 is ok] = "<<PDF_phys_bound->getVal()<<endl;
+  cout<<" Boundary Checks [1 is ok] = "<<PDF_phys_bound->getVal()<<endl;
 
   if (save) {
     // Save fit results in file

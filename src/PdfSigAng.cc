@@ -105,9 +105,77 @@ Double_t PdfSigAng::evaluate() const
   if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
 
   // std::cout<<"->"<<effCValue<<"*"<<decCT<<" + "<<mFrac<<"*"<<effWValue<<"*"<<decWT<<std::endl;
-  return (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT));
+  return (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT) * PdfSigAng::penalty(P1, P2, P3, P4p, P5p, P6p, P8p) );
 
 }
+
+Double_t PdfSigAng::penalty(double P1, double P2, double P3, double P4p, double P5p, double P6p, double P8p) const{
+
+  // Physical Region: should be < 0
+  double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
+  // Physical Region: should be < 0
+  double ctK2 = P1*P1 + 4*P2*P2 + 4*P3*P3 -1;
+  // Physical Region: should be < 0
+  double ctL2phi1 = P5p*P5p*(1-P1) + P6p*P6p*(1+P1) - 4*P3*P5p*P6p - 1 + P1*P1 + 4*P3*P3;
+  // Physical Region: should be < 0
+  double ctL2phi2 = P6p*P6p - 1 + P1;
+  // Physical Region: should be < 0
+  double ctL2phi3 = P5p*P5p - 1 - P1;
+
+  double x = TMath::Max(ctL4phi1, ctK2);
+  x = TMath::Max(x, ctL2phi1);
+  x = TMath::Max(x, ctL2phi2);
+  x = TMath::Max(x, ctL2phi3);
+  double penalty1 = 1.;
+  penalty1 = x > 0 ? exp(-1000*x*x*x*x) : 1.;
+  if (penalty1 < 1.E-10)  penalty1 = 1.E-10;
+
+  // at least one of the three should be > 0
+  double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
+  double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
+  double a1 = 4*P3*P8p*P8p - 4*P3*P6p*P6p - 8*P1*P3 + 2*P5p*P6p*(1+P1) - 2*P4p*P8p*(1-P1) - 4*P2*P4p*P6p + 4*P2*P5p*P8p;
+  double a3 = 4*P3*P4p*P4p - 4*P3*P5p*P5p + 8*P1*P3 + 2*P5p*P6p*(1-P1) - 2*P4p*P8p*(1+P1) - 4*P2*P4p*P6p + 4*P2*P5p*P8p;
+  double a2 = 2 + 2*P1*P1 - 8*P2*P2 - 16*P3*P3 - (P4p*P4p+P6p*P6p)*(1-P1) - (P5p*P5p+P8p*P8p)*(1+P1) + 4*P2*P4p*P5p - 4*P2*P6p*P8p + 8*P3*P4p*P8p + 8*P3*P5p*P6p;
+  double b0 = P8p*P8p - 1 - P1 + 2*P2 + P6p*P8p; 
+  double b2 = P4p*P4p - 1 + P1 + 2*P2 - P4p*P5p; 
+  double b1 = P4p*P8p - 2*P3 + 0.5 * ( P4p*P6p - P5p*P8p );
+  double c0 = P8p*P8p - 1 - P1 - 2*P2 - P6p*P8p; 
+  double c2 = P4p*P4p - 1 + P1 - 2*P2 + P4p*P5p; 
+  double c1 = P4p*P8p - 2*P3 - 0.5 * ( P4p*P6p - P5p*P8p );
+  
+  int nSteps = 100;
+  int halfSteps = nSteps/2;
+  double phi, sin2, sincos, cos2;
+  double ctL1, ctL5p, ctL5m;
+  double tmp_y = 0;
+  double y = 0;
+  for (int step = 0; step < nSteps+1; ++step) {
+    phi = 3.14159 * step / nSteps;
+    sin2 = sin(phi)*sin(phi);
+    sincos = sin(phi)*cos(phi);
+    cos2 = cos(phi)*cos(phi);
+
+    ctL5p = b0*sin2 + b1*sincos + b2*cos2;
+    if ( ctL5p >= 0 ) continue;
+    ctL5m = c0*sin2 + c1*sincos + c2*cos2;
+    if ( ctL5m >= 0 ) continue;
+    ctL1 = a0*sin2*sin2 + a1*sin2*sincos + a2*sin2*cos2 + a3*sincos*cos2 + a4*cos2*cos2;
+    if ( ctL1 >= 0 ) continue;
+
+    tmp_y = TMath::Min(ctL5p, TMath::Min( ctL5m, ctL1));
+    if (tmp_y < y) y = tmp_y; 
+  }  
+
+  double penalty2 = 1;
+  penalty2 = y < 0 ? exp(-1000*y*y*y*y) : 1.;
+  if (penalty2 < 1.E-10)  penalty2 = 1.E-10;
+//   if (penalty1 != 1 || penalty2 != 1)
+//     std::cout << "sara: " << penalty1 << "  " << penalty2 << "  x = " << x << " and y = " << y << std::endl;
+  return TMath::Min(penalty1, penalty2);
+
+} 
+
+
 
 namespace {
   Bool_t fullRangeCosT(const RooRealProxy& x ,const char* range)
@@ -189,6 +257,6 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
     return 1e-55;
   }
  
-  return (retCT+mFrac*retWT) ;
+  return ((retCT+mFrac*retWT)* PdfSigAng::penalty(P1, P2, P3, P4p, P5p, P6p, P8p)) ;
 
 }

@@ -79,6 +79,7 @@ class PdfSigAng : public RooAbsPdf {
 
   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  Double_t penalty(double P1, double P2, double P3, double P4p, double P5p, double P6p, double P8p) const;
 
   ClassDef(PdfSigAng,1) // PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events
     };
