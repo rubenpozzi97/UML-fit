@@ -11,6 +11,7 @@ INCLUDEDIR  := ./interface
 EXECUTABLE0 := simfit_recoMC_singleComponent
 EXECUTABLE1 := simfit4d_recoMC_singleComponent
 EXECUTABLE2 := simfit_recoMC_fullAngular
+EXECUTABLE3 := integrate_boundary
 
 EXTRACLASS := RooDataHist.cxx
 CLASS0     := PdfRT
@@ -45,6 +46,9 @@ $(EXECUTABLE1): $(EXECUTABLE1).cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 $(EXECUTABLE2): $(EXECUTABLE2).cc 
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+
+$(EXECUTABLE3): $(EXECUTABLE3).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 

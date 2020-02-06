@@ -26,10 +26,19 @@ class ParBound : public RooAbsPdf {
   RooRealProxy P1 ;
   RooRealProxy P2 ;
   RooRealProxy P3 ;
-  RooRealProxy P4p ;
-  RooRealProxy P5p ;
-  RooRealProxy P6p ;
-  RooRealProxy P8p ;
+  RooRealProxy R45 ;
+  RooRealProxy R68 ;
+  RooRealProxy phi45 ;
+  RooRealProxy phi68 ;
+
+  bool verbose;
+
+  Double_t integral_value;
+
+  Double_t power;
+  Double_t shift1;
+  Double_t shift5;
+  Double_t coeff;
 
   Double_t evaluate() const ;
 
@@ -39,14 +48,35 @@ class ParBound : public RooAbsPdf {
 	   RooAbsReal& _P1,
 	   RooAbsReal& _P2,
 	   RooAbsReal& _P3,
-	   RooAbsReal& _P4p,
-	   RooAbsReal& _P5p,
-	   RooAbsReal& _P6p,
-	   RooAbsReal& _P8p);
+	   RooAbsReal& _R45,
+	   RooAbsReal& _R68,
+	   RooAbsReal& _phi45,
+	   RooAbsReal& _phi68,
+	   Double_t _power,
+	   Double_t _shift1,
+	   Double_t _shift5,
+	   Double_t _coeff,
+	   Double_t _integral_value,
+	   bool _verbose);
+  ParBound(const char *name, const char *title,
+	   RooAbsReal& _P1,
+	   RooAbsReal& _P2,
+	   RooAbsReal& _P3,
+	   RooAbsReal& _R45,
+	   RooAbsReal& _R68,
+	   RooAbsReal& _phi45,
+	   RooAbsReal& _phi68,
+	   Double_t _power,
+	   Double_t _shift1,
+	   Double_t _shift5,
+	   Double_t _coeff);
   ParBound(const ParBound& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new ParBound(*this,newname); }
   inline virtual ~ParBound() { }
   
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+
   ClassDef(ParBound,1) // PDF constraint for physical boundary on angular parameters
     };
 

@@ -16,19 +16,69 @@ ParBound::ParBound(const char *name, const char *title,
 		   RooAbsReal& _P1,
 		   RooAbsReal& _P2,
 		   RooAbsReal& _P3,
-		   RooAbsReal& _P4p,
-		   RooAbsReal& _P5p,
-		   RooAbsReal& _P6p,
-		   RooAbsReal& _P8p) :
+		   RooAbsReal& _R45,
+		   RooAbsReal& _R68,
+		   RooAbsReal& _phi45,
+		   RooAbsReal& _phi68,
+		   Double_t _power,
+		   Double_t _shift1,
+		   Double_t _shift5,
+		   Double_t _coeff,
+		   Double_t _integral_value,
+		   bool _verbose) :
   RooAbsPdf(name,title), 
   P1("P1","P1",this,_P1),
   P2("P2","P2",this,_P2),
   P3("P3","P3",this,_P3),
-  P4p("P4p","P4p",this,_P4p),
-  P5p("P5p","P5p",this,_P5p),
-  P6p("P6p","P6p",this,_P6p),
-  P8p("P8p","P8p",this,_P8p)
+  R45("R45","R45",this,_R45),
+  R68("R68","R68",this,_R68),
+  phi45("phi45","phi45",this,_phi45),
+  phi68("phi68","phi68",this,_phi68)
 {
+
+  verbose = _verbose;
+
+  integral_value = _integral_value;
+
+  shift1 = _shift1;
+  shift5 = _shift5;
+  coeff  = _coeff;
+  power  = _power;
+
+}
+
+
+ParBound::ParBound(const char *name, const char *title, 
+		   RooAbsReal& _P1,
+		   RooAbsReal& _P2,
+		   RooAbsReal& _P3,
+		   RooAbsReal& _R45,
+		   RooAbsReal& _R68,
+		   RooAbsReal& _phi45,
+		   RooAbsReal& _phi68,
+		   Double_t _power,
+		   Double_t _shift1,
+		   Double_t _shift5,
+		   Double_t _coeff) :
+  RooAbsPdf(name,title), 
+  P1("P1","P1",this,_P1),
+  P2("P2","P2",this,_P2),
+  P3("P3","P3",this,_P3),
+  R45("R45","R45",this,_R45),
+  R68("R68","R68",this,_R68),
+  phi45("phi45","phi45",this,_phi45),
+  phi68("phi68","phi68",this,_phi68)
+{
+
+  verbose = false;
+
+  integral_value = 0.0;
+
+  shift1 = _shift1;
+  shift5 = _shift5;
+  coeff  = _coeff;
+  power = _power;
+
 }
 
 
@@ -37,11 +87,21 @@ ParBound::ParBound(const ParBound& other, const char* name) :
   P1("P1",this,other.P1),
   P2("P2",this,other.P2),
   P3("P3",this,other.P3),
-  P4p("P4p",this,other.P4p),
-  P5p("P5p",this,other.P5p),
-  P6p("P6p",this,other.P6p),
-  P8p("P8p",this,other.P8p)
+  R45("R45",this,other.R45),
+  R68("R68",this,other.R68),
+  phi45("phi45",this,other.phi45),
+  phi68("phi68",this,other.phi68)
 {
+
+  verbose = other.verbose;
+
+  integral_value = other.integral_value;
+
+  shift1 = other.shift1;
+  shift5 = other.shift5;
+  coeff  = other.coeff;
+  power  = other.power;
+
 }
 
 
@@ -49,63 +109,12 @@ ParBound::ParBound(const ParBound& other, const char* name) :
 Double_t ParBound::evaluate() const 
 {
 
-  double power = 6.0;
   double ret = 1.0;
 
-  double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
-  // std::cout<<" ctL4phi1="<<ctL4phi1<<std::endl;
-  
-  if ( ctL4phi1>0 ) {
-    // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
-    ret = exp(-690*pow(ctL4phi1/16.0,power/2));
-    if (ret==0) {
-      std::cout<<"ERROR! Precision not sufficient for ctL4phi1="<<ctL4phi1
-	       <<" ret=exp("<<-690*pow(ctL4phi1/16.0,power/2)<<")"<<std::endl;
-      return 1e-300;
-    }
-  }
-
-  double ctK2 = P1*P1 + 4*P2*P2 + 4*P3*P3 -1;
-
-  if ( ctK2>0 ) {
-    double local_ret = exp(-690*pow(ctK2/2.0,power/2));
-    if (local_ret==0) {
-      std::cout<<"ERROR! Precision not sufficient for ctK2="<<ctK2
-	       <<" ret=exp("<<-690*pow(ctK2/2.0,power/2)<<")"<<std::endl;
-      return 1e-300;
-    }
-    if ( ret > local_ret ) ret = local_ret;
-  }
-
-  double ctL2phi1 = P5p*P5p*(1-P1) + P6p*P6p*(1+P1) - 4*P3*P5p*P6p - 1 + P1*P1 + 4*P3*P3;
-  double ctL2phi2 = P6p*P6p - 1 + P1;
-  double ctL2phi3 = P5p*P5p - 1 - P1;
-  // std::cout<<" ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
-
-  if ( ctL2phi1>0 ) {
-    // std::cout<<"ctL2phi1="<<ctL2phi1<<" ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
-    double local_ret = exp(-690*pow(ctL2phi1/9.0,power/3));
-    if (local_ret==0) {
-      std::cout<<"ERROR! Precision not sufficient for ctL2phi1="<<ctL2phi1
-	       <<" ret=exp("<<-690*pow(ctL2phi1/9.0,power/3)<<")"<<std::endl;
-      return 1e-300;
-    }
-    if ( ret > local_ret ) ret = local_ret;
-  }
-  if ( ctL2phi2>0 || ctL2phi3>0 ) {
-    double local_ret = exp(-690*pow(TMath::Max(ctL2phi2,ctL2phi3)/2.0,power/2));
-    if (local_ret==0) {
-      std::cout<<"ERROR! Precision not sufficient for ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3
-	       <<" ret=exp("<<-690*pow(TMath::Max(ctL2phi2,ctL2phi3)/2.0,power/2)<<")"<<std::endl;
-      return 1e-300;
-    }
-    if ( ret > local_ret ) ret = local_ret;
-  }
-  if ( ctL2phi1<0 && ctL2phi2*ctL2phi3<0 ) std::cout<<"ERROR! ctL2phi2 and ctL2phi3 have different sign! ctL2phi2="<<ctL2phi2<<" ctL2phi3="<<ctL2phi3<<std::endl;
-
-  // Avoid numerical computation when the boundary is already exceeded
-  // except when the constraint is very weak (0.01<ret<1), and a stronger one can be obtained with the following checks
-  if ( ret < 0.01 ) return ret;
+  double P4p = R45*cos(phi45)*sqrt(0.5+P2)+R68*cos(phi68)*sqrt(0.5-P2);
+  double P5p = R45*cos(phi45)*sqrt(0.5+P2)-R68*cos(phi68)*sqrt(0.5-P2);
+  double P6p = R68*sin(phi68)*sqrt(0.5-P2)-R45*sin(phi45)*sqrt(0.5+P2);
+  double P8p = R68*sin(phi68)*sqrt(0.5-P2)+R45*sin(phi45)*sqrt(0.5+P2);
 
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
   double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
@@ -124,32 +133,95 @@ Double_t ParBound::evaluate() const
   double c1 = P4p*P8p - 2*P3 - 0.5 * ( P4p*P6p - P5p*P8p );
   
   int nSteps = 100;
-  int halfSteps = nSteps/2;
   double phi, sin2, sincos, cos2;
   double ctL1, ctL5p, ctL5m;
-  for (int step = -1*halfSteps; step<halfSteps; ++step) {
-    phi = 3.14159 * step / halfSteps;
+  double base1, base5, exponent, local_ret;
+  for (int step = 0; step<nSteps; ++step) {
+    phi = 3.14159 * step / nSteps;
     sin2 = sin(phi)*sin(phi);
     sincos = sin(phi)*cos(phi);
     cos2 = cos(phi)*cos(phi);
 
     ctL5p = b0*sin2 + b1*sincos + b2*cos2;
-    if ( ctL5p >= 0 ) continue;
     ctL5m = c0*sin2 + c1*sincos + c2*cos2;
-    if ( ctL5m >= 0 ) continue;
 
     ctL1 = a0*sin2*sin2 + a1*sin2*sincos + a2*sin2*cos2 + a3*sincos*cos2 + a4*cos2*cos2;
-    if ( ctL1 >= 0 ) continue;
 
-    double local_ret = exp(690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2)));
-    if (local_ret==0) {
-      std::cout<<"ERROR! Precision not sufficient for ctL5p="<<ctL5p<<" ctL5m="<<ctL5m<<" ctL1="<<ctL1
-	       <<" ret=exp("<<690*TMath::Max(-1*pow(-1*ctL1/1.1,power/3),-1*pow(-1*TMath::Max(ctL5m,ctL5p)/3.0,power/2))<<")"<<std::endl;
-      return 1e-300;
+    base1 = 1 - ctL1 * 0.1*shift1;
+    base5 = 1 - TMath::Max(ctL5m,ctL5p) * 0.1*shift5;
+
+    if ( base1 <=0 || base5 <=0 ) continue;
+
+    exponent = -0.0001*coeff * pow(base1,power) * pow(base5,power);
+    local_ret = exp(exponent);
+
+    if (verbose) {
+      if (ctL5m<0 && ctL5p<0 && ctL1<0) std::cout<<"[OUT] 1 "<<ctL1<<" 5p "<<ctL5p<<" 5m "<<ctL5m<<" phi "<<phi<<" base1 "<<base1<<" base5 "<<base5<<" -> exp("<<exponent<<")"<<std::endl;
+      // else std::cout<<"[IN]  1 "<<ctL1<<" 5p "<<ctL5p<<" 5m "<<ctL5m<<" phi "<<phi<<" base1 "<<base1<<" base5 "<<base5<<" -> exp("<<exponent<<")"<<std::endl;
     }
+    if (local_ret<1e-300) return 1e-300;
+
     if ( ret > local_ret ) ret = local_ret;
   }
   
   return ret;
+
+}
+
+namespace {
+  Bool_t fullRangeP1(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for P1
+    return (range == 0 || strlen(range) == 0)
+      ? (std::fabs(x.min() + 1.) < 1.e-5 && std::fabs(x.max() - 1.) < 1.e-5)
+      : (std::fabs(x.min(range) + 1.) < 1.e-5 && std::fabs(x.max(range) - 1.) < 1.e-5);
+  }
+  Bool_t fullRangeP2(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for P2 and P3
+    return (range == 0 || strlen(range) == 0)
+      ? (std::fabs(x.min() + 0.5) < 1.e-5 && std::fabs(x.max() - 0.5) < 1.e-5)
+      : (std::fabs(x.min(range) + 0.5) < 1.e-5 && std::fabs(x.max(range) - 0.5) < 1.e-5);
+  }
+  Bool_t fullRangeR(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for R parameters
+    return (range == 0 || strlen(range) == 0)
+      ? (std::fabs(x.min()) < 1.e-5 && std::fabs(x.max() - 1.0) < 1.e-5)
+      : (std::fabs(x.min(range)) < 1.e-5 && std::fabs(x.max(range) - 1.0) < 1.e-5);
+  }
+  Bool_t fullRangePhi(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for phi parameters
+    return (range == 0 || strlen(range) == 0)
+      ? (std::fabs(x.min() + 0.5*TMath::Pi()) < 1.e-5 && std::fabs(x.max() - 1.5*TMath::Pi()) < 1.e-5)
+      : (std::fabs(x.min(range) + 0.5*TMath::Pi()) < 1.e-5 && std::fabs(x.max(range) - 1.5*TMath::Pi()) < 1.e-5);
+  }
+}
+
+Int_t ParBound::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+{
+
+  if (integral_value<=0) return 0;
+
+  if ( matchArgs(allVars,analVars,P1,P2,P3) && matchArgs(allVars,analVars,R45,R68,phi45,phi68) )
+    if ( fullRangeP1 (P1,rangeName) &&
+	 fullRangeP2 (P2,rangeName) &&
+	 fullRangeP2 (P3,rangeName) &&
+	 fullRangeR  (R45,rangeName) &&
+	 fullRangeR  (R68,rangeName) &&
+	 fullRangePhi(phi45,rangeName) &&
+	 fullRangePhi(phi68,rangeName) )
+      return 1 ;
+
+  return 0 ;
+
+}
+
+Double_t ParBound::analyticalIntegral(Int_t code, const char* rangeName) const
+{
+  assert(code>0 && code<2) ;
+
+  return integral_value;
 
 }

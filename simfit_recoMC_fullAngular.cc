@@ -5,6 +5,7 @@
 #include <TLegend.h>
 #include <TMath.h>
 #include <TH3D.h>
+#include <TStopwatch.h>
 
 #include <RooRealVar.h>
 #include <RooAbsPdf.h>
@@ -17,6 +18,7 @@
 #include <RooDataHist.h>
 #include <RooSimultaneous.h>
 #include <RooNumIntConfig.h>
+#include <RooMinimizer.h>
 
 #include "PdfSigAng.h"
 #include "ParBound.h"
@@ -26,13 +28,15 @@ using namespace std;
 
 static const int nBins = 9;
 
-TCanvas* c [4*nBins];
+TCanvas* cnll;
+TCanvas* c;
 
-void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, bool datalike, std::vector<int> years, std::map<int,float> scale_to_data)
+void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, bool datalike, std::vector<int> years, std::map<int,float> scale_to_data, double bound_power, double bound_shift1, double bound_shift5, double bound_coeff, double bound_int, int nSample)
 {
 
   string shortString = Form("b%ip%i",q2Bin,parity);
   cout<<"Conf: "<<shortString<<endl;
+  cout<<"Bound: pow="<<bound_power<<" shift1="<<bound_shift1<<" shift5="<<bound_shift5<<" coeff="<<bound_coeff<<" integral="<<bound_int<<endl;
 
   // Load variables and dataset
   // importing the complementary dataset, to fit with statistically uncorrelated efficiency
@@ -73,12 +77,17 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   RooRealVar* P1    = new RooRealVar("P1","P_{1}",0,-1,1);
   RooRealVar* P2    = new RooRealVar("P2","P_{2}",0,-0.5,0.5);
   RooRealVar* P3    = new RooRealVar("P3","P_{3}",0,-0.5,0.5);
-  RooRealVar* P4p   = new RooRealVar("P4p","P'_{4}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",1, 0, 2);
+  RooRealVar* R45   = new RooRealVar("R45","R45",0.1,0,1);
+  RooRealVar* R68   = new RooRealVar("R68","R68",0.1,0,1);
+  RooRealVar* phi45 = new RooRealVar("phi45","phi45",0.5*TMath::Pi(),-0.5*TMath::Pi(),1.5*TMath::Pi());
+  RooRealVar* phi68 = new RooRealVar("phi68","phi68",0.5*TMath::Pi(),-0.5*TMath::Pi(),1.5*TMath::Pi());
+  RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",1, 0.95, 1.05);
   mFrac->setConstant();
+
+  RooFormulaVar* P4p = new RooFormulaVar("P4p","P'_{4}","R45*cos(phi45)*sqrt(0.5+P2)+R68*cos(phi68)*sqrt(0.5-P2)",RooArgList(*R45,*R68,*phi45,*phi68,*P2));
+  RooFormulaVar* P5p = new RooFormulaVar("P5p","P'_{5}","R45*cos(phi45)*sqrt(0.5+P2)-R68*cos(phi68)*sqrt(0.5-P2)",RooArgList(*R45,*R68,*phi45,*phi68,*P2));
+  RooFormulaVar* P6p = new RooFormulaVar("P6p","P'_{6}","R68*sin(phi68)*sqrt(0.5-P2)-R45*sin(phi45)*sqrt(0.5+P2)",RooArgList(*R45,*R68,*phi45,*phi68,*P2));
+  RooFormulaVar* P8p = new RooFormulaVar("P8p","P'_{8}","R68*sin(phi68)*sqrt(0.5-P2)+R45*sin(phi45)*sqrt(0.5+P2)",RooArgList(*R45,*R68,*phi45,*phi68,*P2));
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -110,10 +119,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
     // create roodataset (in case data-like option is selected, only import the correct % of data)
     RooDataSet* dataCT, *dataWT;
     if (datalike){
+      if (nSample*scale_to_data[years[iy]]>1) {
+	cout<<"ERROR: number of sample requested is too high, not enough MC stat in "<<years[iy]<<endl;
+	return;
+      }
       dataCT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
-        ->reduce( RooArgSet(reco_vars), Form("rand < %f", scale_to_data[years[iy]] )) ;
+        ->reduce( RooArgSet(reco_vars), Form("rand > %1.6f && rand < %1.6f", (nSample-1)*scale_to_data[years[iy]], nSample*scale_to_data[years[iy]] )) ;
       dataWT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
-        ->reduce( RooArgSet(reco_vars), Form("rand < %f", scale_to_data[years[iy]] )) ;
+        ->reduce( RooArgSet(reco_vars), Form("rand > %1.6f && rand < %1.6f", (nSample-1)*scale_to_data[years[iy]], nSample*scale_to_data[years[iy]] )) ;
     }
     else{
       dataCT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
@@ -129,8 +142,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
     }
 
     // import KDE efficiency histograms and partial integral histograms
-    string filename = "../eff-KDE/files_forSimFit/KDEeff_b";
-    filename = filename + Form((parity==0 ? "%i_ev_%i.root" : "%i_od_%i.root"),q2Bin,years[iy]);
+    string filename = "/eos/cms/store/user/fiorendi/p5prime/effKDE/";
+    filename = filename + Form((parity==0 ? "%i/lmnr/KDEeff_b%i_ev_%i.root" : "%i/lmnr/KDEeff_b%i_od_%i.root"),years[iy],q2Bin,years[iy]);
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -206,10 +219,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   P1 ->setVal(0);
   P2 ->setVal(0);
   P3 ->setVal(0);
-  P4p->setVal(0);
-  P5p->setVal(0);
-  P6p->setVal(0);
-  P8p->setVal(0);
+  R45->setVal(0.1);
+  R68->setVal(0.1);
+  phi45->setVal(0.5*TMath::Pi());
+  phi68->setVal(0.5*TMath::Pi());
 
   // Construct combined dataset in (x,sample)
   RooDataSet combData ("combData", "combined data", 
@@ -218,56 +231,117 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
                          Import(map)); 
 
   // Define the PDF defining the physical region, used as exexternal contraint in the fit
-  RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*R45,*R68,*phi45,*phi68,
+					   bound_power,bound_shift1,bound_shift5,bound_coeff,bound_int,true);
 
   // perform fit in two steps:
   // first with strategy=0 and no MINOS, to get close to the likilihood maximum
-  simPdf->fitTo( combData,
-		 ExternalConstraints(*PDF_phys_bound),
-                 Minimizer("Minuit2","migrad"), 
-                 Extended(false), 
-                 Timer(true),
-                 NumCPU(1),
-                 Hesse(true),
-                 Strategy(0),
-                 Offset(true));
+  RooAbsReal* nll = simPdf->createNLL(combData,
+                                      RooFit::Extended(kFALSE),
+                                      RooFit::ExternalConstraints(*PDF_phys_bound),
+                                      RooFit::NumCPU(1)
+                                      );
+    
+  RooMinimizer m (*nll) ;
+  m.optimizeConst(kTRUE);
+  m.setOffsetting(kTRUE);
+  m.setVerbose(kTRUE);
+  m.setMinimizerType("Minuit2");
+
+  m.setStrategy(0);
+  m.migrad() ;
+  m.hesse() ;   
+
   // second with full accuracy (strategy=2) and MINOS, to get the best result
-  RooFitResult* fitResult = simPdf->fitTo( combData,
-					   ExternalConstraints(*PDF_phys_bound),
-                                           Minimizer("Minuit2","migrad"),
-                                           Extended(false), 
-                                           Save(true),
-//                                            Timer(true),
-                                           // NumCPU(1),
-                                           Hesse(true),
-                                           Strategy(2),
-                                           Minos(true),
-                                           Offset(true)
-                                         );
+  m.setStrategy(2);
+  m.migrad() ;
+  m.hesse() ;   
+  // m.minos() ;
+
   // The two step fit seemed necessary to get convergence in all q2 bins
   // if one observes that the convergence is obtained just running the second step, it is better to avoid the first step (to gain computing time)
   // Offset(true) parameter make the FCN value to be defined at 0 at the begin of the minimization
   // it is needed to get convergence in all q2 bins, and avoid the "machine precision reached" errors
   // which are due to too high FCN absolute values compared to the minimisation steps
 
+  RooFitResult* fitResult = m.save(("Fit results "+shortString).c_str(),("Fit results "+shortString).c_str());
+
+  RooPlot* frameFl    = Fl   ->frame(Title("-log(L) scan vs Fl")) ;
+  RooPlot* frameP1    = P1   ->frame(Title("-log(L) scan vs P1")) ;
+  RooPlot* frameP2    = P2   ->frame(Title("-log(L) scan vs P2")) ;
+  RooPlot* frameP3    = P3   ->frame(Title("-log(L) scan vs P3")) ;
+  RooPlot* frameR45   = R45  ->frame(Title("-log(L) scan vs R45")) ;
+  RooPlot* frameR68   = R68  ->frame(Title("-log(L) scan vs R68")) ;
+  RooPlot* framephi45 = phi45->frame(Title("-log(L) scan vs phi45")) ;
+  RooPlot* framephi68 = phi68->frame(Title("-log(L) scan vs phi68")) ;
+  nll->plotOn(frameFl   ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(frameP1   ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(frameP2   ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(frameP3   ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(frameR45  ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(frameR68  ,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(framephi45,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  nll->plotOn(framephi68,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+
+  PDF_phys_bound->plotOn(frameP1   ,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(frameP2   ,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(frameP3   ,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(frameR45  ,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(frameR68  ,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(framephi45,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+  PDF_phys_bound->plotOn(framephi68,LineColor(kBlue),Normalization(1,RooAbsReal::Raw)) ;
+
+  cnll = new TCanvas (("cnll_"+shortString).c_str(),("cnll_"+shortString).c_str(),1800,1800);
+  cnll->Divide(3,3);
+  cnll->cd(1); frameFl   ->Draw();
+  cnll->cd(2); frameP1   ->Draw();
+  cnll->cd(3); frameP2   ->Draw();
+  cnll->cd(4); frameP3   ->Draw();
+  cnll->cd(5); frameR45  ->Draw();
+  cnll->cd(6); frameR68  ->Draw();
+  cnll->cd(7); framephi45->Draw();
+  cnll->cd(8); framephi68->Draw();
+  cnll->SaveAs( ("plotSimFit_d/NLL_scan_" + shortString + "_" + all_years + Form("_drawBound_%.0f_%.0f_%.0f_%.0f.pdf",bound_power,bound_shift1,bound_shift5,bound_coeff)).c_str() );
+
+  frameFl   ->SetMaximum(2.0);
+  frameP1   ->SetMaximum(2.0);
+  frameP2   ->SetMaximum(2.0);
+  frameP3   ->SetMaximum(2.0);
+  frameR45  ->SetMaximum(2.0);
+  frameR68  ->SetMaximum(2.0);
+  framephi45->SetMaximum(2.0);
+  framephi68->SetMaximum(2.0);
+  cnll->Update();
+  cnll->SaveAs( ("plotSimFit_d/NLL_scan_" + shortString + "_" + all_years + Form("_drawBound_%.0f_%.0f_%.0f_%.0f_zoom.pdf",bound_power,bound_shift1,bound_shift5,bound_coeff)).c_str() );
+
   fitResult->Print("v");
+
+  cout<<endl<<"========== RESULT ==========="<<endl;
+  double finalContraintVal = PDF_phys_bound->getValV();
+  cout<<"Constraint value: "<<finalContraintVal<<endl;
+  cout<<"Fit status: "<<fitResult->status()<<" CovMatrix status (3 is good): "<<fitResult->covQual()<<endl;
 
   if (save) {
     // Save fit results in file
-    TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
-    fitResult->Write(("simFitResult_"+shortString).c_str(),TObject::kWriteDelete);
-    fout->Close();
+    if (datalike) {
+      TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
+      fitResult->Write((Form("simFitResult_s%i_",nSample)+shortString).c_str(),TObject::kWriteDelete);
+      fout->Close();
+    } else {
+      TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + ".root").c_str(),"UPDATE");
+      fitResult->Write(("simFitResult_"+shortString).c_str(),TObject::kWriteDelete);
+      fout->Close();
+    }
   }
 
   if (!plot) return;
 
-  int confIndex = 2*nBins*parity  + q2Bin;
   string longString  = "Fit to reconstructed events";
   longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);
 
   // plot fit projections
-  c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Fit to RECO-level MC - "+longString).c_str(),2000,1400);
-  c[confIndex]->Divide(3, years.size());
+  c = new TCanvas (("c_"+shortString).c_str(),("Fit to RECO-level MC - "+longString).c_str(),2000,1400);
+  c->Divide(3, years.size());
   
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
@@ -294,15 +368,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
     simPdf->plotOn(yframe,Slice(sample, ("data"+year).c_str()), ProjWData(RooArgSet(sample), combData), LineWidth(1));
     simPdf->plotOn(zframe,Slice(sample, ("data"+year).c_str()), ProjWData(RooArgSet(sample), combData), LineWidth(1));
 
-    c[confIndex]->cd(iy*3+1);
+    c->cd(iy*3+1);
     gPad->SetLeftMargin(0.19); 
     xframe->Draw();
     leg->Draw("same");
-    c[confIndex]->cd(iy*3+2);
+    c->cd(iy*3+2);
     gPad->SetLeftMargin(0.19); 
     yframe->Draw();
     leg->Draw("same");
-    c[confIndex]->cd(iy*3+3);
+    c->cd(iy*3+3);
     gPad->SetLeftMargin(0.19); 
     zframe->Draw();
     leg->SetTextSize(0.03);
@@ -311,28 +385,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
     leg->Draw("same");
   }
 
-  
-  c[confIndex]->SaveAs( ("plotSimFit_d/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + ".pdf").c_str() );
+  c->SaveAs( ("plotSimFit_d/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + ".pdf").c_str() );
+
 }
 
-
-void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool plot, bool save, bool datalike, std::vector<int> years, std::map<int,float> scale_to_data)
-{
-  if ( parity==-1 )
-    for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullAngularBin(q2Bin, parity, plot, save, datalike,  years, scale_to_data);
-  else
-    simfit_recoMC_fullAngularBin(q2Bin, parity, plot, save, datalike, years, scale_to_data);
-}
-
-// void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, int tagFlag, bool plot, bool save, bool datalike, std::vector<int> years, std::map<int,float> scale_to_data)
-// {
-//   if ( parity==-1 )
-//     for (parity=0; parity<2; ++parity)
-//       simfit_recoMC_fullAngularBin2(q2Bin, parity, tagFlag, plot, save, datalike, years, scale_to_data);
-//   else
-//     simfit_recoMC_fullAngularBin2(q2Bin, parity, tagFlag, plot, save, datalike, years, scale_to_data);
-// }
 
 int main(int argc, char** argv)
 {
@@ -341,54 +397,59 @@ int main(int argc, char** argv)
   // parity format: [0] even efficiency
   //                [1] odd efficiency
   //                [-1] for each parity recursively
-  // tag format: [0] mistagged
-  //             [1] correctly-tagged
-  //             [-1] for each tag recursively
 
-  int q2Bin   = -1;
-  int parity  = -1; 
-//   int tagFlag = -1;
+  int q2Bin   = 0;
+  int parity  = 1; 
 
-  if ( argc >= 2 ) q2Bin   = atoi(argv[1]);
-  if ( argc >= 3 ) parity  = atoi(argv[2]);
-//   if ( argc >= 4 ) tagFlag = atoi(argv[3]);
+  double bound_power  = 6.0;
+  double bound_shift1 = 1000.0;
+  double bound_shift5 = 100.0;
+  double bound_coeff  = 50.0;
+  double bound_int   = 0.0;
 
-  bool plot = true;
-  bool save = true;
+  int nSample = 1;
+
+  bool plot = false;
+  bool save = false;
   bool datalike = true;
 
-  if ( argc >= 4 && atoi(argv[3]) == 0 ) plot     = false;
-  if ( argc >= 5 && atoi(argv[4]) == 0 ) save     = false;
-  if ( argc >= 6 && atoi(argv[5]) == 0 ) datalike = false;
-
   std::vector<int> years;
-  if ( argc >= 7 && atoi(argv[6]) != 0 ) years.push_back(atoi(argv[6]));
+
+  if ( argc >= 2 ) q2Bin = atoi(argv[1]);
+
+  if ( argc >= 3 ) bound_power  = atoi(argv[2]);
+  if ( argc >= 4 ) bound_shift1 = atof(argv[3]);
+  if ( argc >= 5 ) bound_shift5 = atof(argv[4]);
+  if ( argc >= 6 ) bound_coeff  = atof(argv[5]);
+  if ( argc >= 7 ) bound_int    = atof(argv[6]);
+
+  if ( argc >= 8 && atoi(argv[7]) != 0 ) years.push_back(atoi(argv[7]));
   else {
     cout << " no specific years selected, using default: 2016";
     years.push_back(2016);
   }
-  if ( argc >= 8  && atoi(argv[7]) != 0 ) years.push_back(atoi(argv[7]));
   if ( argc >= 9  && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
+  if ( argc >= 10 && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
 
-  if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
-  if ( parity  < -1 || parity  > 1      ) return 1;
-//   if ( tagFlag < -1 || tagFlag > 1      ) return 1;
+  if ( argc >= 11 ) nSample = atoi(argv[10]);
 
-  if ( q2Bin==-1 )   cout << "Running all the q2 bins" << endl;
-  if ( parity==-1 )  cout << "Running both the parity datasets" << endl;
-//   if ( tagFlag==-1 ) cout << "Running both the tag conditions"  << endl;
+  if ( argc >= 12 ) parity = atoi(argv[11]);
+
+  if ( argc >= 13 && atoi(argv[12]) == 0 ) datalike = false;
+  if ( argc >= 14 && atoi(argv[13]) == 1 ) plot     = true;
+  if ( argc >= 15 && atoi(argv[14]) == 1 ) save     = true;
+
+  if ( q2Bin   < 0 || q2Bin   >= nBins ) return 1;
+  if ( parity  < 0 || parity  > 1      ) return 1;
+
   if ( datalike )    cout << "Considering data-like statistics" << endl;
 
   std::map<int,float> scale_to_data;
-  scale_to_data.insert(std::make_pair(2016, 0.01*2)); // *2 since we are using only odd/even events 
-  scale_to_data.insert(std::make_pair(2017, 0.01*2));
-  scale_to_data.insert(std::make_pair(2018, 0.015*2));
+  scale_to_data.insert(std::make_pair(2016, 0.01*2 /2.5/2)); // *2 since we are using only odd/even events 
+  scale_to_data.insert(std::make_pair(2017, 0.01*2 /2.05/2));
+  scale_to_data.insert(std::make_pair(2018, 0.015*2 /2.05/2));
 
-  if ( q2Bin==-1 )
-    for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullAngularBin1(q2Bin, parity, plot, save, datalike, years, scale_to_data);
-  else
-    simfit_recoMC_fullAngularBin1(q2Bin, parity, plot, save, datalike, years, scale_to_data);
+  simfit_recoMC_fullAngularBin(q2Bin, parity, plot, save, datalike, years, scale_to_data, bound_power, bound_shift1, bound_shift5, bound_coeff, bound_int, nSample);
 
   return 0;
 
