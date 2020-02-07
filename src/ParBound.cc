@@ -83,7 +83,6 @@ Double_t ParBound::evaluate() const
   double c1 = P4p*P8p - 2*P3 - 0.5 * ( P4p*P6p - P5p*P8p );
   
   int nSteps = 100;
-  int halfSteps = nSteps/2;
   double phi, sin2, sincos, cos2;
   double ctL1, ctL5p, ctL5m;
   double tmp_y = 0;
@@ -122,7 +121,7 @@ Double_t ParBound::evaluate() const
        ctK2<=0,
        ctL2phi1<=0,
        ctL2phi2<=0,
-       ctL2phi1<=0,
+       ctL2phi3<=0,
        y>=0, y)
        <<std::endl;
   } 

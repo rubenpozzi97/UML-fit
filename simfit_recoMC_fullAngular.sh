@@ -19,6 +19,6 @@ while read -a line; do
 	bin=${line[0]}
 	
 	./simfit_recoMC_fullAngular ${bin} ${par} 1 1 ${datalike} ${year1} ${year2} ${year3}\
-	    &> logs_simFitExtConstr/simfit_recoMC_fullAngular_${bin}_${par}_${year1}_${year2}_${year3}_dataStat${datalike}_quarterStat_Paolo.out &
+	    &> logs_simFitExtConstr/simfit_recoMC_fullAngular_${bin}_${par}_${year1}_${year2}_${year3}_dataStat${datalike}_quarterStat_intConstrain.out &
 
 done < ../confSF/KDE_SF.list

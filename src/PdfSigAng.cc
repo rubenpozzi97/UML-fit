@@ -128,7 +128,7 @@ Double_t PdfSigAng::penalty(double P1, double P2, double P3, double P4p, double 
   x = TMath::Max(x, ctL2phi3);
   double penalty1 = 1.;
   penalty1 = x > 0 ? exp(-1000*x*x*x*x) : 1.;
-  if (penalty1 < 1.E-10)  penalty1 = 1.E-10;
+  if (penalty1 < 1.E-8)  penalty1 = 1.E-8;
 
   // at least one of the three should be > 0
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
@@ -144,7 +144,6 @@ Double_t PdfSigAng::penalty(double P1, double P2, double P3, double P4p, double 
   double c1 = P4p*P8p - 2*P3 - 0.5 * ( P4p*P6p - P5p*P8p );
   
   int nSteps = 100;
-  int halfSteps = nSteps/2;
   double phi, sin2, sincos, cos2;
   double ctL1, ctL5p, ctL5m;
   double tmp_y = 0;
@@ -168,7 +167,7 @@ Double_t PdfSigAng::penalty(double P1, double P2, double P3, double P4p, double 
 
   double penalty2 = 1;
   penalty2 = y < 0 ? exp(-1000*y*y*y*y) : 1.;
-  if (penalty2 < 1.E-10)  penalty2 = 1.E-10;
+  if (penalty2 < 1.E-8)  penalty2 = 1.E-8;
 //   if (penalty1 != 1 || penalty2 != 1)
 //     std::cout << "sara: " << penalty1 << "  " << penalty2 << "  x = " << x << " and y = " << y << std::endl;
   return TMath::Min(penalty1, penalty2);

@@ -52,4 +52,4 @@ $(EXECUTABLE2): $(EXECUTABLE2).cc
 #cleaning options
 .PHONY: clean
 clean:
-	rm -f $(EXECUTABLE0) $(EXECUTABLE1) 
+	rm -f $(EXECUTABLE0) $(EXECUTABLE1) $(EXECUTABLE2)
