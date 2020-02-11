@@ -435,9 +435,10 @@ int main(int argc, char** argv)
   if ( datalike )    cout << "Considering data-like statistics" << endl;
 
   std::map<int,float> scale_to_data;
-  scale_to_data.insert(std::make_pair(2016, 0.01*2 /2.5 /2  )); // *2 since we are using only odd/even events 
-  scale_to_data.insert(std::make_pair(2017, 0.01*2 /2.05/2  ));
-  scale_to_data.insert(std::make_pair(2018, 0.015*2/2.05/1.9));
+  // https://docs.google.com/spreadsheets/d/1gG-qowySO9WJpMmr_bAWmOAu05J8zr95yJXGIYCY9-A/edit?usp=sharing
+  scale_to_data.insert(std::make_pair(2016, 0.006*2 /2.5  )); // *2 since we are using only odd/even events, second factor is "data-driven"
+  scale_to_data.insert(std::make_pair(2017, 0.005*2 /2.05 ));
+  scale_to_data.insert(std::make_pair(2018, 0.007*2 /1.9  ));
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
