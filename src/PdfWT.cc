@@ -67,15 +67,33 @@ PdfWT::PdfWT(const PdfWT& other, const char* name) :
 Double_t PdfWT::evaluate() const 
 {
 
-  double dec = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
-		 Fl * ctK*ctK +
-		 ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-		 0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
-		 2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-		 2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
-		 2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
-		 P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-  if ( dec<1e-55 ) return 1e-55;
+     double unoCTK = (1-ctK)*(1+ctK);
+     double unoCTL = (1-ctL)*(1+ctL);
+//double unoCTK = (1-ctK*ctK);
+//double unoCTL = (1-ctL*ctL);
+  double sqrtCTL = sqrt(unoCTL);
+//   if ( sqrtCL<1e-32 ) sqrtCL=1e-32;
+
+  double dec   = ( 0.75 * (1-Fl) * unoCTK +
+		   Fl * ctK*ctK +
+		   ( 0.25 * (1-Fl) * unoCTK - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
+		   0.5 * P1 * (1-Fl) * unoCTK * unoCTL * cos(2*phi) -
+		   2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( -1. * P4p * ctL * sqrtCTL + P5p * sqrtCTL ) +
+		   2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( -1. * P8p * ctL * sqrtCTL - P6p * sqrtCTL ) -
+		   2 * P2 * (1-Fl) * unoCTK * ctL +
+		   P3 * (1-Fl) * unoCTK * unoCTL * sin(2*phi) );
+//   double dec = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
+// 		 Fl * ctK*ctK +
+// 		 ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
+// 		 0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
+// 		 2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
+// 		 2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
+// 		 2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
+// 		 P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
+     if ( dec<1e-7 ){
+ // //     std::cout<<"decCTMIN decWT = "<<dec<<" ctL = "<<ctL<<" ctK = "<<ctK<<" phi = "<<phi<<std::endl;
+       return 1e-7;
+     }        
 
   double effValue = effVal()->getVal();
   if (effValue<0)  std::cout<<"ERROR! NEGATIVE EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effValue<<std::endl;

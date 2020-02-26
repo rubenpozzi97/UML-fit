@@ -75,15 +75,48 @@ PdfSigAng::PdfSigAng(const PdfSigAng& other, const char* name) :
 
 Double_t PdfSigAng::evaluate() const 
 {
-/*    
-//  double power = 6.0;
-  double RET= 1e-60;
-
-  double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
-  // std::cout<<" ctL4phi1="<<ctL4phi1<<std::endl;
+  double sqrtFL = sqrt(Fl*(1.-Fl));
+//  double sqrtFL = sqrt(Fl)*sqrt(1.-Fl);
+  if (TMath::IsNaN(sqrtFL)) sqrtFL=1e-32;
   
-  if ( ctL4phi1>0 ) {
-    // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
+  Double_t retCT =   (
+//  Double_t retCT =  9./(32*3.14159265) * (
+					  0.75*(1-Fl)              * intCPart[0]
+					  + Fl                     * intCPart[1]
+					  + 0.25*(1-Fl)            * intCPart[2]
+					  - Fl                     * intCPart[3]
+					  + 0.5*P1*(1-Fl)          * intCPart[4]
+					  + 0.5*sqrtFL        *P4p * intCPart[5]
+					  + sqrtFL        *P5p     * intCPart[6]
+					  - sqrtFL        *P6p     * intCPart[7]
+					  + 0.5*sqrtFL        *P8p * intCPart[8]
+					  + 2*(1-Fl)*P2            * intCPart[9]
+					  - P3*(1-Fl)              * intCPart[10]
+					  );
+  
+  Double_t retWT =   (
+//  Double_t retWT =  9./(32*3.14159265) * (
+					  0.75*(1-Fl)              * intWPart[0]
+					  + Fl                     * intWPart[1]
+					  + 0.25*(1-Fl)            * intWPart[2]
+					  - Fl                     * intWPart[3]
+					  + 0.5*P1*(1-Fl)          * intWPart[4]
+					  + 0.5*sqrtFL        *P4p * intWPart[5]
+					  - sqrtFL        *P5p     * intWPart[6]
+					  - sqrtFL        *P6p     * intWPart[7]
+					  - 0.5*sqrtFL        *P8p * intWPart[8]
+					  - 2*(1-Fl)*P2            * intWPart[9]
+					  + P3*(1-Fl)              * intWPart[10]
+					  );
+
+// double power = 2.0;
+//   double RET= 1.0;
+// 
+//   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
+//   // std::cout<<" ctL4phi1="<<ctL4phi1<<std::endl;
+//   
+//   if ( ctL4phi1>0 ) {
+//     // std::cout<<"ctL4phi1="<<ctL4phi1<<std::endl;
 //     RET= exp(-pow(ctL4phi1/16.0,power/2));
 // //    RET= exp(-690*pow(ctL4phi1/16.0,power/2));
 //     if (RET==0) {
@@ -91,9 +124,7 @@ Double_t PdfSigAng::evaluate() const
 // 	       <<" ret=exp("<<-pow(ctL4phi1/16.0,power/2)<<")"<<std::endl;
 //       return 1e-300;
 //     }
-    return RET;
-  }
- */
+//   }
 // 
 //   double ctK2 = P1*P1 + 4*P2*P2 + 4*P3*P3 -1;
 // 
@@ -212,19 +243,10 @@ Double_t PdfSigAng::evaluate() const
 // 		   Fl * ctK*ctK +
 // 		   ( 0.25 * (1-Fl) * unoCTK - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
 // 		   0.5 * P1 * (1-Fl) * unoCTK * unoCTL * cos(2*phi) -
-
   double decWT1 =  - 2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( -1. * P4p * ctL * sqrtCTL + P5p * sqrtCTL ) +
 		     2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( -1. * P8p * ctL * sqrtCTL - P6p * sqrtCTL ) -
 		     2 * P2 * (1-Fl) * unoCTK * ctL +
 		     P3 * (1-Fl) * unoCTK * unoCTL * sin(2*phi) ;
-
-//   double phi_TMP=-phi; 
-//   double ctL_TMP=-ctL; 
-//   double ctK_TMP=-ctK; 
-//   double decWT1 =    2 * cos(phi_TMP) * ctK_TMP * sqrt(Fl * (1-Fl) * unoCTK) * ( P4p * ctL_TMP * sqrtCTL + P5p * sqrtCTL ) +
-// 		     2 * sin(phi_TMP) * ctK_TMP * sqrt(Fl * (1-Fl) * unoCTK) * ( P8p * ctL_TMP * sqrtCTL - P6p * sqrtCTL ) +
-// 		     2 * P2 * (1-Fl) * unoCTK * ctL_TMP -
-// 		     P3 * (1-Fl) * unoCTK * unoCTL * sin(2*phi_TMP) ;
 		     
 //		     2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( P4p * ctL)-
 //		     2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * unoCTK) * ( P6p * sqrtCTL )
@@ -232,8 +254,23 @@ Double_t PdfSigAng::evaluate() const
 //		     2 * ctK * sqrt(Fl * (1-Fl) * unoCTK) * (cos(phi)* P4p * ctL - sin(phi) * P6p * sqrtCTL )
 		     
 		     
-//  if((decCC-TMath::Max(-decCT1,-decWT1))<0) return 1e-32;
-//  if((decCC-TMath::Max(-decCT1,-decWT1))<0) return -1e-32;
+  double decCT = decCC+decCT1;
+  double decWT = decCC+decWT1;
+  
+  
+//   if(!(decCT>=0)){
+// //     std::cout<<"ERR deltaT  = "<<decCT1-decWT1<<std::endl;
+//    return 1e-32;
+//   } 
+  
+//   if(decCT>=0 && decWT>=0) {
+// //  if((decCC-TMath::Max(-decCT1,-decWT1))>0) {
+// //  if((decCC-TMath::Max(-decCT1,-decWT1))>0) {
+//     std::cout<<"deltaT  = "<<decCT1-decWT1<<std::endl;
+//   }else{  
+//     std::cout<<"ERR deltaT  = "<<decCT1-decWT1<<std::endl;
+//     return 1e-32;
+//   } 
 //
 // //===============================================================================================================================  
 //   
@@ -279,11 +316,6 @@ Double_t PdfSigAng::evaluate() const
 //    }
 //   }  		     
 // //==========================================================================================================================
-  double decCT = decCC+decCT1;
-  double decWT = decCC+decWT1;
-  
-//   if(decCT<1e-32) decCT =1e-32;
-//   if(decWT<1e-32) decWT =1e-32;
   
 //  if((decCC-TMath::Max(-decCT1,-decWT1))<1e-6) return -1e-6;
 //  if((decCC-TMath::Max(-decCT1,-decWT1))<0) return (decCC-TMath::Max(-decCT1,-decWT1));
@@ -298,59 +330,36 @@ Double_t PdfSigAng::evaluate() const
   if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
   if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
   
-    if ( decCT<0 ){
+//    if ( decCT<0 ){
 // //   if ( decCT<1e-32 ){
-     if(verb) std::cout<<"decCT<0 decWT  = "<<decWT<<" decCT ="<<decCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
+//     std::cout<<"decCT<0 decWT  = "<<decWT<<" decCT ="<<decCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
 //     decCT = 1e-32;
-    } 
-    if ( decWT<0 ){
+//    } 
 //    if ( decWT<0 && fabs(decWT1)>decCT1 ){
 // //   if ( decWT<1e-32 && fabs(decWT1)>decCT1 ){
-     if(verb) std::cout<<"decWT<0 decWT  = "<<decWT<<" decCT ="<<decCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
+//     std::cout<<"decWT<0 decWT  = "<<decWT<<" decCT ="<<decCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
 //     decWT = 1e-32;
-   }
-  
-/*      double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
-     double expo0C =  40*(decCT)+2;
-     double expo0W =  20*(decWT)+2;
-     double expo0  =  10*(ctL4phi1)-8;
-//    ret0 = 0.5*erfc(expo0);
-//      decCT = 0.5*erfc(expo0C)*0.5*erfc(expo0W)*decCT;
-//      decWT = 0.5*erfc(expo0C)*0.5*erfc(expo0W)*decWT;
-//      decCT = 1/(1+exp(-expo0C))*1/(1+exp(-expo0W))*decCT*0.5*erfc(expo0);
-//      decWT = 1/(1+exp(-expo0C))*1/(1+exp(-expo0W))*decWT*0.5*erfc(expo0);
-     decCT = 1/(1+exp(-expo0C))*1/(1+exp(-expo0W))*1/(1+exp(expo0))*decCT;
-     decWT = 1/(1+exp(-expo0C))*1/(1+exp(-expo0W))*1/(1+exp(expo0))*decWT;
- */
-
-  double effdecCT=effCValue * decCT;
-  double effdecWT=effWValue * decWT;
-
-  
-// 
-//    if ( effdecCT<1e-32 ){
-//     std::cout<<"effdecCT<0 effdecWT  = "<<effdecWT<<" effdecCT ="<<effdecCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
-// //    effdecCT = 1e-32;
-//    } 
-//    if ( effdecWT<1e-32 && fabs(effdecWT)>effdecCT ){
-//     std::cout<<"effdecWT<0 effdecWT  = "<<effdecWT<<" effdecCT ="<<effdecCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
-// //    effdecWT = 1e-32;
 //   }
+  
+  double effdecCT=effCValue * decCT/retCT;
+  double effdecWT=effWValue * decWT/retWT;
+  
+
+  if ( effdecCT<1e-32 ){
+   std::cout<<"effdecCT<0 effdecWT  = "<<effdecWT<<" effdecCT ="<<effdecCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
+//   effdecCT = 1e-32;
+  } 
+  if ( effdecWT<1e-32 && fabs(effdecWT)>effdecCT ){
+   std::cout<<"effdecWT<0 effdecWT  = "<<effdecWT<<" effdecCT ="<<effdecCT<<" decCC = "<<decCC<<" decWT1 = "<<decWT1<<" decCT1 = "<<decCT1<<std::endl;
+//   effdecWT = 1e-32;
+  }
   // std::cout<<"->"<<effCValue<<"*"<<decCT<<" + "<<mFrac<<"*"<<effWValue<<"*"<<decWT<<std::endl;
-//
-//
- double ret = (9./(32 * 3.14159265) * ( effdecCT + mFrac * effdecWT));
- 
- 
- 
-// double ret = (9./(32 * 3.14159265) * ( effdecCT + mFrac * effdecWT));
-//
-//
+  double ret = ( effdecCT + mFrac * effdecWT)/( 1 + mFrac );
+//  double ret = (9./(32 * 3.14159265) * ( effdecCT + mFrac * effdecWT));
   if (TMath::IsNaN(ret)) {
     std::cout<<"PDFNAN!  effdecWT  = "<<effdecWT<<" effdecCT ="<<effdecCT<< std::endl;
    ret=1e-32;
   }
-
 //   if ( decWT<1e-32 ) {
 //     std::cout<<"PDFWarning! Pdf="<<std::scientific<<ret<<" decCT="<<decCT<<" decWT="<<decWT<<" =>setting PDF=1e-32 at:  "<<std::scientific<<ctK<<" "<<ctL<<" "<<phi<<std::endl;
 //   
@@ -362,12 +371,12 @@ Double_t PdfSigAng::evaluate() const
 //     ret=1e-32;
 //   }
 
-//    if ( ret<1e-32   ) {
-//      std::cout<<"\n PDFWarning! Pdf="<<std::scientific<<ret<<" decCT="<<effdecCT<<" decWT="<<effdecWT<<" =>setting PDF=1e-32 at:  "<<std::scientific<<ctK<<" "<<ctL<<" "<<phi<<std::endl;
-// //     std::cout<<"   PDFWarning! Pdf="<<std::scientific<<ret<<" EecCT="<<effdecCT<<" EecWT="<<effdecWT<<" =>setting PDF=1e-32 at:  "<<std::scientific<<ctK<<" "<<ctL<<" "<<phi<<std::endl;
-//      std::cout<<"PDFWarning! effCValue= "<<std::scientific<<effCValue<<" effWValue = "<<effWValue<<std::endl;
-//      ret=1e-32;
-//    }
+  if ( ret<1e-32   ) {
+    std::cout<<"\n PDFWarning! Pdf="<<std::scientific<<ret<<" decCT="<<effdecCT<<" decWT="<<effdecWT<<" =>setting PDF=1e-32 at:  "<<std::scientific<<ctK<<" "<<ctL<<" "<<phi<<std::endl;
+    std::cout<<"   PDFWarning! Pdf="<<std::scientific<<ret<<" EecCT="<<effdecCT<<" EecWT="<<effdecWT<<" =>setting PDF=1e-32 at:  "<<std::scientific<<ctK<<" "<<ctL<<" "<<phi<<std::endl;
+    std::cout<<"PDFWarning! effCValue= "<<std::scientific<<effCValue<<" effWValue = "<<effWValue<<std::endl;
+//    ret=1e-32;
+  }
   return ret;
 
 }
@@ -382,6 +391,7 @@ namespace {
   }
   Bool_t fullRangePhi(const RooRealProxy& x ,const char* range)
   {
+    
     // set accepted integration range for phi variable
     return range == 0 || strlen(range) == 0
       ? std::fabs(x.min() + TMath::Pi()) < 1.e-3 && std::fabs(x.max() - TMath::Pi()) < 1.e-3
@@ -410,6 +420,7 @@ Int_t PdfSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
 Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code>0 && code<2) ;
+  return 1;
 
   // use the pre-computed integrals from histogram
   

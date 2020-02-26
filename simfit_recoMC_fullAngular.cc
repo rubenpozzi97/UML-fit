@@ -12,13 +12,16 @@
 #include <RooCategory.h>
 #include <RooDataSet.h>
 #include <RooFitResult.h>
-#include <RooPlot.h>
+#include <RooMinimizer.h>
+ #include <RooPlot.h>
 #include <RooHistFunc.h>
 #include <RooDataHist.h>
 #include <RooSimultaneous.h>
 #include <RooNumIntConfig.h>
 
 #include "PdfSigAng.h"
+#include "ParBound.h"
+#include "ParBoundNum.h"
 
 using namespace RooFit;
 using namespace std;
@@ -67,15 +70,36 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
   RooArgSet reco_vars (*ctK, *ctL, *phi, *rand);
 
+
   // define angular parameters with ranges from positiveness requirements on the decay rate
-  RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
-  RooRealVar* P1    = new RooRealVar("P1","P_{1}",0,-1,1);
-  RooRealVar* P2    = new RooRealVar("P2","P_{2}",0,-0.5,0.5);
-  RooRealVar* P3    = new RooRealVar("P3","P_{3}",0,-0.5,0.5);
-  RooRealVar* P4p   = new RooRealVar("P4p","P'_{4}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
+  double Fl_min=0.;
+  double Fl_max=1.;
+  double P1_min=-1.;
+  double P1_max=1.;
+  double P2_min=-0.6;
+  double P2_max= 0.5;
+  double P3_min=-0.5;
+  double P3_max= 0.5;
+  double Pp_min= -1*sqrt(2);
+  double Pp_max=  1*sqrt(2);
+
+//   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
+//   RooRealVar* P1    = new RooRealVar("P1","P_{1}",0,-1,1);
+//   RooRealVar* P2    = new RooRealVar("P2","P_{2}",0,-0.5,0.5);
+//   RooRealVar* P3    = new RooRealVar("P3","P_{3}",0,-0.5,0.5);
+//   RooRealVar* P4p   = new RooRealVar("P4p","P'_{4}",0,-1*sqrt(2),sqrt(2));
+//   RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
+//   RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
+//   RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
+//   RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",1, 0, 2);
+  RooRealVar* Fl    = new RooRealVar("Fl","F_{L}"  ,0.5,Fl_min,Fl_max);
+  RooRealVar* P1    = new RooRealVar("P1","P_{1}"  ,0.0,P1_min,P1_max);
+  RooRealVar* P2    = new RooRealVar("P2","P_{2}"  ,0.0,P2_min,P2_max);
+  RooRealVar* P3    = new RooRealVar("P3","P_{3}"  ,0.0,P3_min,P3_max);
+  RooRealVar* P4p   = new RooRealVar("P4p","P'_{4}",0.0,Pp_min,Pp_max);
+  RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0.0,Pp_min,Pp_max);
+  RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0.0,Pp_min,Pp_max);
+  RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0.0,Pp_min,Pp_max);
   RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",1, 0, 2);
   mFrac->setConstant();
 
@@ -216,43 +240,280 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
                          Index(sample),
                          Import(map)); 
 
+  // Define the PDF defining the physical region, used as exexternal contraint in the fit
+  RooAbsPdf* PDF_phys_bound = new ParBound(("PDF_phys_bound_"+shortString).c_str(),"PDF_phys_bound",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  ((ParBound*)PDF_phys_bound)->Q2Bin=q2Bin;
+
+//   RooAbsPdf* PDF_phys_boundNum = new ParBoundNum(("PDF_phys_boundNum_"+shortString).c_str(),"PDF_phys_boundNum",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+//   ((ParBoundNum*)PDF_phys_boundNum)->Q2Bin=q2Bin;
+  RooAbsPdf* PDF_phys_boundNum = new ParBoundNum(("PDF_phys_boundNum_"+shortString).c_str(),"PDF_phys_boundNum",*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  ((ParBoundNum*)PDF_phys_boundNum)->Q2Bin=q2Bin;
+
+  RooAbsReal* nll = simPdf->createNLL(combData,
+                                      RooFit::Extended(kFALSE),
+//                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_bound)),
+                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_bound,*PDF_phys_boundNum)),
+                                      RooFit::NumCPU(2)
+                                      );
+    
+    
+  RooMinimizer m(*nll) ;
+  m.optimizeConst (kTRUE); // do not recalculate constant terms
+  m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
+  m.setVerbose(kTRUE);
+//  Minuit2.setEps(1e-16) ;
+  m.setMinimizerType("Minuit2");
+//  m.setStrategy(0);
+//   m.setEvalErrorWall(false);
+//  m.migrad() ;
+//  m.hesse() ;   
+//   std::cout << std::endl;
+   std::cout << "######################### now strategy 2 #########################"<< std::endl;
+  m.setStrategy(2);
+  m.migrad() ;
+  m.hesse() ;
+  m.minos() ;
+  
+  RooFitResult* fitResult = m.save() ; 
+  fitResult->Print("v");
+  
+  RooAbsReal* fll = simPdf->createNLL(combData,
+                                      RooFit::Extended(kFALSE),
+                                      RooFit::NumCPU(1)
+                                      );
 
   // perform fit in two steps:
   // first with strategy=0 and no MINOS, to get close to the likilihood maximum
-  simPdf->fitTo( combData,
-                 Minimizer("Minuit2","migrad"), 
-                 Extended(false), 
-                 Timer(true),
-                 NumCPU(1),
-                 Hesse(true),
-                 Strategy(0),
-                 Offset(true));
-  // second with full accuracy (strategy=2) and MINOS, to get the best result
-  RooFitResult* fitResult = simPdf->fitTo( combData,
-                                           Minimizer("Minuit2","migrad"),
-                                           Extended(false), 
-                                           Save(true),
-//                                            Timer(true),
-                                           NumCPU(1),
-                                           Hesse(true),
-                                           Strategy(2),
-                                           Minos(true),
-                                           Offset(true)
-                                         );
+//   simPdf->fitTo( combData,
+// 		 ExternalConstraints(*PDF_phys_bound),
+//                  Minimizer("Minuit2","migrad"), 
+//                  Extended(false), 
+//                  Timer(true),
+//                  NumCPU(1),
+//                  Hesse(true),
+//                  Strategy(0),
+//                  Offset(true));
+//   // second with full accuracy (strategy=2) and MINOS, to get the best result
+//   RooFitResult* fitResult = simPdf->fitTo( combData,
+// 					   ExternalConstraints(*PDF_phys_bound),
+//                                            Minimizer("Minuit2","migrad"),
+//                                            Extended(false), 
+//                                            Save(true),
+// //                                            Timer(true),
+//                                            // NumCPU(1),
+//                                            Hesse(true),
+//                                            Strategy(2),
+//                                            Minos(true),
+//                                            Offset(true)
+//                                          );
   // The two step fit seemed necessary to get convergence in all q2 bins
   // if one observes that the convergence is obtained just running the second step, it is better to avoid the first step (to gain computing time)
   // Offset(true) parameter make the FCN value to be defined at 0 at the begin of the minimization
   // it is needed to get convergence in all q2 bins, and avoid the "machine precision reached" errors
   // which are due to too high FCN absolute values compared to the minimisation steps
 
-  fitResult->Print("v");
+//   fitResult->Print("v");
+  ((ParBound*)PDF_phys_bound)->verbose=true;
+  ((ParBoundNum*)PDF_phys_boundNum)->verbose=true;
+//  
+//  Boundary Checks [0 is ok, ret=final penality, ret_local4="numerically computed" penality]
+  cout<<"mink1 Boundary Checks [0 is ok] = "<<PDF_phys_bound->getVal()<<endl;
+  cout<<"mink2 Boundary Quattro [0 is ok] = "<<PDF_phys_boundNum->getVal()<<endl;
 
   if (save) {
     // Save fit results in file
-    TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
+    TFile* fout = new TFile(("simFitResultsExtConstr/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
     fitResult->Write(("simFitResult_"+shortString).c_str(),TObject::kWriteDelete);
-    fout->Close();
+    fout->Close(); 
   }
+  for (unsigned int iy = 0; iy < years.size(); iy++) {
+    ((PdfSigAng* )PDF_sig_ang_fullAngular[iy])->verb=false;
+  }
+//  
+  ((ParBound*)PDF_phys_bound)->verbose=false;
+  ((ParBoundNum*)PDF_phys_boundNum)->verbose=false;
+//  
+  double nllscale = 100.;
+  cout<<"================ START SCAN LIKELIHOOD ======================="<<endl;
+  cout<<"================ START SCAN LIKELIHOOD ======================="<<endl;
+  cout<<"================ START SCAN LIKELIHOOD ======================="<<endl;
+  RooPlot* frameFl = Fl->frame(Title("-log(L) scan vs Fl")) ;
+  nll->plotOn(frameFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameFl   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameFl   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP1 = P1->frame(Title("-log(L) scan vs P1")) ;
+  nll->plotOn(frameP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP1   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP1   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP2 = P2->frame(Title("-log(L) scan vs P2")) ;
+  nll->plotOn(frameP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP2   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP2   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP3 = P3->frame(Title("-log(L) scan vs P3")) ;
+  nll->plotOn(frameP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP3   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP3   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP4p = P4p->frame(Title("-log(L) scan vs P4p")) ;
+  nll->plotOn(frameP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP4p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP4p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP5p = P5p->frame(Title("-log(L) scan vs P5p")) ;
+  nll->plotOn(frameP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP5p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP5p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP6p = P6p->frame(Title("-log(L) scan vs P6p")) ;
+  nll->plotOn(frameP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP6p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP6p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  RooPlot* frameP8p = P8p->frame(Title("-log(L) scan vs P8p")) ;
+  nll->plotOn(frameP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(frameP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  //PDF_phys_bound->plotOn(frameP8p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+  PDF_phys_boundNum->plotOn(frameP8p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+  
+  nllscale = 1.;
+  int nsigma = 3;
+  double FrameMax=8;
+  double rmin=Fl->getVal()-nsigma*Fl->getError();
+  double rmax=Fl->getVal()+nsigma*Fl->getError();
+  if(rmin<Fl_min) rmin=Fl_min;
+  if(rmax>Fl_max) rmax=Fl_max;
+  
+  RooPlot* wframeFl = Fl->frame(Title("-log(L) scan vs Fl"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeFl->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeFl   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeFl   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P1->getVal()-nsigma*P1->getError();
+  rmax=P1->getVal()+nsigma*P1->getError();
+  if(rmin<P1_min) rmin=P1_min;
+  if(rmax>P1_max) rmax=P1_max;
+
+  RooPlot* wframeP1 = P1->frame(Title("-log(L) scan vs P1"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP1->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP1   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP1   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P2->getVal()-nsigma*P2->getError();
+  rmax=P2->getVal()+nsigma*P2->getError();
+  if(rmin<P2_min) rmin=P2_min;
+  if(rmax>P2_max) rmax=P2_max;
+
+  RooPlot* wframeP2 = P2->frame(Title("-log(L) scan vs P2"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP2->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(frameP2   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(frameP2   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P3->getVal()-nsigma*P3->getError();
+  rmax=P3->getVal()+nsigma*P3->getError();
+  if(rmin<P3_min) rmin=P3_min;
+  if(rmax>P3_max) rmax=P3_max;
+
+  RooPlot* wframeP3 = P3->frame(Title("-log(L) scan vs P3"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP3->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP3   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP3   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P4p->getVal()-nsigma*P4p->getError();
+  rmax=P4p->getVal()+nsigma*P4p->getError();
+  if(rmin<Pp_min) rmin=Pp_min;
+  if(rmax>Pp_max) rmax=Pp_max;
+
+  RooPlot* wframeP4p = P4p->frame(Title("-log(L) scan vs P4p"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP4p->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP4p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP4p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P5p->getVal()-nsigma*P5p->getError();
+  rmax=P5p->getVal()+nsigma*P5p->getError();
+  if(rmin<Pp_min) rmin=Pp_min;
+  if(rmax>Pp_max) rmax=Pp_max;
+
+  RooPlot* wframeP5p = P5p->frame(Title("-log(L) scan vs P5p"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP5p->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP5p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP5p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+//
+  rmin=P6p->getVal()-nsigma*P6p->getError();
+  rmax=P6p->getVal()+nsigma*P6p->getError();
+  if(rmin<Pp_min) rmin=Pp_min;
+  if(rmax>Pp_max) rmax=Pp_max;
+  RooPlot* wframeP6p = P6p->frame(Title("-log(L) scan vs P6p"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP6p->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP6p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP6p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+//
+  rmin=P8p->getVal()-nsigma*P8p->getError();
+  rmax=P8p->getVal()+nsigma*P8p->getError();
+  if(rmin<Pp_min) rmin=Pp_min;
+  if(rmax>Pp_max) rmax=Pp_max;
+  RooPlot* wframeP8p = P8p->frame(Title("-log(L) scan vs P8p"),Range(rmin,rmax)) ;
+  nll->plotOn(wframeP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
+  fll->plotOn(wframeP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kGreen)) ;
+  wframeP8p->SetMaximum(FrameMax);
+//  //PDF_phys_bound->plotOn(wframeP8p   ,LineColor(kBlue),Normalization(nllscale,RooAbsReal::Raw)) ;
+//  PDF_phys_boundNum->plotOn(wframeP8p   ,LineColor(kMagenta),Normalization(nllscale,RooAbsReal::Raw)) ;
+  
+//   frameFl->SetMaximum(15) ;
+//   frameFl->SetMinimum(0) ;
+
+  
+  cout<<"================ END SCAN LIKELIHOOD ======================="<<endl;
+  cout<<"================ END SCAN LIKELIHOOD ======================="<<endl;
+  cout<<"================ END SCAN LIKELIHOOD ======================="<<endl;
+
+  TCanvas* cSara = new TCanvas("nllerrorhandling","nllerrorhandling",1200,900) ;
+  cSara->Divide(3,3) ;
+  cSara->cd(1) ; gPad->SetLeftMargin(0.15) ; frameFl->GetYaxis()->SetTitleOffset(1.4)  ; frameFl->Draw() ;
+  cSara->cd(2) ; gPad->SetLeftMargin(0.15) ; frameP1->GetYaxis()->SetTitleOffset(1.4)  ; frameP1->Draw() ;
+  cSara->cd(3) ; gPad->SetLeftMargin(0.15) ; frameP2->GetYaxis()->SetTitleOffset(1.4)  ; frameP2->Draw() ;
+  cSara->cd(4) ; gPad->SetLeftMargin(0.15) ; frameP3->GetYaxis()->SetTitleOffset(1.4)  ; frameP3->Draw() ;
+  cSara->cd(5) ; gPad->SetLeftMargin(0.15) ; frameP4p->GetYaxis()->SetTitleOffset(1.4) ; frameP4p->Draw() ;
+  cSara->cd(6) ; gPad->SetLeftMargin(0.15) ; frameP5p->GetYaxis()->SetTitleOffset(1.4) ; frameP5p->Draw() ;
+  cSara->cd(7) ; gPad->SetLeftMargin(0.15) ; frameP6p->GetYaxis()->SetTitleOffset(1.4) ; frameP6p->Draw() ;
+  cSara->cd(8) ; gPad->SetLeftMargin(0.15) ; frameP8p->GetYaxis()->SetTitleOffset(1.4) ; frameP8p->Draw() ;
+  cSara->SaveAs(("test_nll_Constr_" + all_years + stat + Form("_b%i_Paolo.pdf", q2Bin)).c_str());
+
+  TCanvas* cRange = new TCanvas("nllerrorhandling","nllerrorhandling",1200,900) ;
+  cRange->Divide(3,3) ;
+  cRange->cd(1) ; gPad->SetLeftMargin(0.15) ; wframeFl->GetYaxis()->SetTitleOffset(1.4)  ; wframeFl->Draw() ;
+  cRange->cd(2) ; gPad->SetLeftMargin(0.15) ; wframeP1->GetYaxis()->SetTitleOffset(1.4)  ; wframeP1->Draw() ;
+  cRange->cd(3) ; gPad->SetLeftMargin(0.15) ; wframeP2->GetYaxis()->SetTitleOffset(1.4)  ; wframeP2->Draw() ;
+  cRange->cd(4) ; gPad->SetLeftMargin(0.15) ; wframeP3->GetYaxis()->SetTitleOffset(1.4)  ; wframeP3->Draw() ;
+  cRange->cd(5) ; gPad->SetLeftMargin(0.15) ; wframeP4p->GetYaxis()->SetTitleOffset(1.4) ; wframeP4p->Draw() ;
+  cRange->cd(6) ; gPad->SetLeftMargin(0.15) ; wframeP5p->GetYaxis()->SetTitleOffset(1.4) ; wframeP5p->Draw() ;
+  cRange->cd(7) ; gPad->SetLeftMargin(0.15) ; wframeP6p->GetYaxis()->SetTitleOffset(1.4) ; wframeP6p->Draw() ;
+  cRange->cd(8) ; gPad->SetLeftMargin(0.15) ; wframeP8p->GetYaxis()->SetTitleOffset(1.4) ; wframeP8p->Draw() ;
+  cRange->SaveAs(("test_nll_Constr_" + all_years + stat + Form("_b%i_Range.pdf", q2Bin)).c_str());
 
   if (!plot) return;
 
@@ -266,7 +527,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-  
+    ((PdfSigAng*) PDF_sig_ang_fullAngular[iy])->verb=true;
     RooPlot* xframe = ctK->frame(Title((longString+year).c_str()));
     RooPlot* yframe = ctL->frame(Title((longString+year).c_str()));
     RooPlot* zframe = phi->frame(Title((longString+year).c_str()));
@@ -375,9 +636,9 @@ int main(int argc, char** argv)
   if ( datalike )    cout << "Considering data-like statistics" << endl;
 
   std::map<int,float> scale_to_data;
-  scale_to_data.insert(std::make_pair(2016, 0.01*2)); // *2 since we are using only odd/even events 
-  scale_to_data.insert(std::make_pair(2017, 0.01*2));
-  scale_to_data.insert(std::make_pair(2018, 0.015*2));
+  scale_to_data.insert(std::make_pair(2016, 0.01*2/4)); // *2 since we are using only odd/even events 
+  scale_to_data.insert(std::make_pair(2017, 0.01*2/4));
+  scale_to_data.insert(std::make_pair(2018, 0.015*2/4));
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
