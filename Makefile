@@ -1,6 +1,6 @@
 #root_stuff (root libraries and needed root options)
 ROOTLIBS  := $(shell root-config --glibs)
-ROOTFLAGS := $(shell root-config --cflags --libs) -lRooFit -lRooFitCore -lMathMore -lMinuit
+ROOTFLAGS := $(shell root-config --cflags --libs) -lRooFit -lRooFitCore -lMathMore -lMinuit -lMinuit2
 ROOTCINT  := $(shell which rootcint)
 
 #directories
@@ -18,6 +18,8 @@ CLASS1     := PdfWT
 CLASS2     := DecayRate
 CLASS3     := PdfSigAng
 CLASS4     := RooDoubleCBFast
+CLASS5     := ParBound
+CLASS6     := ParBoundNum
 CLASSDICT  := AngDict
 CLASSDICT2 := RooDoubleCBDict
 
@@ -26,10 +28,10 @@ DEBUGFLAGS := -O3 -Wall -std=c++11
 CXXFLAGS := $(DEBUGFLAGS) 
 
 #compile class
-LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
-# LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
+LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(SOURCEDIR)/$(CLASS5).cc $(SOURCEDIR)/$(CLASS6).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
+# LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS5).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
 
-$(CLASSDICT): $(INCLUDEDIR)/$(CLASS0).h $(INCLUDEDIR)/$(CLASS1).h $(INCLUDEDIR)/$(CLASS2).h $(INCLUDEDIR)/$(CLASS3).h
+$(CLASSDICT): $(INCLUDEDIR)/$(CLASS0).h $(INCLUDEDIR)/$(CLASS1).h $(INCLUDEDIR)/$(CLASS2).h $(INCLUDEDIR)/$(CLASS3).h $(INCLUDEDIR)/$(CLASS5).h $(INCLUDEDIR)/$(CLASS6).h
 	@echo "Generating dictionary $@ using rootcint ..."
 	$(ROOTCINT) -f $@.cc -c $^
 

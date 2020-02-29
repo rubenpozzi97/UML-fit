@@ -252,7 +252,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, b
   RooAbsReal* nll = simPdf->createNLL(combData,
                                       RooFit::Extended(kFALSE),
 //                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_bound)),
-                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_bound,*PDF_phys_boundNum)),
+//                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_bound,*PDF_phys_boundNum)),
+                                      RooFit::ExternalConstraints(RooArgSet(*PDF_phys_boundNum)),
                                       RooFit::NumCPU(2)
                                       );
     

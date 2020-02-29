@@ -82,7 +82,7 @@ Double_t ParBoundNum::evaluate() const
   double ctLMin=999;
   
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
-  double expo0  =  10*(ctL4phi1)-1.8;
+  double expo0  =  100*(ctL4phi1)-1.8;
   
   double step = 3;
    for (double i=-step;i<=step;i++){ 
