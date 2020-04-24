@@ -84,7 +84,6 @@ Double_t PdfSigAng::evaluate() const
 		   2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
 		   2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
 		   P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-  if ( decCT<1e-55 ) return 1e-55;
 
   double decWT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
 		   Fl * ctK*ctK +
@@ -94,7 +93,6 @@ Double_t PdfSigAng::evaluate() const
 		   2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
 		   2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
 		   P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-  if ( decWT<1e-55 ) return 1e-55;
 
   double effCValue = effCVal()->getVal();
   if (effCValue<0)  std::cout<<"ERROR! NEGATIVE CT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
@@ -104,8 +102,11 @@ Double_t PdfSigAng::evaluate() const
   if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
   if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
 
-  // std::cout<<"->"<<effCValue<<"*"<<decCT<<" + "<<mFrac<<"*"<<effWValue<<"*"<<decWT<<std::endl;
-  return (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT));
+  double ret = (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT));
+
+  if ( ret < 1e-250 ) return 1e-250;
+
+  return ret;
 
 }
 

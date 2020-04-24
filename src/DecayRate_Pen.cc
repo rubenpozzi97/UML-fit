@@ -8,11 +8,11 @@
 
 #include "Riostream.h" 
 
-#include "DecayRate.h" 
+#include "DecayRate_Pen.h" 
 
-ClassImp(DecayRate) 
+ClassImp(DecayRate_Pen) 
 
-DecayRate::DecayRate(const char *name, const char *title, 
+DecayRate_Pen::DecayRate_Pen(const char *name, const char *title, 
 		     RooAbsReal& _ctK,
 		     RooAbsReal& _ctL,
 		     RooAbsReal& _phi,
@@ -23,7 +23,8 @@ DecayRate::DecayRate(const char *name, const char *title,
 		     RooAbsReal& _P4p,
 		     RooAbsReal& _P5p,
 		     RooAbsReal& _P6p,
-		     RooAbsReal& _P8p) :
+		     RooAbsReal& _P8p,
+		     RooAbsReal& _PenTerm) :
   RooAbsPdf(name,title), 
   ctK("ctK","ctK",this,_ctK),
   ctL("ctL","ctL",this,_ctL),
@@ -35,12 +36,13 @@ DecayRate::DecayRate(const char *name, const char *title,
   P4p("P4p","P4p",this,_P4p),
   P5p("P5p","P5p",this,_P5p),
   P6p("P6p","P6p",this,_P6p),
-  P8p("P8p","P8p",this,_P8p)
+  P8p("P8p","P8p",this,_P8p),
+  PenTerm("PenTerm","PenTerm",this,_PenTerm)
 { 
 } 
 
 
-DecayRate::DecayRate(const DecayRate& other, const char* name) :  
+DecayRate_Pen::DecayRate_Pen(const DecayRate_Pen& other, const char* name) :  
   RooAbsPdf(other,name), 
   ctK("ctK",this,other.ctK),
   ctL("ctL",this,other.ctL),
@@ -52,13 +54,14 @@ DecayRate::DecayRate(const DecayRate& other, const char* name) :
   P4p("P4p",this,other.P4p),
   P5p("P5p",this,other.P5p),
   P6p("P6p",this,other.P6p),
-  P8p("P8p",this,other.P8p)
+  P8p("P8p",this,other.P8p),
+  PenTerm("PenTerm",this,other.PenTerm)
 { 
 } 
 
 
 
-Double_t DecayRate::evaluate() const 
+Double_t DecayRate_Pen::evaluate() const 
 { 
 
   double dec = ( 0.75 * (1-Fl) * (1-ctK*ctK)
@@ -70,9 +73,11 @@ Double_t DecayRate::evaluate() const
 		 + 2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL
 		 - P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
 
-  double ret = (9./(32 * 3.14159265) * dec);
+  double penalty = penTermVal()->getVal();
 
-  if ( ret<1e-250 ) return 1e-250;
+  double ret = (9./(32 * 3.14159265) * dec * penalty);
+
+  if ( ret < 1e-250 ) return 1e-250;
 
   return ret;
 
@@ -95,7 +100,7 @@ namespace {
   }
 }
 
-Int_t DecayRate::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+Int_t DecayRate_Pen::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   // use analytical integral for any subset of the angular variables
   if (matchArgs(allVars,analVars,ctK,ctL,phi)) {
@@ -129,7 +134,7 @@ Int_t DecayRate::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
   return 0 ;
 }
 
-Double_t DecayRate::analyticalIntegral(Int_t code, const char* rangeName) const
+Double_t DecayRate_Pen::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code>0 && code<8) ;
 
