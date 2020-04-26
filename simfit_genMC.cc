@@ -293,11 +293,12 @@ void fit_genMCBin(int q2Bin, int parity, bool plot, bool save, int nSample, doub
     TFile* fout = new TFile(foutName.c_str(),"UPDATE");
 
     RooWorkspace* wksp = new RooWorkspace(Form("ws_%s_s%i_pow%.1f",shortString.c_str(),nSample,power),"Workspace with GEN fit result");
-    wksp->import(*nll);
+    wksp->import(*data,Rename("data"));
+    wksp->import(*PDF_sig_ang_decayRate,RenameVariable(PDF_sig_ang_decayRate->GetName(),"pdf"),Silence());
     wksp->import(*fitResult);
     if (usedPenalty) {
-      wksp->import(*penLog);
-      wksp->import(*nll_pen);
+      wksp->import(*penLog,Silence());
+      wksp->import(*PDF_sig_ang_decayRate_pen,RenameVariable(PDF_sig_ang_decayRate_pen->GetName(),"pdfPen"),Silence());
       wksp->import(*penFitResult);
     }
 

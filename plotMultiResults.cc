@@ -102,7 +102,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
   }
   cout<<"Plotting dataset with "<<subPosConv->numEntries()<<" results"<<endl;
 
-  // import NLL and fit result of high-stat MC sample
+  // import fit result of high-stat MC sample, and data+PDF to create NLL
   string fileNameRes = "";
   if (isGEN) fileNameRes = "fitResult_genMC_penalty";
   else fileNameRes = Form(("simFitResult_recoMC_fullAngular"+yearString+"_MCStat_b%i").c_str(),q2Bin);
@@ -119,13 +119,28 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     cout<<"Workspace "<<wsNameRes<<" not found in file: simFitResults/"<<fileNameRes<<".root"<<endl;
     return;
   }
-  string NllName = "";
-  if (isGEN) NllName = "nll_PDF_sig_ang_decayRate_"+shortString+"_data_genDen_"+(parity==1?"ev":"od")+Form("_b%i",q2Bin);
-  else NllName = "nll_simPdf_allcombData";
-  RooAbsReal* nll = wspRes->function(NllName.c_str());
-  if ( !nll || nll->IsZombie() ) {
-    cout<<"NLL "<<NllName<<" not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
-    return;
+  RooAbsReal* nll = 0;
+  RooDataSet* data = 0;
+  RooAbsPdf* pdf = 0;
+  if (isGEN) {
+    data = (RooDataSet*)wspRes->data("data");
+    if ( !data || data->IsZombie() ) {
+      cout<<"Dataset not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
+      return;
+    }
+    pdf = wspRes->pdf("pdf");
+    if ( !pdf || pdf->IsZombie() ) {
+      cout<<"Free pdf not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
+      return;
+    }
+    nll = pdf->createNLL(*data,Extended(kFALSE),NumCPU(1));
+  } else {
+    string NllName = "nll_simPdf_allcombData";
+    nll = wspRes->function(NllName.c_str());
+    if ( !nll || nll->IsZombie() ) {
+      cout<<"NLL "<<NllName<<" not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
+      return;
+    }
   }
   RooFitResult* fitResult = 0;
   if (isGEN) {
@@ -165,7 +180,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
   // BoundCheck* boundary15_4 = new BoundCheck("bound15_4","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.90*TMath::Pi());
 
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  nll->Print();
+
   for (int iPar = 0; iPar < pars.getSize(); ++iPar)
     ((RooRealVar*)pars.at(iPar))->setVal(((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getValV());
 
@@ -206,7 +221,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
   }
 
   for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-  cout<<iPar<<endl;
+
     RooRealVar* par = (RooRealVar*)pars.at(iPar);
 
     // plots with zoom around the best-fit value
@@ -223,12 +238,12 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
 		EvalErrorValue(nll->getVal()+10),
 		LineColor(kRed),
 		LineWidth(2)) ;
-  cout<<iPar<<endl;
+
     // double hMax = frame[iPar]->GetMaximum();
     // double hZoom = 0.5 * nSigZoom*nSigZoom;
     double parSigma = ((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getError();
     double hZoom = 0.5 * pow( (highRange[iPar]-lowRange[iPar])/2/parSigma, 2 );
-    cout<<hZoom<<endl;
+
     if (iPar>0)
       boundary->plotOn(frame[iPar],
 		       LineColor(13),
