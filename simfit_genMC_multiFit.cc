@@ -143,6 +143,8 @@ void fit_genMCBin(int q2Bin, int parity, bool plot, bool save, int nSamples, dou
   bool isAdaptive = true;
   if ( coeff1>0 || coeff4>0 || coeff5>0 ) isAdaptive = false;
 
+  // count how many fits need the penalty term
+  int penFitCont = 0;
 
   // Produce and fit subsamples
   for (int iSam=0; iSam<nSamples; ++iSam) {
@@ -207,6 +209,7 @@ void fit_genMCBin(int q2Bin, int parity, bool plot, bool save, int nSamples, dou
 	 fitResult->covQual() != 3 ) {
     
       usedPenalty = true;
+      ++penFitCont;
 
       // Fit step-2: accurate penalalised fit
 
@@ -393,7 +396,7 @@ void fit_genMCBin(int q2Bin, int parity, bool plot, bool save, int nSamples, dou
   cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec, max: "<<timeMax<<" sec)"<<endl;
 
 
-  cout<<"Fitted subsamples: "<<subResults->numEntries()<<" of which good: "<<subPosConv->numEntries()<<endl;
+  cout<<"Fitted subsamples: "<<subResults->numEntries()<<" of which good: "<<subPosConv->numEntries()<<" ("<<penFitCont<<" using a penalty)"<<endl;
   cout<<"Bad fits: "<<subNegConv->numEntries()<<" converging outside physical region, "
       <<subPosNotc->numEntries()+subNegNotc->numEntries()<<" not converged ("<<subPosNotc->numEntries()<<" in ph region)"<<endl;
 

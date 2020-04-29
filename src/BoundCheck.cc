@@ -82,11 +82,11 @@ Double_t BoundCheck::evaluate() const
 
   double b0 = P8p*P8p - 1 - P1 + 2*P2 + P6p*P8p; 
   double b2 = P4p*P4p - 1 + P1 + 2*P2 - P4p*P5p; 
-  double b1 = P4p*P8p - 2*P3 + 0.5 * ( P4p*P6p - P5p*P8p );
+  double b1 = 2*P4p*P8p - 4*P3 + P4p*P6p - P5p*P8p;
   
   double c0 = P8p*P8p - 1 - P1 - 2*P2 - P6p*P8p; 
   double c2 = P4p*P4p - 1 + P1 - 2*P2 + P4p*P5p; 
-  double c1 = P4p*P8p - 2*P3 - 0.5 * ( P4p*P6p - P5p*P8p );
+  double c1 = 2*P4p*P8p - 4*P3 - P4p*P6p + P5p*P8p;
   
   int nSteps = 500;
   double phi, sin2, sincos, cos2;

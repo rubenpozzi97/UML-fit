@@ -27,6 +27,7 @@
 using namespace RooFit;
 using namespace std;
 
+int nBins = 500;
 int nPlotBins = 40;
 int nPlotBinsZoom = 20;
 
@@ -38,7 +39,7 @@ TCanvas* c2;
 
 void plotBound(TH1* h2Bound, TVirtualPad* pad, int color, float size);
 
-void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool do2018, bool isGEN)
+void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool do2018, bool isGEN, int boundAnalysis)
 {
 
   gStyle->SetOptStat(0);
@@ -72,7 +73,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     return;
   }
   string wsName = "";
-  if (isGEN) wsName = "wsMulti_" + shortString + "_s" + yearString + (q2Bin==7?"_n100_pow1.0":"_n500_pow1.0");
+  if (isGEN) wsName = "wsMulti_" + shortString + "_s" + yearString + "_n200_pow1.0";
   else wsName = "ws_" + shortString;
   RooWorkspace* wsp = (RooWorkspace*)fin_data->Get(wsName.c_str());
   if ( !wsp || wsp->IsZombie() ) {
@@ -119,29 +120,17 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     cout<<"Workspace "<<wsNameRes<<" not found in file: simFitResults/"<<fileNameRes<<".root"<<endl;
     return;
   }
-  RooAbsReal* nll = 0;
-  RooDataSet* data = 0;
-  RooAbsPdf* pdf = 0;
-  if (isGEN) {
-    data = (RooDataSet*)wspRes->data("data");
-    if ( !data || data->IsZombie() ) {
-      cout<<"Dataset not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
-      return;
-    }
-    pdf = wspRes->pdf("pdf");
-    if ( !pdf || pdf->IsZombie() ) {
-      cout<<"Free pdf not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
-      return;
-    }
-    nll = pdf->createNLL(*data,Extended(kFALSE),NumCPU(1));
-  } else {
-    string NllName = "nll_simPdf_allcombData";
-    nll = wspRes->function(NllName.c_str());
-    if ( !nll || nll->IsZombie() ) {
-      cout<<"NLL "<<NllName<<" not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
-      return;
-    }
+  RooDataSet* data = (RooDataSet*)wspRes->data("data");
+  if ( !data || data->IsZombie() ) {
+    cout<<"Dataset not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
+    return;
   }
+  RooAbsPdf* pdf = wspRes->pdf("pdf");
+  if ( !pdf || pdf->IsZombie() ) {
+    cout<<"Free pdf not found in workspace "<<wsNameRes<<" in file: simFitResults/"<<fileNameRes<<".root"<<endl;
+    return;
+  }
+  RooAbsReal* nll = pdf->createNLL(*data,Extended(kFALSE),NumCPU(1));
   RooFitResult* fitResult = 0;
   if (isGEN) {
     fitResult = (RooFitResult*)wspRes->obj("penFitResult");
@@ -167,32 +156,39 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
 
   // Define boundary check (returning 0 in physical region and 1 outside)
   BoundCheck* boundary = new BoundCheck("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  // BoundCheck* boundary4 = new BoundCheck("bound4","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,-1);
-  // BoundCheck* boundary15 = new BoundCheck("bound15","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false);
 
-  // vector <BoundCheck*> boundary15v (0);
-  // for (int iPhi=4; iPhi<=100; iPhi+=4)
-  //   boundary15v.push_back(new BoundCheck(Form("bound15%i",iPhi),"Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.01*iPhi*TMath::Pi()));
-
-  // BoundCheck* boundary15_1 = new BoundCheck("bound15_1","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.10*TMath::Pi());
-  // BoundCheck* boundary15_2 = new BoundCheck("bound15_2","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.15*TMath::Pi());
-  // BoundCheck* boundary15_3 = new BoundCheck("bound15_3","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.85*TMath::Pi());
-  // BoundCheck* boundary15_4 = new BoundCheck("bound15_4","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.90*TMath::Pi());
+  // when boundary analysis is selected, single component of the boundary are added in the 2D plots
+  BoundCheck* boundary4  = 0;
+  BoundCheck* boundary15 = 0;
+  vector <BoundCheck*> boundary15v (0);
+  if ( boundAnalysis>0 ) {
+    // CTL4 component
+    boundary4 = new BoundCheck("bound4","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,-1);
+    if ( boundAnalysis>1 && boundAnalysis<=100 ) {
+      // here a set of CTL15 components are created for individual phi values
+      int nScan = 100 / boundAnalysis;
+      for (int iPhi=nScan; iPhi<=100; iPhi+=nScan)
+	boundary15v.push_back(new BoundCheck(Form("bound15%i",iPhi),"Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false,0.01*iPhi*TMath::Pi()));
+    } else 
+      // here the global CTL15 component is created
+      boundary15 = new BoundCheck("bound15","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,false);
+  }
 
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   for (int iPar = 0; iPar < pars.getSize(); ++iPar)
     ((RooRealVar*)pars.at(iPar))->setVal(((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getValV());
 
-  c  = new TCanvas (("c_"+shortString).c_str(),("c_"+shortString).c_str(),1800,1800);
-  cZ = new TCanvas (("cZ_"+shortString).c_str(),("cZ_"+shortString).c_str(),1800,1800);
+  if (boundAnalysis==0) {
+    c  = new TCanvas (("c_"+shortString).c_str(),("c_"+shortString).c_str(),1800,1800);
+    cZ = new TCanvas (("cZ_"+shortString).c_str(),("cZ_"+shortString).c_str(),1800,1800);
+    c ->Divide(3,3);
+    cZ->Divide(3,3);
+  }
   c2 = new TCanvas (("c2_"+shortString).c_str(),("c2_"+shortString).c_str(),3600,3000);
-  c ->Divide(3,3);
-  cZ->Divide(3,3);
   c2->Divide(6,5);
 
   RooPlot* frame [8];
-  RooPlot* frame2D [28];
 
   vector <double> lowRange  (0);
   vector <double> highRange (0);
@@ -206,10 +202,13 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
 
     hResGood->SetLineColor(8);
     
-    c->cd(iPar+1);
-    hRes->Draw();
-    hResGood->Draw("same");
+    if (boundAnalysis==0) {
+      c->cd(iPar+1);
+      hRes->Draw();
+      hResGood->Draw("same");
+    }
 
+    // compute range for zommed plots
     int iBin = 1;
     for (iBin=1; hRes->GetBinContent(iBin)==0; ++iBin);
     lowRange.push_back (max(par->getMin(),
@@ -218,130 +217,116 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     highRange.push_back(min(par->getMax(),
 			    hRes->GetBinCenter(iBin) + 0.5*hRes->GetBinWidth(iBin) - 0.25 * ( hRes->GetMean() - hRes->GetBinCenter(iBin) )) );
 
-  }
+    if (boundAnalysis==0) {
+      frame[iPar] = par->frame(Name(Form("f%s",par->GetName())),Title(Form("Result distribution of %s",par->GetTitle())),
+			       Range(lowRange[iPar],highRange[iPar])) ;
+      
+      // NLL function of high-stat fit
+      nll->plotOn(frame[iPar],
+		  PrintEvalErrors(-1),
+		  ShiftToZero(),
+		  EvalErrorValue(nll->getVal()+10),
+		  LineColor(kRed),
+		  LineWidth(2)) ;
+      
+      // compute y range needed to contain the likelihood, expecting a shape similar to a parabolic function
+      double parSigma = ((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getError();
+      double hZoom = 0.5 * pow( (highRange[iPar]-lowRange[iPar])/2/parSigma, 2 );
+      
+      // boundary represented by shading the non-physical region
+      if (iPar>0)
+	boundary->plotOn(frame[iPar],
+			 LineColor(13),
+			 FillColor(13),
+			 FillStyle(3545),
+			 Normalization(1.1*hZoom,RooAbsReal::Raw),
+			 DrawOption("LF"),
+			 VLines(),
+			 LineWidth(2));
+      
+      frame[iPar]->SetMaximum(hZoom);
+      
+      // 1D histos with fit results (hzRes is visible only if there are not-good fit results)
+      auto hzRes = subResults->createHistogram("hzRes",*par,Binning(nPlotBinsZoom,lowRange[iPar],highRange[iPar]));
+      auto hzResGood = subPosConv->createHistogram("hzResGood",*par,Binning(nPlotBinsZoom,lowRange[iPar],highRange[iPar]));
+      
+      double histScaling = 0.8*hZoom/hzRes->GetMaximum();
+      hzRes->Scale(histScaling);
+      hzResGood->Scale(histScaling);
+      hzResGood->SetLineColor(8);
+      
+      cZ->cd(iPar+1);
+      frame[iPar]->Draw();
+      hzRes->Draw("same");
+      hzResGood->Draw("same");
+      
+    }
 
-  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-
-    RooRealVar* par = (RooRealVar*)pars.at(iPar);
-
-    // plots with zoom around the best-fit value
-    // double halfRange = ((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getError();
-    // double lowRange  = max(par->getMin(),par->getValV()-nSigZoom*halfRange);
-    // double highRange = min(par->getMax(),par->getValV()+nSigZoom*halfRange);
-
-    frame[iPar] = par->frame(Name(Form("f%s",par->GetName())),Title(Form("Result distribution of %s",par->GetTitle())),
-			     Range(lowRange[iPar],highRange[iPar])) ;
-
-    nll->plotOn(frame[iPar],
-		PrintEvalErrors(-1),
-		ShiftToZero(),
-		EvalErrorValue(nll->getVal()+10),
-		LineColor(kRed),
-		LineWidth(2)) ;
-
-    // double hMax = frame[iPar]->GetMaximum();
-    // double hZoom = 0.5 * nSigZoom*nSigZoom;
-    double parSigma = ((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar)->GetName()))->getError();
-    double hZoom = 0.5 * pow( (highRange[iPar]-lowRange[iPar])/2/parSigma, 2 );
-
-    if (iPar>0)
-      boundary->plotOn(frame[iPar],
-		       LineColor(13),
-		       FillColor(13),
-		       FillStyle(3545),
-		       Normalization(1.1*hZoom,RooAbsReal::Raw),
-		       DrawOption("LF"),
-		       VLines(),
-		       LineWidth(2));
-
-    frame[iPar]->SetMaximum(hZoom);
-
-    auto hzRes = subResults->createHistogram("hzRes",*par,Binning(nPlotBinsZoom,lowRange[iPar],highRange[iPar]));
-    auto hzResGood = subPosConv->createHistogram("hzResGood",*par,Binning(nPlotBinsZoom,lowRange[iPar],highRange[iPar]));
-
-    double histScaling = 0.8*hZoom/hzRes->GetMaximum();
-    hzRes->Scale(histScaling);
-    hzResGood->Scale(histScaling);
-    hzResGood->SetLineColor(8);
-    
-    cZ->cd(iPar+1);
-    frame[iPar]->Draw();
-    hzRes->Draw("same");
-    hzResGood->Draw("same");
-
+    // Loop over a second parameter to produce 2D plots
     for (int iPar2 = 0; iPar2 < iPar; ++iPar2) {
 
       int indx = iPar2 + iPar*(iPar-1)/2;
       RooRealVar* par2 = (RooRealVar*)pars.at(iPar2);
 
-      // double halfRange2 = ((RooRealVar*)fitResult->floatParsFinal().find(pars.at(iPar2)->GetName()))->getError();
-      // double lowRange2  = max(par2->getMin(),par2->getValV()-nSigZoom*halfRange2);
-      // double highRange2 = min(par2->getMax(),par2->getValV()+nSigZoom*halfRange2);
-
-      auto h2ResGood = subPosConv->createHistogram("h2ResGood",*par2,Binning(50,lowRange[iPar2],highRange[iPar2]),
+      // Histogram with the results
+      TH1* h2ResGood = subPosConv->createHistogram("h2ResGood",*par2,Binning(50,lowRange[iPar2],highRange[iPar2]),
       						   YVar(*par,Binning(50,lowRange[iPar],highRange[iPar])));
       h2ResGood->SetMaximum(7);
 
-      // frame2D[indx] = new RooPlot(*par2,*par);
-
-      auto h2Bound = boundary->createHistogram("h2Bound",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-					       YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
+      // Boundaries are represented as 2D histo, then will be plot as TGraph with their countours by the plotBound function
+      TH1* h2Bound = boundary->createHistogram("h2Bound",*par2,Binning(nBins,lowRange[iPar2],highRange[iPar2]),
+					       YVar(*par,Binning(nBins,lowRange[iPar],highRange[iPar])),
 					       Extended(false),Scaling(false));
-      // auto h2Bound4 = boundary4->createHistogram("h2Bound4",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						 YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						 Extended(false),Scaling(false));
-      // auto h2Bound15 = boundary15->createHistogram("h2Bound15",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						   YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						   Extended(false),Scaling(false));
-      // vector <TH1*> h2Bound15v (0);
-      // for (uint iBound=0; iBound<boundary15v.size(); ++iBound)
-      // 	h2Bound15v.push_back(boundary15v[iBound]->createHistogram(Form("h2Bound15%u",iBound),*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 								  YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 								  Extended(false),Scaling(false)));
 
-      // auto h2Bound15_1 = boundary15_1->createHistogram("h2Bound15_1",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						       YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						       Extended(false),Scaling(false));
-      // auto h2Bound15_2 = boundary15_2->createHistogram("h2Bound15_2",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						       YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						       Extended(false),Scaling(false));
-      // auto h2Bound15_3 = boundary15_3->createHistogram("h2Bound15_3",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						       YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						       Extended(false),Scaling(false));
-      // auto h2Bound15_4 = boundary15_4->createHistogram("h2Bound15_4",*par2,Binning(500,lowRange[iPar2],highRange[iPar2]),
-      // 						       YVar(*par,Binning(500,lowRange[iPar],highRange[iPar])),
-      // 						       Extended(false),Scaling(false));
+      TH1* h2Bound4 = 0;
+      TH1* h2Bound15 = 0;
+      vector <TH1*> h2Bound15v (0);
+      if ( boundAnalysis>0 ) {
+	h2Bound4 = boundary4->createHistogram("h2Bound4",*par2,Binning(nBins,lowRange[iPar2],highRange[iPar2]),
+					      YVar(*par,Binning(nBins,lowRange[iPar],highRange[iPar])),
+					      Extended(false),Scaling(false));
+ 	if ( boundAnalysis>1 && boundAnalysis<=100 ) {
+	  for (uint iBound=0; iBound<boundary15v.size(); ++iBound)
+	    h2Bound15v.push_back(boundary15v[iBound]->createHistogram(Form("h2Bound15%u",iBound),*par2,Binning(nBins,lowRange[iPar2],highRange[iPar2]),
+								      YVar(*par,Binning(nBins,lowRange[iPar],highRange[iPar])),
+								      Extended(false),Scaling(false)));
+	} else
+	  h2Bound15 = boundary15->createHistogram("h2Bound15",*par2,Binning(nBins,lowRange[iPar2],highRange[iPar2]),
+						  YVar(*par,Binning(nBins,lowRange[iPar],highRange[iPar])),
+						  Extended(false),Scaling(false));
+      }
 
+      // One-point graph with high-stat fit result
       TGraph* grBestFit = new TGraph(1);
       grBestFit->SetPoint(0,par2->getValV(),par->getValV());
       grBestFit->SetMarkerColor(2);
       grBestFit->SetMarkerStyle(29);
       grBestFit->SetMarkerSize(5);
 
+      // Prepare alternative palette to be used when boundAnalysis>1
+      const Int_t Number = 3;
+      Double_t Red[Number]    = { 1.00, 0.00, 0.00};
+      Double_t Green[Number]  = { 0.00, 1.00, 0.00};
+      Double_t Blue[Number]   = { 1.00, 0.00, 1.00};
+      Double_t Length[Number] = { 0.00, 0.50, 1.00 };
+      Int_t nb=100;
+
+      // Plot 2D objects
       TVirtualPad* pad = c2->cd(indx+1);
-      // frame2D[indx]->Draw();
+
       h2ResGood->Draw("COLZ");
-
-
-      // const Int_t Number = 3;
-      // Double_t Red[Number]    = { 1.00, 0.00, 0.00};
-      // Double_t Green[Number]  = { 0.00, 1.00, 0.00};
-      // Double_t Blue[Number]   = { 1.00, 0.00, 1.00};
-      // Double_t Length[Number] = { 0.00, 0.50, 1.00 };
-      // Int_t nb=50;
-      // TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue,nb);
- 
-
-      plotBound(h2Bound,pad,13,0.5);
-      // for (uint iHist=0; iHist<h2Bound15v.size(); ++iHist)
-      // 	plotBound(h2Bound15v[iHist],pad,0,0.4);
-      // plotBound(h2Bound4,pad,797,0.4);
-      // plotBound(h2Bound15,pad,393,0.4);
-
-      // plotBound(h2Bound15_1,pad,4,0.4);
-      // plotBound(h2Bound15_2,pad,3,0.4);
-      // plotBound(h2Bound15_3,pad,6,0.4);
-      // plotBound(h2Bound15_4,pad,1,0.4);
+      
+      if ( boundAnalysis>0 ) {
+	plotBound(h2Bound,pad,2,0.8);
+	plotBound(h2Bound4,pad,797,0.5);
+ 	if ( boundAnalysis>1 && boundAnalysis<=100 ) {
+	  TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue,nb);
+	  for (uint iHist=0; iHist<h2Bound15v.size(); ++iHist)
+	    plotBound(h2Bound15v[iHist],pad,0,0.4);
+	} else
+	  plotBound(h2Bound15,pad,4,0.4);
+      } else
+	plotBound(h2Bound,pad,13,0.7);
 
       grBestFit->Draw("P");
 
@@ -354,14 +339,23 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
   if (do2017) plotName = plotName + "_2017";
   if (do2018) plotName = plotName + "_2018";
 
-  c->Update();
-  c->SaveAs( ("plotSimFit_d/"+plotName+".pdf").c_str() );
+  if (boundAnalysis==0) {
 
-  cZ->Update();
-  cZ->SaveAs( ("plotSimFit_d/"+plotName+"_zoom.pdf").c_str() );
+    c->Update();
+    c->SaveAs( ("plotSimFit_d/"+plotName+".pdf").c_str() );
+    
+    cZ->Update();
+    cZ->SaveAs( ("plotSimFit_d/"+plotName+"_zoom.pdf").c_str() );
+
+    c2->Update();
+    c2->SaveAs( ("plotSimFit_d/"+plotName+"_2D.pdf").c_str() );
  
+  } else {
+
   c2->Update();
-  c2->SaveAs( ("plotSimFit_d/"+plotName+"_2D.pdf").c_str() );
+  c2->SaveAs( ("plotSimFit_d/"+plotName+Form("_boundAnalysis%i.pdf",boundAnalysis)).c_str() );
+
+  }
 
 }
 
@@ -423,6 +417,10 @@ int main(int argc, char** argv)
 
   if ( argc > 6 && atoi(argv[6]) > 0 ) doGen = true;
 
+  int boundAnalysis = 0;
+
+  if ( argc > 7 ) boundAnalysis = atoi(argv[7]);
+
   if ( q2Bin  < -1 || q2Bin  > 7 ) return 1;
   if ( parity <  0 || parity > 1 ) return 1;
 
@@ -430,10 +428,10 @@ int main(int argc, char** argv)
     cout<<"Running all the q2 bins"<<endl;
     for (q2Bin=0; q2Bin<8; ++q2Bin) {
       if ( q2Bin==4 || q2Bin==6 ) continue;
-      plotMultiResultsBin(q2Bin, parity, do2016, do2017, do2018, doGen);
+      plotMultiResultsBin(q2Bin, parity, do2016, do2017, do2018, doGen, boundAnalysis);
     }
   } else
-    plotMultiResultsBin(q2Bin, parity, do2016, do2017, do2018, doGen);
+    plotMultiResultsBin(q2Bin, parity, do2016, do2017, do2018, doGen, boundAnalysis);
 
   return 0;
 

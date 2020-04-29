@@ -117,6 +117,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
+  RooFormulaVar* penLog = new RooFormulaVar("penLog","penLog","-1.0 * log(penTerm)",RooArgList(*penTerm));
 
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -281,6 +282,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
   // counters to monitor results' status
   int cnt[9];
   for (int iCnt=0; iCnt<9; ++iCnt) cnt[iCnt] = 0;
+
+  bool usedPenalty = false;
                          
   for (unsigned int is = 0; is < nSamples; is++) {
     string the_cut = Form("sample==sample::data%d_subs%d", years[0], is);
@@ -345,7 +348,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
     // fitResult->Print("v");
 
     RooFitResult* fitResult_penalty = 0;
-    bool usedPenalty = false;
+    usedPenalty = false;
+
     if ( fitResult->status()!=0 || fitResult->covQual()!=3 || boundary->getValV() > 0 ) {
       usedPenalty = true;
 
@@ -458,12 +462,21 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
   if (save) {
     RooWorkspace* wksp = new RooWorkspace(("ws_"+shortString).c_str(),"Workspace with RECO subsamples fit results");
-    wksp->import(*subResults);
-    wksp->import(*subPosConv);
-    wksp->import(*subPosNotc);
-    wksp->import(*subNegConv);
-    wksp->import(*subNegNotc);
-    if (nSamples==1) wksp->import(*nll);
+
+    if (nSamples>1) {
+      wksp->import(*subResults);
+      wksp->import(*subPosConv);
+      wksp->import(*subPosNotc);
+      wksp->import(*subNegConv);
+      wksp->import(*subNegNotc);
+    } else {
+      wksp->import(*combData,Rename("data"));
+      wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
+      if (usedPenalty) {
+	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence());
+	wksp->import(*penLog,Silence());
+      }
+    }
 
     fout->cd();
     wksp->Write();

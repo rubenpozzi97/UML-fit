@@ -3,7 +3,7 @@
 par=1
 datalike=${1}
 
-pow=${2}
+pow=1
 
 # Create directories for fit logs, results and plots
 if [ ! -d logs_simFit ]; then mkdir logs_simFit; fi
