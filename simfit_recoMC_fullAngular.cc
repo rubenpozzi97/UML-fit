@@ -21,7 +21,6 @@
 #include <RooNumIntConfig.h>
 
 #include "PdfSigAng.h"
-#include "PdfSigAng_Pen.h"
 #include "BoundCheck.h"
 #include "Penalty.h"
 
@@ -235,10 +234,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       		                                     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
       		                                     *effC[iy], *effW[iy], intCVec[iy],intWVec[iy]));
     // define PDF with penalty term
-    PDF_sig_ang_fullAngular_penalty.push_back( new PdfSigAng_Pen(("PDF_sig_ang_fullAngular_penalty_"+shortString+"_"+year).c_str(),
-								 ("PDF_sig_ang_fullAngular_penalty_"+year).c_str(),
-								 *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
-								 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],*penTerm));
+    PDF_sig_ang_fullAngular_penalty.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_penalty_"+shortString+"_"+year).c_str(),
+							     ("PDF_sig_ang_fullAngular_penalty_"+year).c_str(),
+							     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
+							     *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],*penTerm));
 
     // insert sample in the category map, to be imported in the combined dataset
     // and associate model with the data

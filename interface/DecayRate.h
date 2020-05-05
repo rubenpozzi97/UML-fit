@@ -34,10 +34,32 @@ class DecayRate : public RooAbsPdf {
   RooRealProxy P6p ;
   RooRealProxy P8p ;
   
+  RooRealProxy PenTerm;
+
+  bool isPenalised;
+  
+  const RooAbsReal* penTermVal() const {
+    // Return pointer to penalty term function
+    return (RooAbsReal*) PenTerm.absArg() ;
+  }
+
   Double_t evaluate() const ;
 
  public:
   DecayRate() {} ; 
+  DecayRate(const char *name, const char *title,
+	    RooAbsReal& _ctK,
+	    RooAbsReal& _ctL,
+	    RooAbsReal& _phi,
+	    RooAbsReal& _Fl,
+	    RooAbsReal& _P1,
+	    RooAbsReal& _P2,
+	    RooAbsReal& _P3,
+	    RooAbsReal& _P4p,
+	    RooAbsReal& _P5p,
+	    RooAbsReal& _P6p,
+	    RooAbsReal& _P8p,
+	    RooAbsReal& _PenTerm);
   DecayRate(const char *name, const char *title,
 	    RooAbsReal& _ctK,
 	    RooAbsReal& _ctL,

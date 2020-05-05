@@ -47,6 +47,51 @@ PdfSigAng::PdfSigAng(const char *name, const char *title,
   intCPart(_intCPart),
   intWPart(_intWPart)
 {
+
+  isPenalised = false;
+
+}
+
+PdfSigAng::PdfSigAng(const char *name, const char *title, 
+		     RooAbsReal& _ctK,
+		     RooAbsReal& _ctL,
+		     RooAbsReal& _phi,
+		     RooAbsReal& _Fl,
+		     RooAbsReal& _P1,
+		     RooAbsReal& _P2,
+		     RooAbsReal& _P3,
+		     RooAbsReal& _P4p,
+		     RooAbsReal& _P5p,
+		     RooAbsReal& _P6p,
+		     RooAbsReal& _P8p,
+		     RooAbsReal& _mFrac,
+		     RooAbsReal& _EffC,
+		     RooAbsReal& _EffW,
+		     std::vector<double> _intCPart,
+		     std::vector<double> _intWPart,
+		     RooAbsReal& _PenTerm) :
+  RooAbsPdf(name,title), 
+  ctK("ctK","ctK",this,_ctK),
+  ctL("ctL","ctL",this,_ctL),
+  phi("phi","phi",this,_phi),
+  Fl("Fl","Fl",this,_Fl),
+  P1("P1","P1",this,_P1),
+  P2("P2","P2",this,_P2),
+  P3("P3","P3",this,_P3),
+  P4p("P4p","P4p",this,_P4p),
+  P5p("P5p","P5p",this,_P5p),
+  P6p("P6p","P6p",this,_P6p),
+  P8p("P8p","P8p",this,_P8p),
+  mFrac("mFrac","mFrac",this,_mFrac),
+  EffC("EffC","corr-tag efficiency",this,_EffC),
+  EffW("EffW","wrong-tag efficiency",this,_EffW),
+  intCPart(_intCPart),
+  intWPart(_intWPart),
+  PenTerm("PenTerm","PenTerm",this,_PenTerm)
+{
+
+  isPenalised = true;
+
 }
 
 
@@ -69,6 +114,12 @@ PdfSigAng::PdfSigAng(const PdfSigAng& other, const char* name) :
   intCPart(other.intCPart),
   intWPart(other.intWPart)
 {
+
+  if (other.isPenalised) {
+    PenTerm = RooRealProxy("PenTerm",this,other.PenTerm);
+    isPenalised = true;
+  } else isPenalised = false;
+
 }
 
 
@@ -102,9 +153,10 @@ Double_t PdfSigAng::evaluate() const
   if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
   if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
 
-  double ret = (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT));
+  double penalty = 1;
+  if (isPenalised) penalty = penTermVal()->getVal();
 
-  if ( ret < 1e-250 ) return 1e-250;
+  double ret = (9./(32 * 3.14159265) * (effCValue * decCT + mFrac * effWValue * decWT) * penalty);
 
   return ret;
 

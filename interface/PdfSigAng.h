@@ -41,6 +41,10 @@ class PdfSigAng : public RooAbsPdf {
 
   std::vector<double> intCPart;
   std::vector<double> intWPart;
+
+  RooRealProxy PenTerm;
+
+  bool isPenalised;
   
   const RooAbsReal* effCVal() const { 
     // Return pointer to efficiency function in product
@@ -52,10 +56,33 @@ class PdfSigAng : public RooAbsPdf {
     return (RooAbsReal*) EffW.absArg() ; 
   }
 
+  const RooAbsReal* penTermVal() const {
+    // Return pointer to penalty term function
+    return (RooAbsReal*) PenTerm.absArg() ;
+  }
+
   Double_t evaluate() const ;
 
  public:
   PdfSigAng() {} ; 
+  PdfSigAng(const char *name, const char *title,
+	    RooAbsReal& _ctK,
+	    RooAbsReal& _ctL,
+	    RooAbsReal& _phi,
+	    RooAbsReal& _Fl,
+	    RooAbsReal& _P1,
+	    RooAbsReal& _P2,
+	    RooAbsReal& _P3,
+	    RooAbsReal& _P4p,
+	    RooAbsReal& _P5p,
+	    RooAbsReal& _P6p,
+	    RooAbsReal& _P8p,
+	    RooAbsReal& _mFrac,
+	    RooAbsReal& _EffC,
+	    RooAbsReal& _EffW,
+	    std::vector<double> _intCPart,
+	    std::vector<double> _intWPart,
+	    RooAbsReal& _PenTerm);
   PdfSigAng(const char *name, const char *title,
 	    RooAbsReal& _ctK,
 	    RooAbsReal& _ctL,

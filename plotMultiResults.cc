@@ -18,9 +18,7 @@
 #include <RooMinimizer.h>
 
 #include "DecayRate.h"
-#include "DecayRate_Pen.h"
 #include "PdfSigAng.h"
-#include "PdfSigAng_Pen.h"
 #include "Penalty.h"
 #include "BoundCheck.h"
 

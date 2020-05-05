@@ -16,7 +16,6 @@
 #include <RooCategory.h>
 
 #include "DecayRate.h"
-#include "DecayRate_Pen.h"
 #include "BoundCheck.h"
 #include "Penalty.h"
 
@@ -120,8 +119,8 @@ void fit_genMCBin(int q2Bin, int parity, bool plot, bool save, int nSamples, dou
   RooAbsPdf* PDF_sig_ang_decayRate = new DecayRate(("PDF_sig_ang_decayRate_"+shortString).c_str(),"PDF_sig_ang_decayRate",
 						   *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
   // define PDF including penalty term
-  RooAbsPdf* PDF_sig_ang_decayRate_pen = new DecayRate_Pen(("PDF_sig_ang_decayRate_pen_"+shortString).c_str(),"PDF_sig_ang_decayRate_pen",
-							   *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*penTerm);
+  RooAbsPdf* PDF_sig_ang_decayRate_pen = new DecayRate(("PDF_sig_ang_decayRate_pen_"+shortString).c_str(),"PDF_sig_ang_decayRate_pen",
+						       *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*penTerm);
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");

@@ -37,6 +37,42 @@ DecayRate::DecayRate(const char *name, const char *title,
   P6p("P6p","P6p",this,_P6p),
   P8p("P8p","P8p",this,_P8p)
 { 
+
+  isPenalised = false;
+
+} 
+
+
+DecayRate::DecayRate(const char *name, const char *title, 
+		     RooAbsReal& _ctK,
+		     RooAbsReal& _ctL,
+		     RooAbsReal& _phi,
+		     RooAbsReal& _Fl,
+		     RooAbsReal& _P1,
+		     RooAbsReal& _P2,
+		     RooAbsReal& _P3,
+		     RooAbsReal& _P4p,
+		     RooAbsReal& _P5p,
+		     RooAbsReal& _P6p,
+		     RooAbsReal& _P8p,
+		     RooAbsReal& _PenTerm) :
+  RooAbsPdf(name,title), 
+  ctK("ctK","ctK",this,_ctK),
+  ctL("ctL","ctL",this,_ctL),
+  phi("phi","phi",this,_phi),
+  Fl("Fl","Fl",this,_Fl),
+  P1("P1","P1",this,_P1),
+  P2("P2","P2",this,_P2),
+  P3("P3","P3",this,_P3),
+  P4p("P4p","P4p",this,_P4p),
+  P5p("P5p","P5p",this,_P5p),
+  P6p("P6p","P6p",this,_P6p),
+  P8p("P8p","P8p",this,_P8p),
+  PenTerm("PenTerm","PenTerm",this,_PenTerm)
+{ 
+
+  isPenalised = true;
+
 } 
 
 
@@ -54,6 +90,12 @@ DecayRate::DecayRate(const DecayRate& other, const char* name) :
   P6p("P6p",this,other.P6p),
   P8p("P8p",this,other.P8p)
 { 
+
+  if (other.isPenalised) {
+    PenTerm = RooRealProxy("PenTerm",this,other.PenTerm);
+    isPenalised = true;
+  } else isPenalised = false;
+
 } 
 
 
@@ -70,9 +112,10 @@ Double_t DecayRate::evaluate() const
 		 + 2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL
 		 - P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
 
-  double ret = (9./(32 * 3.14159265) * dec);
+  double penalty = 1;
+  if (isPenalised) penalty = penTermVal()->getVal();
 
-  if ( ret<1e-250 ) return 1e-250;
+  double ret = (9./(32 * 3.14159265) * dec * penalty);
 
   return ret;
 
