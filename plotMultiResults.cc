@@ -35,7 +35,8 @@ int nPlotBinsZoom = 20;
 
 TCanvas* c;
 TCanvas* cZ;
-TCanvas* c2;
+TCanvas* c2d1;
+TCanvas* c2d2;
 
 void plotBound(TH1* h2Bound, TVirtualPad* pad, int color, float size);
 
@@ -74,7 +75,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
   }
   string wsName = "";
   if (isGEN) wsName = "wsMulti_" + shortString + "_s" + yearString + "_n200_pow1.0";
-  else wsName = "ws_" + shortString;
+  else wsName = "wsMulti_" + shortString + "_s100_pow1.0";
   RooWorkspace* wsp = (RooWorkspace*)fin_data->Get(wsName.c_str());
   if ( !wsp || wsp->IsZombie() ) {
     cout<<"Workspace "<<wsName<<" not found in file: simFitResults/"<<fileName<<".root"<<endl;
@@ -112,9 +113,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     cout<<"File not found: simFitResults/"<<fileName<<".root"<<endl;
     return;
   }
-  string wsNameRes = "";
-  if (isGEN) wsNameRes = Form("ws_%s_s0_pow1.0",shortString.c_str());
-  else wsNameRes = "ws_" + shortString;
+  string wsNameRes = "ws_" + shortString + "_s0_pow1.0";
   RooWorkspace* wspRes = (RooWorkspace*)fin_res->Get(wsNameRes.c_str());
   if ( !wspRes || wspRes->IsZombie() ) {
     cout<<"Workspace "<<wsNameRes<<" not found in file: simFitResults/"<<fileNameRes<<".root"<<endl;
@@ -185,8 +184,10 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     c ->Divide(3,3);
     cZ->Divide(3,3);
   }
-  c2 = new TCanvas (("c2_"+shortString).c_str(),("c2_"+shortString).c_str(),3600,3000);
-  c2->Divide(6,5);
+  c2d1 = new TCanvas (("c2d1_"+shortString).c_str(),("c2d1_"+shortString).c_str(),3000,1800);
+  c2d2 = new TCanvas (("c2d2_"+shortString).c_str(),("c2d2_"+shortString).c_str(),3000,1800);
+  c2d1->Divide(5,3);
+  c2d2->Divide(5,3);
 
   RooPlot* frame [8];
 
@@ -212,10 +213,10 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     int iBin = 1;
     for (iBin=1; hRes->GetBinContent(iBin)==0; ++iBin);
     lowRange.push_back (max(par->getMin(),
-			    hRes->GetBinCenter(iBin) - 0.5*hRes->GetBinWidth(iBin) - 0.25 * ( hRes->GetMean() - hRes->GetBinCenter(iBin) )) );
+    			    hRes->GetBinCenter(iBin) - 0.5*hRes->GetBinWidth(iBin) - 0.25 * ( hRes->GetMean() - hRes->GetBinCenter(iBin) )) );
     for (iBin=hRes->GetNbinsX(); hRes->GetBinContent(iBin)==0; --iBin);
     highRange.push_back(min(par->getMax(),
-			    hRes->GetBinCenter(iBin) + 0.5*hRes->GetBinWidth(iBin) - 0.25 * ( hRes->GetMean() - hRes->GetBinCenter(iBin) )) );
+    			    hRes->GetBinCenter(iBin) + 0.5*hRes->GetBinWidth(iBin) - 0.25 * ( hRes->GetMean() - hRes->GetBinCenter(iBin) )) );
 
     if (boundAnalysis==0) {
       frame[iPar] = par->frame(Name(Form("f%s",par->GetName())),Title(Form("Result distribution of %s",par->GetTitle())),
@@ -225,7 +226,7 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
       nll->plotOn(frame[iPar],
 		  PrintEvalErrors(-1),
 		  ShiftToZero(),
-		  EvalErrorValue(nll->getVal()+10),
+		  EvalErrorValue(nll->getVal()+1),
 		  LineColor(kRed),
 		  LineWidth(2)) ;
       
@@ -312,7 +313,10 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
       Int_t nb=100;
 
       // Plot 2D objects
-      TVirtualPad* pad = c2->cd(indx+1);
+      TVirtualPad* pad = 0;
+      if (indx<13) pad = c2d1->cd(indx+1);
+      else pad = c2d2->cd(indx-12);
+      gPad->SetLeftMargin(0.15);
 
       h2ResGood->Draw("COLZ");
       
@@ -347,13 +351,19 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     cZ->Update();
     cZ->SaveAs( ("plotSimFit_d/"+plotName+"_zoom.pdf").c_str() );
 
-    c2->Update();
-    c2->SaveAs( ("plotSimFit_d/"+plotName+"_2D.pdf").c_str() );
+    c2d1->Update();
+    c2d1->SaveAs( ("plotSimFit_d/"+plotName+"_2D.pdf").c_str() );
+ 
+    c2d2->Update();
+    c2d2->SaveAs( ("plotSimFit_d/"+plotName+"_2Dbis.pdf").c_str() );
  
   } else {
 
-  c2->Update();
-  c2->SaveAs( ("plotSimFit_d/"+plotName+Form("_boundAnalysis%i.pdf",boundAnalysis)).c_str() );
+  c2d1->Update();
+  c2d1->SaveAs( ("plotSimFit_d/"+plotName+Form("_boundAnalysis%i.pdf",boundAnalysis)).c_str() );
+
+  c2d2->Update();
+  c2d2->SaveAs( ("plotSimFit_d/"+plotName+Form("_boundAnalysis%i_bis.pdf",boundAnalysis)).c_str() );
 
   }
 

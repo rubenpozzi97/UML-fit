@@ -32,17 +32,21 @@ static const int nBins = 9;
 
 TCanvas* cnll;
 TCanvas* cZoom;
+TCanvas* cPen;
 TCanvas* c [4*nBins];
 
-double fac1 = 10;
-double fac4 = 10;
-double fac5 = 10;
+double fac1 = 1;
+double fac4 = 1;
+double fac5 = 1;
 double base1 = 3;
 double base4 = 3;
 double base5 = 3;
+double max1 = 0;
+double max4 = 0;
+double max5 = 200;
 double maxCoeff = 1e8;
 
-void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, int datalike, std::vector<int> years, std::map<int,float> scale_to_data, double power)
+void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double power)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -60,8 +64,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
   string all_years = "";
   string year = ""; 
   string isample = ""; 
-  string stat = datalike > 0 ? "_dataStat":"_MCStat";
-  unsigned int nSamples = datalike>1 ? datalike : 1;
+  string stat = nSample > 0 ? "_dataStat":"_MCStat";
+  uint firstSample = ( multiSample || nSample==0 ) ? 0 : nSample-1;
+  uint lastSample = nSample > 0 ? nSample-1 : 0;
   
   std::vector<TFile*> fin_data, fin_eff;
   std::vector<RooWorkspace*> wsp;
@@ -103,11 +108,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
     all_years += year;
-    for (unsigned int is = 0; is < nSamples; is++) {
+    for (uint is = firstSample; is <= lastSample; is++) {
       isample.clear(); isample.assign( Form("%i",is) );
       sample.defineType(("data"+year+"_subs"+isample).c_str());
     }
   }
+
   // Construct a simultaneous pdf using category sample as index
   RooSimultaneous* simPdf = new RooSimultaneous("simPdf", "simultaneous pdf", sample);
   RooSimultaneous* simPdf_penalty = new RooSimultaneous("simPdf_penalty", "simultaneous pdf with penalty term", sample);
@@ -117,7 +123,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
-  RooFormulaVar* penLog = new RooFormulaVar("penLog","penLog","-1.0 * log(penTerm)",RooArgList(*penTerm));
 
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -199,8 +204,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
     RooDataSet* dataCT, *dataWT;
     std::vector<RooDataSet*> data_isample;
 
-    if (datalike>0){
-      for (unsigned int is = 0; is < nSamples; is++) {
+    if (nSample>0){
+      for (uint is = firstSample; is <= lastSample; is++) {
         dataCT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
           ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[years[iy]], (is+1)*scale_to_data[years[iy]] )) ;
         dataWT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
@@ -222,12 +227,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
     }
 
     data.push_back(data_isample) ;
-    for (unsigned int is = 0; is < nSamples; is++) {
-      if ( !data[iy][is] || data[iy][is]->IsZombie() ) {
-        cout<<"Dataset " << is  << "not found in file: "<<filename_data<<endl;
-        return;
-      }
-    }
 
     // define angular PDF for signal, using the custom class
     // efficiency function and integral values are passed as arguments
@@ -241,26 +240,40 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 								 *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
 								 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],*penTerm));
 
-    for (unsigned int is = 0; is < nSamples; is++) {
-      // insert sample in the category map, to be imported in the combined dataset
-      map.insert( map.cbegin(), std::pair<const string,RooDataSet*>(("data"+year+Form("_subs%d",is)).c_str(), data[iy][is]) );
-      // associate model with the data
-      simPdf->addPdf(*PDF_sig_ang_fullAngular[iy], ("data"+year+Form("_subs%d",is)).c_str());
-      simPdf_penalty->addPdf(*PDF_sig_ang_fullAngular_penalty[iy], ("data"+year+Form("_subs%d",is)).c_str());
+    // insert sample in the category map, to be imported in the combined dataset
+    // and associate model with the data
+    if (multiSample) for (uint is = firstSample; is <= lastSample; is++) {
+	if ( !data[iy][is] || data[iy][is]->IsZombie() ) {
+	  cout<<"Dataset " << is  << " not found in file: "<<filename_data<<endl;
+	  return;
+	}
+	map.insert( map.cbegin(), std::pair<const string,RooDataSet*>(("data"+year+Form("_subs%d",is)).c_str(), data[iy][is]) );
+	simPdf->addPdf(*PDF_sig_ang_fullAngular[iy], ("data"+year+Form("_subs%d",is)).c_str());
+	simPdf_penalty->addPdf(*PDF_sig_ang_fullAngular_penalty[iy], ("data"+year+Form("_subs%d",is)).c_str());
+      }
+    else {
+      if ( !data[iy][0] || data[iy][0]->IsZombie() ) {
+	cout<<"Dataset " << firstSample  << " not found in file: "<<filename_data<<endl;
+	return;
+      }
+      map.insert( map.cbegin(), std::pair<const string,RooDataSet*>(("data"+year+Form("_subs%d",firstSample)).c_str(), data[iy][0]) );
+      simPdf->addPdf(*PDF_sig_ang_fullAngular[iy], ("data"+year+Form("_subs%d",firstSample)).c_str());
+      simPdf_penalty->addPdf(*PDF_sig_ang_fullAngular_penalty[iy], ("data"+year+Form("_subs%d",firstSample)).c_str());
     }
+
   }
 
 
-  TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
+  TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
                             vars,
                             Index(sample), 
                             Import(map)); 
-  RooDataSet * combData; 
-  RooAbsReal* nll;                         
-  RooAbsReal* nll_penalty;                         
+  RooDataSet* combData = 0;
+  RooAbsReal* nll = 0;
+  RooAbsReal* nll_penalty = 0;
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
@@ -285,7 +298,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
   bool usedPenalty = false;
                          
-  for (unsigned int is = 0; is < nSamples; is++) {
+  for (uint is = firstSample; is <= lastSample; is++) {
+
     string the_cut = Form("sample==sample::data%d_subs%d", years[0], is);
     if (years.size() > 1){
       for (unsigned int iy=1; iy < years.size(); iy++){
@@ -357,15 +371,16 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
 	for (phase1=0; phase1<=totCoeff; ++phase1) {
 	  coeff1 = fac1 * pow(base1,totCoeff*cos(0.5*TMath::Pi()*phase1/(totCoeff>0?totCoeff:1)));
+	  if (max1>0 && coeff1>max1) continue;
 	  penTerm->setCoefficient(1,coeff1);
 
 	  sinPh1 = sin(0.5*TMath::Pi()*phase1/(totCoeff>0?totCoeff:1));
 	  totCoeffPro = (int)(totCoeff*sinPh1);
 	  for (phase2=0; phase2<=totCoeffPro; ++phase2) {
 	    coeff4 = fac4 * pow(base4,totCoeff*sinPh1*sin(0.5*TMath::Pi()*phase2/(totCoeffPro>0?totCoeffPro:1)));
+	    if (max4>0 && coeff4>max4) continue;
 	    coeff5 = fac5 * pow(base5,totCoeff*sinPh1*cos(0.5*TMath::Pi()*phase2/(totCoeffPro>0?totCoeffPro:1)));
-	    // if (coeff4>2000) continue;
-	    // if (coeff5>20000) continue;
+	    if (max5>0 && coeff5>max5) continue;
 
 	    penTerm->setCoefficient(4,coeff4);
 	    penTerm->setCoefficient(5,coeff5);
@@ -450,20 +465,25 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
     }
   }  
 
-  double time90quant = 0;
-  double quant = 0;
-  double totEntries = subResults->sumEntries();
-  for (time90quant = 0; quant<0.9; time90quant += 0.1)
-    quant = subResults->sumEntries(Form("fitTime<%.2f",time90quant))/totEntries;
-  cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec)"<<endl;
+  if (multiSample) {
+    double time90quant = 0;
+    double quant = 0;
+    double totEntries = subResults->sumEntries();
+    for (time90quant = 0; quant<0.9; time90quant += 0.1)
+      quant = subResults->sumEntries(Form("fitTime<%.2f",time90quant))/totEntries;
+    cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec)"<<endl;
 
-  cout<<"Fitted subsamples: "<<cnt[8]<<" of which good: "<<cnt[0]+cnt[1]<<" ("<<cnt[1]<<" with the use of the penalty term)"<<endl;
-  cout<<"Bad fits: "<<cnt[3]<<" converging outside physical region, "<<cnt[5]+cnt[7]<<" not converged ("<<cnt[5]<<" in ph region)"<<endl;
+    cout<<"Fitted subsamples: "<<cnt[8]<<" of which good: "<<cnt[0]+cnt[1]<<" ("<<cnt[1]<<" with the use of the penalty term)"<<endl;
+    cout<<"Bad fits: "<<cnt[3]<<" converging outside physical region, "<<cnt[5]+cnt[7]<<" not converged ("<<cnt[5]<<" in ph region)"<<endl;
+  }
 
   if (save) {
-    RooWorkspace* wksp = new RooWorkspace(("ws_"+shortString).c_str(),"Workspace with RECO subsamples fit results");
+    RooWorkspace* wksp = new RooWorkspace(((multiSample?"wsMulti_":"ws_")+shortString+Form("_s%i_pow%.1f",nSample,power)).c_str(),
+					  (multiSample?"Workspace with set of RECO subsample fit results":
+					   (nSample>0?"Workspace with RECO subsample fit result":
+					    "Workspace with full RECO fit result")));
 
-    if (nSamples>1) {
+    if (multiSample) {
       wksp->import(*subResults);
       wksp->import(*subPosConv);
       wksp->import(*subPosNotc);
@@ -473,8 +493,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
       wksp->import(*combData,Rename("data"));
       wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
       if (usedPenalty) {
-	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence());
-	wksp->import(*penLog,Silence());
+	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence(),RecycleConflictNodes());
+	wksp->import(*penTerm,Silence(),RecycleConflictNodes());
       }
     }
 
@@ -482,43 +502,93 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
     wksp->Write();
   }
 
+  fout->Close();
 
-  if (!plot || datalike > 1) {
-    fout->Close();
-    return;
+  if (!plot || multiSample) return;
+
+  // For plotting the effective penalty term is used
+  Penalty* penTerm_eff = new Penalty(*penTerm,"penTerm_eff");
+  penTerm_eff->setPower(power);
+  RooFormulaVar* penLog = new RooFormulaVar("penLog","penLog","-1.0 * log(penTerm_eff)",RooArgList(*penTerm_eff));
+
+  double xZoom = 200.0;
+  if (nSample>0) xZoom = 2.0;
+
+  cnll  = new TCanvas (("cnll_"+shortString).c_str(),("cnll_"+shortString).c_str(),1800,1800);
+  cZoom = new TCanvas (("cZoom_"+shortString).c_str(),("cZoom_"+shortString).c_str(),1800,1800);
+  cPen = new TCanvas (("cPen_"+shortString).c_str(),("cPen_"+shortString).c_str(),1800,1800);
+  cnll->Divide(3,3);
+  cZoom->Divide(3,3);
+  cPen->Divide(3,3);
+
+  RooPlot* frame [8];
+  RooPlot* fZoom [8];
+  RooPlot* fPenTerm [8];
+
+  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+
+    RooRealVar* par = (RooRealVar*)pars.at(iPar);
+
+    frame[iPar] = par->frame(Name(Form("f1%s",par->GetName())),Title(Form("-log(L) scan vs %s",par->GetTitle()))) ;
+    fZoom[iPar] = par->frame(Name(Form("f2%s",par->GetName())),Title(Form("zoom on -log(L) scan vs %s",par->GetTitle())),
+			     Range(TMath::Max(par->getMin(),par->getValV()+xZoom*par->getErrorLo()),
+				   TMath::Min(par->getMax(),par->getValV()+xZoom*par->getErrorHi()) )) ;
+
+    nll->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed),LineWidth(2)) ;
+    nll->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed),LineWidth(2)) ;
+
+    if (iPar>0) {
+
+      double hMax = frame[iPar]->GetMaximum();
+
+      boundary->plotOn(frame[iPar],LineColor(13),FillColor(13),FillStyle(3545),Normalization(1.1*hMax,RooAbsReal::Raw),DrawOption("LF"),VLines(),LineWidth(2));
+      boundary->plotOn(fZoom[iPar],LineColor(13),FillColor(13),FillStyle(3545),Normalization(1.1*hMax,RooAbsReal::Raw),DrawOption("LF"),VLines(),LineWidth(2));
+
+      if (usedPenalty) {
+
+	nll_penalty->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty->getVal()+10),LineColor(kBlue),LineWidth(2));
+	nll_penalty->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty->getVal()+10),LineColor(kBlue),LineWidth(2));
+
+	penLog->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
+	penLog->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
+
+      }
+
+      frame[iPar]->SetMaximum(hMax);
+
+      fPenTerm[iPar] = par->frame(Name(Form("f3%s",par->GetName())),Title(Form("Penalty term vs %s",par->GetTitle()))) ;
+      penTerm_eff->plotOn(fPenTerm[iPar],LineColor(4),LineWidth(2)) ;
+      double hMaxP = fPenTerm[iPar]->GetMaximum();
+      boundary->plotOn(fPenTerm[iPar],LineColor(13),FillColor(13),FillStyle(3545),Normalization(1.1*hMaxP,RooAbsReal::Raw),DrawOption("LF"),VLines(),LineWidth(2));
+      fPenTerm[iPar]->SetMaximum(hMaxP);
+      cPen->cd(iPar+1);
+      fPenTerm[iPar]->Draw();
+
+    }
+
+    fZoom[iPar]->SetMaximum(0.5*xZoom*xZoom);
+
+    cnll->cd(iPar+1);
+    frame[iPar]->Draw();
+
+    cZoom->cd(iPar+1);
+    fZoom[iPar]->Draw();
+
+
   }
 
-  RooPlot* frameFl = Fl->frame(Title("-log(L) scan vs Fl")) ;
-  nll->plotOn(frameFl,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP1 = P1->frame(Title("-log(L) scan vs P1")) ;
-  nll->plotOn(frameP1,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP2 = P2->frame(Title("-log(L) scan vs P2")) ;
-  nll->plotOn(frameP2,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP3 = P3->frame(Title("-log(L) scan vs P3")) ;
-  nll->plotOn(frameP3,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP4p = P4p->frame(Title("-log(L) scan vs P4p")) ;
-  nll->plotOn(frameP4p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP5p = P5p->frame(Title("-log(L) scan vs P5p")) ;
-  nll->plotOn(frameP5p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP6p = P6p->frame(Title("-log(L) scan vs P6p")) ;
-  nll->plotOn(frameP6p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-  RooPlot* frameP8p = P8p->frame(Title("-log(L) scan vs P8p")) ;
-  nll->plotOn(frameP8p,PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll->getVal()+10),LineColor(kRed)) ;
-//   frameFl->SetMaximum(15) ;
-//   frameFl->SetMinimum(0) ;
+  string plotString = shortString + "_" + all_years;
+  if (nSample>0) plotString = plotString + Form("_s%i",nSample);
 
-  TCanvas* cNll = new TCanvas("nllerrorhandling","nllerrorhandling",1200,900) ;
-  cNll->Divide(3,3) ;
-  cNll->cd(1) ; gPad->SetLeftMargin(0.15) ; frameFl->GetYaxis()->SetTitleOffset(1.4)  ; frameFl->Draw() ;
-  cNll->cd(2) ; gPad->SetLeftMargin(0.15) ; frameP1->GetYaxis()->SetTitleOffset(1.4)  ; frameP1->Draw() ;
-  cNll->cd(3) ; gPad->SetLeftMargin(0.15) ; frameP2->GetYaxis()->SetTitleOffset(1.4)  ; frameP2->Draw() ;
-  cNll->cd(4) ; gPad->SetLeftMargin(0.15) ; frameP3->GetYaxis()->SetTitleOffset(1.4)  ; frameP3->Draw() ;
-  cNll->cd(5) ; gPad->SetLeftMargin(0.15) ; frameP4p->GetYaxis()->SetTitleOffset(1.4) ; frameP4p->Draw() ;
-  cNll->cd(6) ; gPad->SetLeftMargin(0.15) ; frameP5p->GetYaxis()->SetTitleOffset(1.4) ; frameP5p->Draw() ;
-  cNll->cd(7) ; gPad->SetLeftMargin(0.15) ; frameP6p->GetYaxis()->SetTitleOffset(1.4) ; frameP6p->Draw() ;
-  cNll->cd(8) ; gPad->SetLeftMargin(0.15) ; frameP8p->GetYaxis()->SetTitleOffset(1.4) ; frameP8p->Draw() ;
-  cNll->SaveAs(("test_nll_Constr_" + all_years + stat + Form("_b%i.pdf", q2Bin)).c_str());
+  cnll->Update();
+  cnll->SaveAs( ("plotSimFit_d/recoNLL_scan_" + plotString + ".pdf").c_str() );
 
+  cZoom->Update();
+  cZoom->SaveAs( ("plotSimFit_d/recoNLL_scan_" + plotString + "_zoom.pdf").c_str() );
+
+  cPen->Update();
+  cPen->SaveAs( ("plotSimFit_d/recoPenTerm_" + plotString + ".pdf").c_str() );
+  return;
 
   int confIndex = 2*nBins*parity  + q2Bin;
   string longString  = "Fit to reconstructed events";
@@ -572,18 +642,17 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool plot, bool save, i
 
   
   c[confIndex]->SaveAs( ("plotSimFit_d/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + ".pdf").c_str() );
-  fout->Close(); 
 
 }
 
 
-void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool plot, bool save, int datalike, std::vector<int> years, std::map<int,float> scale_to_data, double power)
+void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double power)
 {
   if ( parity==-1 )
     for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullAngularBin(q2Bin, parity, plot, save, datalike,  years, scale_to_data, power);
+      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
   else
-    simfit_recoMC_fullAngularBin(q2Bin, parity, plot, save, datalike, years, scale_to_data, power);
+    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
 }
 
 int main(int argc, char** argv)
@@ -597,36 +666,40 @@ int main(int argc, char** argv)
   int q2Bin   = -1;
   int parity  = -1; 
 
-  if ( argc >= 2 ) q2Bin   = atoi(argv[1]);
-  if ( argc >= 3 ) parity  = atoi(argv[2]);
+  if ( argc > 1 ) q2Bin   = atoi(argv[1]);
+  if ( argc > 2 ) parity  = atoi(argv[2]);
 
-  double power = 0.5;
+  double power = 1.0;
 
-  if ( argc >= 4 ) power = atof(argv[3]);
+  if ( argc > 3 ) power = atof(argv[3]);
+
+  bool multiSample = false;
+  uint nSample = 0;
+  if ( argc > 4 && atoi(argv[4]) > 0 ) multiSample = true;
+  if ( argc > 5 ) nSample = atoi(argv[5]);
+
+  if (nSample==0) multiSample = false;
 
   bool plot = true;
   bool save = true;
-  int  datalike = 0;
 
-  if ( argc >= 5 && atoi(argv[4]) == 0 ) plot     = false;
-  if ( argc >= 6 && atoi(argv[5]) == 0 ) save     = false;
-  if ( argc >= 7 && atoi(argv[6]) > 0  ) datalike = atoi(argv[6]);
+  if ( argc > 6 && atoi(argv[6]) == 0 ) plot = false;
+  if ( argc > 7 && atoi(argv[7]) == 0 ) save = false;
 
   std::vector<int> years;
-  if ( argc >= 8 && atoi(argv[7]) != 0 ) years.push_back(atoi(argv[7]));
+  if ( argc > 8 && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
   else {
-    cout << " no specific years selected, using default: 2016";
+    cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc >= 9  && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
-  if ( argc >= 10 && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
+  if ( argc > 9  && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
+  if ( argc > 10 && atoi(argv[10]) != 0 ) years.push_back(atoi(argv[10]));
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
   if ( parity  < -1 || parity  > 1      ) return 1;
 
   if ( q2Bin==-1 )   cout << "Running all the q2 bins" << endl;
   if ( parity==-1 )  cout << "Running both the parity datasets" << endl;
-  if ( datalike )    cout << "Considering data-like statistics" << endl;
 
   std::map<int,float> scale_to_data;
   // https://docs.google.com/spreadsheets/d/1gG-qowySO9WJpMmr_bAWmOAu05J8zr95yJXGIYCY9-A/edit?usp=sharing
@@ -636,9 +709,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullAngularBin1(q2Bin, parity, plot, save, datalike, years, scale_to_data, power);
+      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
   else
-    simfit_recoMC_fullAngularBin1(q2Bin, parity, plot, save, datalike, years, scale_to_data, power);
+    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
 
   return 0;
 
