@@ -94,12 +94,13 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
     return;
   }
   RooDataSet* subPosConv = 0;
+  RooDataSet* subNoPen = 0;
   if (isGEN) subPosConv = (RooDataSet*)subResults->reduce(Name("subPosConv"),Cut("resStatus==0"));
-  else subPosConv = (RooDataSet*)wsp->data("subPosConv");
-  if ( !subPosConv || subPosConv->IsZombie() ) {
-    cout<<"Dataset subPosConv not found in file: simFitResults/"<<fileName<<".root"<<endl;
-    return;
+  else {
+    subPosConv = (RooDataSet*)subResults->reduce(Name("subPosConv"),Cut("resStatus<2"));
+    subNoPen = (RooDataSet*)subResults->reduce(Name("subPosConv"),Cut("resStatus==0"));
   }
+
   cout<<"Plotting dataset with "<<subPosConv->numEntries()<<" results"<<endl;
 
   // import fit result of high-stat MC sample, and data+PDF to create NLL
@@ -270,6 +271,13 @@ void plotMultiResultsBin(int q2Bin, int parity, bool do2016, bool do2017, bool d
       // Histogram with the results
       TH1* h2ResGood = subPosConv->createHistogram("h2ResGood",*par2,Binning(50,lowRange[iPar2],highRange[iPar2]),
       						   YVar(*par,Binning(50,lowRange[iPar],highRange[iPar])));
+      TH1* h2NoPen = 0;
+      if (!isGEN) {
+	h2NoPen = subNoPen->createHistogram("h2NoPen",*par2,Binning(50,lowRange[iPar2],highRange[iPar2]),
+					    YVar(*par,Binning(50,lowRange[iPar],highRange[iPar])));
+	h2ResGood->Add(h2NoPen,10);
+      }
+
       h2ResGood->SetMaximum(7);
 
       // Boundaries are represented as 2D histo, then will be plot as TGraph with their countours by the plotBound function

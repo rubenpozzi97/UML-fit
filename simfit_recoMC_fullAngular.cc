@@ -282,7 +282,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
   RooArgSet savePars (*co1,*co4,*co5,*fitTime);
   savePars.add(pars);
-  RooDataSet* subResults = new RooDataSet("subResults","subResults",savePars);
+  RooCategory resStatus ("resStatus","Status of the fit result");
+  resStatus.defineType("convergent-positive-noPenalty",0);
+  resStatus.defineType("convergent-positive",1);
+  resStatus.defineType("convergent-negative",2);
+  resStatus.defineType("notconvergent-positive",3);
+  resStatus.defineType("notconvergent-negative",4);
+  RooDataSet* subResults = 0;
+  RooDataSet* subNoPen = new RooDataSet("subNoPen","subNoPen",savePars);
   RooDataSet* subPosConv = new RooDataSet("subPosConv","subPosConv",savePars);
   RooDataSet* subPosNotc = new RooDataSet("subPosNotc","subPosNotc",savePars);
   RooDataSet* subNegConv = new RooDataSet("subNegConv","subNegConv",savePars);
@@ -447,13 +454,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     if (boundCheck>0) iCnt += 2;
     ++cnt[iCnt];
 
-    subResults->add(savePars);
     if (boundCheck>0) {
       if (fitResult->status()==0 && fitResult->covQual()==3) subNegConv->add(savePars);
       else subNegNotc->add(savePars);
     } else {
-      if (fitResult->status()==0 && fitResult->covQual()==3) subPosConv->add(savePars);
-      else subPosNotc->add(savePars);
+      if (fitResult->status()==0 && fitResult->covQual()==3) {
+	if (usedPenalty) subPosConv->add(savePars);
+	else subNoPen->add(savePars);
+      } else subPosNotc->add(savePars);
     }
 
     // Save fit results in file
@@ -465,6 +473,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }  
 
   if (multiSample) {
+    subResults = new RooDataSet("subResults",
+				"Results of RECO sub-sample fitting",
+				savePars,Index(resStatus),
+				Import("convergent-positive-noPenalty",*subNoPen),
+				Import("convergent-positive",*subPosConv),
+				Import("convergent-negative",*subNegConv),
+				Import("notconvergent-positive",*subPosNotc),
+				Import("notconvergent-negative",*subNegNotc));
+
     double time90quant = 0;
     double quant = 0;
     double totEntries = subResults->sumEntries();
@@ -484,10 +501,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     if (multiSample) {
       wksp->import(*subResults);
-      wksp->import(*subPosConv);
-      wksp->import(*subPosNotc);
-      wksp->import(*subNegConv);
-      wksp->import(*subNegNotc);
     } else {
       wksp->import(*combData,Rename("data"));
       wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
