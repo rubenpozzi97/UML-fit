@@ -22,6 +22,7 @@
 
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
+#include "BoundDist.h"
 #include "Penalty.h"
 
 using namespace RooFit;
@@ -34,18 +35,11 @@ TCanvas* cZoom;
 TCanvas* cPen;
 TCanvas* c [4*nBins];
 
-double fac1 = 1;
-double fac4 = 1;
-double fac5 = 1;
-double base1 = 3;
-double base4 = 3;
-double base5 = 3;
-double max1 = 0;
-double max4 = 0;
-double max5 = 200;
+double power = 1.0;
+
 double maxCoeff = 1e8;
 
-void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double power)
+void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -119,6 +113,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
   // Define boundary check (returning 0 in physical region and 1 outside)
   BoundCheck* boundary = new BoundCheck("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+
+  // Define boundary distance calculator
+  BoundDist* bound_dist = new BoundDist("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,0,true);
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
@@ -279,8 +276,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooRealVar* co1 = new RooRealVar("co1","Coefficient 1",0);
   RooRealVar* co4 = new RooRealVar("co4","Coefficient 4",0);
   RooRealVar* co5 = new RooRealVar("co5","Coefficient 5",0);
+  RooRealVar* boundDist = new RooRealVar("boundDist","Distance from boundary",0);
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  RooArgSet savePars (*co1,*co4,*co5,*fitTime);
+  RooArgSet savePars (*co1,*co4,*co5,*fitTime,*boundDist);
   savePars.add(pars);
   RooCategory resStatus ("resStatus","Status of the fit result");
   resStatus.defineType("convergent-positive-noPenalty",0);
@@ -314,6 +312,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     combData = (RooDataSet*)allcombData.reduce(Cut(the_cut.c_str()));
+    if (nSample>0) cout<<"Fitting subsample "<<is+1<<" with "<<combData->numEntries()<<" entries"<<endl;
+    else cout<<"Fitting full MC sample with "<<combData->numEntries()<<" entries"<<endl;
+
 //     for(auto it = map.cbegin(); it != map.cend(); ++it)
 //       std::cout << "dataset: " << it->first << ", with n entries: " << it->second->sumEntries() << "\n";
 
@@ -434,15 +435,20 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     if (usedPenalty) {
       if (isPhysical) {
-	cout<<"Physical result with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<endl;
 	co1->setVal(coeff1);
 	co4->setVal(coeff4);
 	co5->setVal(coeff5);
       }
-      else cout<<"No physical result"<<endl;
     }
 
     double boundCheck = boundary->getValV();
+
+    TStopwatch distTime;
+    distTime.Start(true);
+    double boundDistVal = bound_dist->getValV();
+    distTime.Stop();
+    cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
+    boundDist->setVal(boundDistVal);
 
     ++cnt[8];
     int iCnt = 0;
@@ -455,13 +461,26 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     ++cnt[iCnt];
 
     if (boundCheck>0) {
-      if (fitResult->status()==0 && fitResult->covQual()==3) subNegConv->add(savePars);
-      else subNegNotc->add(savePars);
+      if (fitResult->status()==0 && fitResult->covQual()==3) {
+	subNegConv->add(savePars);
+	cout<<"Converged in unphysical region"<<endl;
+      } else {
+	subNegNotc->add(savePars);
+	cout<<"Not converged (result in unphysical region)"<<endl;
+      }
     } else {
       if (fitResult->status()==0 && fitResult->covQual()==3) {
-	if (usedPenalty) subPosConv->add(savePars);
-	else subNoPen->add(savePars);
-      } else subPosNotc->add(savePars);
+	if (usedPenalty) {
+	  subPosConv->add(savePars);
+	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<endl;
+	} else {
+	  subNoPen->add(savePars);
+	  cout<<"Converged without penalty"<<endl;
+	}
+      } else {
+	subPosNotc->add(savePars);
+	cout<<"Not converged (result in physical region)"<<endl;
+      }
     }
 
     // Save fit results in file
@@ -515,6 +534,16 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
   fout->Close();
+
+  if (multiSample) {
+    TCanvas* cDist = new TCanvas (("cDist_"+shortString).c_str(),("cDist_"+shortString).c_str(),1800,1800);
+    RooPlot* fDist = boundDist->frame(Name("fDist"),Title("Distribution of results' distance fram boundary"),Range(0,0.1));
+    subNoPen->plotOn(fDist,Binning(50,0,0.1),LineColor(kBlue),MarkerColor(kBlue),MarkerStyle(19),DrawOption("XL"));
+    subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
+    cDist->cd();
+    fDist->Draw();
+    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.1f-%.1f-%.1f_b-%.1f-%.1f-%.1f_m-%.1f-%.1f-%.1f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
+  }
 
   if (!plot || multiSample) return;
 
@@ -658,13 +687,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 }
 
 
-void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double power)
+void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5)
 {
   if ( parity==-1 )
     for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
+      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, fac5, base1, base4, base5, max1, max4, max5);
   else
-    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
+    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, fac5, base1, base4, base5, max1, max4, max5);
 }
 
 int main(int argc, char** argv)
@@ -681,31 +710,47 @@ int main(int argc, char** argv)
   if ( argc > 1 ) q2Bin   = atoi(argv[1]);
   if ( argc > 2 ) parity  = atoi(argv[2]);
 
-  double power = 1.0;
+  double fac1 = 1;
+  double fac4 = 1;
+  double fac5 = 1;
+  double base1 = 3;
+  double base4 = 3;
+  double base5 = 3;
+  double max1 = 0;
+  double max4 = 0;
+  double max5 = 200;
 
-  if ( argc > 3 ) power = atof(argv[3]);
+  if ( argc > 3  ) fac1  = atof(argv[3]);
+  if ( argc > 4  ) fac4  = atof(argv[4]);
+  if ( argc > 5  ) fac5  = atof(argv[5]);
+  if ( argc > 6  ) base1 = atof(argv[6]);
+  if ( argc > 7  ) base4 = atof(argv[7]);
+  if ( argc > 8  ) base5 = atof(argv[8]);
+  if ( argc > 9  ) max1  = atof(argv[9]);
+  if ( argc > 10 ) max4  = atof(argv[10]);
+  if ( argc > 11 ) max5  = atof(argv[11]);
 
   bool multiSample = false;
   uint nSample = 0;
-  if ( argc > 4 && atoi(argv[4]) > 0 ) multiSample = true;
-  if ( argc > 5 ) nSample = atoi(argv[5]);
+  if ( argc > 12 && atoi(argv[12]) > 0 ) multiSample = true;
+  if ( argc > 13 ) nSample = atoi(argv[13]);
 
   if (nSample==0) multiSample = false;
 
   bool plot = true;
   bool save = true;
 
-  if ( argc > 6 && atoi(argv[6]) == 0 ) plot = false;
-  if ( argc > 7 && atoi(argv[7]) == 0 ) save = false;
+  if ( argc > 14 && atoi(argv[14]) == 0 ) plot = false;
+  if ( argc > 15 && atoi(argv[15]) == 0 ) save = false;
 
   std::vector<int> years;
-  if ( argc > 8 && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
+  if ( argc > 16 && atoi(argv[16]) != 0 ) years.push_back(atoi(argv[16]));
   else {
     cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc > 9  && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
-  if ( argc > 10 && atoi(argv[10]) != 0 ) years.push_back(atoi(argv[10]));
+  if ( argc > 17 && atoi(argv[17]) != 0 ) years.push_back(atoi(argv[17]));
+  if ( argc > 18 && atoi(argv[18]) != 0 ) years.push_back(atoi(argv[18]));
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
   if ( parity  < -1 || parity  > 1      ) return 1;
@@ -721,9 +766,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
+      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, fac5, base1, base4, base5, max1, max4, max5);
   else
-    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, power);
+    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, fac5, base1, base4, base5, max1, max4, max5);
 
   return 0;
 
