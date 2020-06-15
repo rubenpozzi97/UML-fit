@@ -64,13 +64,32 @@ BoundCheck::BoundCheck(const BoundCheck& other, const char* name) :
 Double_t BoundCheck::evaluate() const 
 {
 
+  if ( useCTL4 && !isInCTL4() ) return 1;
+  if ( useCTL15>=0 && !isInCTL15() ) return 1;
+
+  return 0;
+
+}
+
+
+
+Bool_t BoundCheck::isInCTL4() const
+{
+
   double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
 
   if (verbose && ctL4phi1>0) std::cout<<"[OUT] 4 "<<ctL4phi1<<std::endl;
 
-  if (useCTL4 && ctL4phi1>0) return 1;
+  if (ctL4phi1>0) return false;
 
-  if (useCTL15<0) return 0;
+  return true;
+
+}
+
+
+
+Bool_t BoundCheck::isInCTL15() const
+{
 
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
   double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
@@ -110,11 +129,11 @@ Double_t BoundCheck::evaluate() const
 
     if (verbose) std::cout<<"[OUT] 1 "<<ctL1<<" 5p "<<ctL5p<<" 5m "<<ctL5m<<" phi "<<phi<<std::endl;
 
-    return 1;
+    return false;
     if (useCTL15>0) break;
 
   }
   
-  return 0;
+  return true;
 
 }

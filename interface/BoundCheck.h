@@ -48,6 +48,9 @@ class BoundCheck : public RooAbsReal {
   BoundCheck(const BoundCheck& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new BoundCheck(*this,newname); }
   inline virtual ~BoundCheck() { }
+
+  Bool_t isInCTL4() const ;
+  Bool_t isInCTL15() const ;
   
   ClassDef(BoundCheck,1) // Step function: 0 inside physical region, 1 outside it
     };
