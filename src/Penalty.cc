@@ -68,11 +68,17 @@ Penalty::Penalty(const Penalty& other, const char* name) :
 Double_t Penalty::evaluate() const 
 {
 
-  double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
+  double ret4 = 1.0;
 
-  double ret4 = pow(1.0/(1+exp(coeff4*ctL4phi1)),power);
+  if (coeff4>0) {
+    double ctL4phi1 = P4p*P4p + P5p*P5p + P6p*P6p + P8p*P8p - 2 + 2*fabs( 2*P2 - P4p*P5p +P6p*P8p );
 
-  if (verbose && ctL4phi1>0) std::cout<<"[OUT] 4 "<<ctL4phi1<<std::endl;
+    ret4 = pow(1.0/(1+exp(coeff4*ctL4phi1)),power);
+
+    if (verbose && ctL4phi1>0) std::cout<<"[OUT] 4 "<<ctL4phi1<<std::endl;
+  }
+
+  if (coeff1<=0 && coeff5<=0) return ret4;
 
   double a0 = 1 - P1*P1 - P6p*P6p*(1+P1) - P8p*P8p*(1-P1) - 4*P2*P2 - 4*P2*P6p*P8p; 
   double a4 = 1 - P1*P1 - P4p*P4p*(1+P1) - P5p*P5p*(1-P1) - 4*P2*P2 + 4*P2*P4p*P5p; 
@@ -112,6 +118,9 @@ Double_t Penalty::evaluate() const
     ctL1 = a0*sin2*sin2 + a1*sin2*sincos + a2*sin2*cos2 + a3*sincos*cos2 + a4*cos2*cos2;
 
     if (verbose && ctL5<0 && ctL1<0) std::cout<<"[OUT] 1 "<<ctL1<<" 5p "<<ctL5p<<" 5m "<<ctL5m<<" phi "<<phi<<std::endl;
+
+    if ( coeff1<=0 ) variable = coeff5*ctL5;
+    if ( coeff5<=0 ) variable = coeff1*ctL1;
 
     if ( ctL1 >= 0 ) {
       if ( ctL5 <= 0 ) variable = coeff1*ctL1;
