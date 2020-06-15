@@ -39,6 +39,8 @@ double power = 1.0;
 
 double maxCoeff = 1e8;
 
+double min_base = 1.05;
+
 void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5)
 {
 
@@ -115,7 +117,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   BoundCheck* boundary = new BoundCheck("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   // Define boundary distance calculator
-  BoundDist* bound_dist = new BoundDist("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,0,true);
+  BoundDist* bound_dist = new BoundDist("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,0,false);
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
@@ -329,15 +331,24 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     P8p->setVal(0);
 
     // set penalty term power parameter
-    penTerm->setPower(power/combData->numEntries());
+    int combEntries = combData->numEntries();
+    penTerm->setPower(power/combEntries);
 
     // define variables needed for adaptive procedure
     bool isPhysical = false;
     double coeff1 = 0;
     double coeff4 = 0;
     double coeff5 = 0;
-    double sinPh1;
-    int totCoeff, phase1, phase2, totCoeffPro;
+    int totCoeff, iCoeff1, iCoeff4;
+    double base1_corr = base1*sqrt(combEntries);
+    double base4_corr = base4*sqrt(combEntries);
+    double base5_corr = base5*sqrt(combEntries);
+    if (base1_corr<min_base) base1_corr = min_base;
+    if (base4_corr<min_base) base4_corr = min_base;
+    if (base5_corr<min_base) base5_corr = min_base;
+
+    bool inCTL4  = true;
+    bool inCTL15 = true;
 
     nll = simPdf->createNLL(*combData,
                             RooFit::Extended(kFALSE),
@@ -349,7 +360,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
     // m.setVerbose(kTRUE);
     m.setPrintLevel(-1);
-  //  Minuit2.setEps(1e-16) ;
+    m.setPrintEvalErrors(-1);
+    //  Minuit2.setEps(1e-16) ;
     m.setMinimizerType("Minuit2");
 
     subTime.Start(true);
@@ -374,20 +386,33 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     if ( fitResult->status()!=0 || fitResult->covQual()!=3 || boundary->getValV() > 0 ) {
       usedPenalty = true;
 
-      for (totCoeff=0; fac1*pow(base1,totCoeff)<=maxCoeff; ++totCoeff) {
+      if ( !boundary->isInCTL4()  ) inCTL4  = false;
+      if ( !boundary->isInCTL15() ) inCTL15 = false;
 
-	for (phase1=0; phase1<=totCoeff; ++phase1) {
-	  coeff1 = fac1 * pow(base1,totCoeff*cos(0.5*TMath::Pi()*phase1/(totCoeff>0?totCoeff:1)));
+      for (totCoeff=0; fac1*pow(base1_corr,totCoeff)<=maxCoeff; ++totCoeff) {
+
+	for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
+	  coeff1 = fac1 * pow(base1_corr,iCoeff1);
 	  if (max1>0 && coeff1>max1) continue;
+	  if ( inCTL15 ) {
+	    if ( iCoeff1>0 ) continue;
+	    coeff1 = 0;
+	  }
 	  penTerm->setCoefficient(1,coeff1);
 
-	  sinPh1 = sin(0.5*TMath::Pi()*phase1/(totCoeff>0?totCoeff:1));
-	  totCoeffPro = (int)(totCoeff*sinPh1);
-	  for (phase2=0; phase2<=totCoeffPro; ++phase2) {
-	    coeff4 = fac4 * pow(base4,totCoeff*sinPh1*sin(0.5*TMath::Pi()*phase2/(totCoeffPro>0?totCoeffPro:1)));
+	  for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
+	    coeff4 = fac4 * pow(base4_corr,iCoeff4);
 	    if (max4>0 && coeff4>max4) continue;
-	    coeff5 = fac5 * pow(base5,totCoeff*sinPh1*cos(0.5*TMath::Pi()*phase2/(totCoeffPro>0?totCoeffPro:1)));
+	    if ( inCTL4 ) {
+	      if ( iCoeff4>0 ) continue;
+	      coeff4 = 0;
+	    }
+	    coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
 	    if (max5>0 && coeff5>max5) continue;
+	    if ( inCTL15 ) {
+	      if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
+	      coeff5 = 0;
+	    }
 
 	    penTerm->setCoefficient(4,coeff4);
 	    penTerm->setCoefficient(5,coeff5);
@@ -404,6 +429,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	    m_penalty.setMinimizerType("Minuit2");
 	    // m_penalty.setProfile(kTRUE);
 	    m_penalty.setPrintLevel(-1);
+	    m_penalty.setPrintEvalErrors(-1);
 	    m_penalty.setStrategy(2);
     
 	    m_penalty.migrad() ;
@@ -413,10 +439,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	    // cout<<penTerm->getCoefficient(1)<<"\t"<<penTerm->getCoefficient(5)<<"\t"<<P5p->getValV()<<endl;
 	    // fitResult_penalty->Print("v");
 	    
-	    if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 && boundary->getValV()==0 ) {
-	      isPhysical = true;
-	      break;
-	    }
+	    if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 ) {
+	      if ( boundary->getValV()==0 ) {
+		isPhysical = true;
+		cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+		break;
+	      } else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	    } else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
 	  }
 	  if (isPhysical) break;
 	}
@@ -442,6 +471,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     double boundCheck = boundary->getValV();
+    bool convCheck = false;
+    if (usedPenalty && fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3) convCheck = true;
+    if (!usedPenalty && fitResult->status()==0 && fitResult->covQual()==3) convCheck = true;
 
     TStopwatch distTime;
     distTime.Start(true);
@@ -450,18 +482,18 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
     boundDist->setVal(boundDistVal);
 
+    if (boundDistVal>0.02 && usedPenalty)
+      cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
+
     ++cnt[8];
     int iCnt = 0;
-    if (usedPenalty) {
-      iCnt += 1;
-      if (fitResult_penalty->status()!=0 || fitResult_penalty->covQual()!=3) iCnt += 4;
-    } else
-      if (fitResult->status()!=0 || fitResult->covQual()!=3) iCnt += 4;
+    if (!convCheck) iCnt += 4;
     if (boundCheck>0) iCnt += 2;
+    if (usedPenalty) iCnt += 1;
     ++cnt[iCnt];
 
     if (boundCheck>0) {
-      if (fitResult->status()==0 && fitResult->covQual()==3) {
+      if (convCheck) {
 	subNegConv->add(savePars);
 	cout<<"Converged in unphysical region"<<endl;
       } else {
@@ -469,7 +501,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	cout<<"Not converged (result in unphysical region)"<<endl;
       }
     } else {
-      if (fitResult->status()==0 && fitResult->covQual()==3) {
+      if (convCheck) {
 	if (usedPenalty) {
 	  subPosConv->add(savePars);
 	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<endl;
@@ -542,7 +574,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
     cDist->cd();
     fDist->Draw();
-    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.1f-%.1f-%.1f_b-%.1f-%.1f-%.1f_m-%.1f-%.1f-%.1f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
+    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
   }
 
   if (!plot || multiSample) return;
@@ -720,12 +752,12 @@ int main(int argc, char** argv)
   double max4 = 0;
   double max5 = 200;
 
-  if ( argc > 3  ) fac1  = atof(argv[3]);
-  if ( argc > 4  ) fac4  = atof(argv[4]);
-  if ( argc > 5  ) fac5  = atof(argv[5]);
-  if ( argc > 6  ) base1 = atof(argv[6]);
-  if ( argc > 7  ) base4 = atof(argv[7]);
-  if ( argc > 8  ) base5 = atof(argv[8]);
+  if ( argc > 3  ) fac1  = atof(argv[3]) / 1000.0;
+  if ( argc > 4  ) fac4  = atof(argv[4]) / 1000.0;
+  if ( argc > 5  ) fac5  = atof(argv[5]) / 1000.0;
+  if ( argc > 6  ) base1 = atof(argv[6]) / 1000.0;
+  if ( argc > 7  ) base4 = atof(argv[7]) / 1000.0;
+  if ( argc > 8  ) base5 = atof(argv[8]) / 1000.0;
   if ( argc > 9  ) max1  = atof(argv[9]);
   if ( argc > 10 ) max4  = atof(argv[10]);
   if ( argc > 11 ) max5  = atof(argv[11]);
