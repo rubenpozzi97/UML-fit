@@ -394,25 +394,31 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
 	  coeff1 = fac1 * pow(base1_corr,iCoeff1);
 	  if (max1>0 && coeff1>max1) continue;
-	  if ( inCTL15 ) {
-	    if ( iCoeff1>0 ) continue;
-	    coeff1 = 0;
-	  }
+	  // if ( inCTL15 ) {
+	  //   if ( iCoeff1>0 ) continue;
+	  //   coeff1 = 0;
+	  // }
 	  penTerm->setCoefficient(1,coeff1);
 
-	  for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
+	  // for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
+	  iCoeff4=totCoeff-iCoeff1; // new
+	  {                         // new
+
 	    coeff4 = fac4 * pow(base4_corr,iCoeff4);
 	    if (max4>0 && coeff4>max4) continue;
-	    if ( inCTL4 ) {
-	      if ( iCoeff4>0 ) continue;
-	      coeff4 = 0;
-	    }
-	    coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
+	    // if ( inCTL4 ) {
+	    //   if ( iCoeff4>0 ) continue;
+	    //   coeff4 = 0;
+	    // }
+
+	    // coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
+	    coeff5 = pow(coeff1,1.5) / 316.2; // new
+
 	    if (max5>0 && coeff5>max5) continue;
-	    if ( inCTL15 ) {
-	      if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
-	      coeff5 = 0;
-	    }
+	    // if ( inCTL15 ) {
+	    //   if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
+	    //   coeff5 = 0;
+	    // }
 
 	    penTerm->setCoefficient(4,coeff4);
 	    penTerm->setCoefficient(5,coeff5);
