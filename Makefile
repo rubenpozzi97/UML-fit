@@ -14,6 +14,7 @@ EXECUTABLE2 := simfit_recoMC_fullAngular
 EXECUTABLE3 := simfit_genMC
 EXECUTABLE4 := simfit_genMC_multiFit
 EXECUTABLE5 := plotMultiResults
+EXECUTABLE6 := simfit_recoMC_fullAngular_parSub
 
 EXTRACLASS := RooDataHist.cxx
 CLASS0     := PdfRT
@@ -59,6 +60,9 @@ $(EXECUTABLE4): $(EXECUTABLE4).cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 $(EXECUTABLE5): $(EXECUTABLE5).cc 
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+
+$(EXECUTABLE6): $(EXECUTABLE6).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 
