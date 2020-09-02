@@ -41,6 +41,14 @@ double maxCoeff = 1e8;
 
 double min_base = 1.05;
 
+// Variables to be used both in the main function and the fit subfunc
+double coeff1 = 0;
+double coeff4 = 0;
+double coeff5 = 0;
+bool usedPenalty = false;
+
+RooFitResult* fit (RooDataSet* combData, RooAbsPdf* simPdf, RooAbsPdf* simPdf_penalty, RooAbsReal* nll, RooAbsReal* nll_penalty, BoundCheck* boundary, Penalty* penTerm, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5);
+                         
 void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5)
 {
 
@@ -302,8 +310,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   int cnt[9];
   for (int iCnt=0; iCnt<9; ++iCnt) cnt[iCnt] = 0;
 
-  bool usedPenalty = false;
-                         
   for (uint is = firstSample; is <= lastSample; is++) {
 
     string the_cut = Form("sample==sample::data%d_subs%d", years[0], is);
@@ -316,6 +322,17 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     combData = (RooDataSet*)allcombData.reduce(Cut(the_cut.c_str()));
     if (nSample>0) cout<<"Fitting subsample "<<is+1<<" with "<<combData->numEntries()<<" entries"<<endl;
     else cout<<"Fitting full MC sample with "<<combData->numEntries()<<" entries"<<endl;
+
+    // set penalty term power parameter
+    int combEntries = combData->numEntries();
+    penTerm->setPower(power/combEntries);
+
+    double base1_corr = base1*sqrt(combEntries);
+    double base4_corr = base4*sqrt(combEntries);
+    double base5_corr = base5*sqrt(combEntries);
+    if (base1_corr<min_base) base1_corr = min_base;
+    if (base4_corr<min_base) base4_corr = min_base;
+    if (base5_corr<min_base) base5_corr = min_base;
 
 //     for(auto it = map.cbegin(); it != map.cend(); ++it)
 //       std::cout << "dataset: " << it->first << ", with n entries: " << it->second->sumEntries() << "\n";
@@ -330,134 +347,19 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     P6p->setVal(0);
     P8p->setVal(0);
 
-    // set penalty term power parameter
-    int combEntries = combData->numEntries();
-    penTerm->setPower(power/combEntries);
-
     // define variables needed for adaptive procedure
-    bool isPhysical = false;
-    double coeff1 = 0;
-    double coeff4 = 0;
-    double coeff5 = 0;
-    int totCoeff, iCoeff1, iCoeff4;
-    double base1_corr = base1*sqrt(combEntries);
-    double base4_corr = base4*sqrt(combEntries);
-    double base5_corr = base5*sqrt(combEntries);
-    if (base1_corr<min_base) base1_corr = min_base;
-    if (base4_corr<min_base) base4_corr = min_base;
-    if (base5_corr<min_base) base5_corr = min_base;
-
-    bool inCTL4  = true;
-    bool inCTL15 = true;
-
-    nll = simPdf->createNLL(*combData,
-                            RooFit::Extended(kFALSE),
-                            RooFit::NumCPU(1)
-                            );
-         
-    RooMinimizer m(*nll) ;
-    m.optimizeConst (kTRUE); // do not recalculate constant terms
-    m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
-    // m.setVerbose(kTRUE);
-    m.setPrintLevel(-1);
-    m.setPrintEvalErrors(-1);
-    //  Minuit2.setEps(1e-16) ;
-    m.setMinimizerType("Minuit2");
 
     subTime.Start(true);
 
-    m.setStrategy(0);
-  //   m.setEvalErrorWall(false);
-    m.migrad() ;
-    m.hesse() ;
-    // std::cout << std::endl;
-    // std::cout << "######################### now strategy 2 #########################"<< std::endl;
-    m.setStrategy(2);
-    m.migrad() ;
-    m.hesse() ;
-    // m.minos() ;
-    
-    RooFitResult* fitResult = m.save(("result_" + shortString + Form("subs%d",is)).c_str()) ; 
-    // fitResult->Print("v");
+    // run the fit
+    RooFitResult* fitResult = fit(combData,simPdf,simPdf_penalty,nll,nll_penalty,boundary,penTerm,fac1,fac4,fac5,base1_corr,base4_corr,base5_corr,max1,max4,max5);
 
-    RooFitResult* fitResult_penalty = 0;
-    usedPenalty = false;
-
-    if ( fitResult->status()!=0 || fitResult->covQual()!=3 || boundary->getValV() > 0 ) {
-      usedPenalty = true;
-
-      if ( !boundary->isInCTL4()  ) inCTL4  = false;
-      if ( !boundary->isInCTL15() ) inCTL15 = false;
-
-      for (totCoeff=0; fac1*pow(base1_corr,totCoeff)<=maxCoeff; ++totCoeff) {
-
-	for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
-	  coeff1 = fac1 * pow(base1_corr,iCoeff1);
-	  if (max1>0 && coeff1>max1) continue;
-	  // if ( inCTL15 ) {
-	  //   if ( iCoeff1>0 ) continue;
-	  //   coeff1 = 0;
-	  // }
-	  penTerm->setCoefficient(1,coeff1);
-
-	  // for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
-	  iCoeff4=totCoeff-iCoeff1; // new
-	  {                         // new
-
-	    coeff4 = fac4 * pow(base4_corr,iCoeff4);
-	    if (max4>0 && coeff4>max4) continue;
-	    // if ( inCTL4 ) {
-	    //   if ( iCoeff4>0 ) continue;
-	    //   coeff4 = 0;
-	    // }
-
-	    // coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
-	    coeff5 = pow(coeff1,1.5) / 316.2; // new
-
-	    if (max5>0 && coeff5>max5) continue;
-	    // if ( inCTL15 ) {
-	    //   if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
-	    //   coeff5 = 0;
-	    // }
-
-	    penTerm->setCoefficient(4,coeff4);
-	    penTerm->setCoefficient(5,coeff5);
-
-	    nll_penalty = simPdf_penalty->createNLL(*combData,
-						    RooFit::Extended(kFALSE),
-						    RooFit::NumCPU(1)
-						    );
-
-	    RooMinimizer m_penalty (*nll_penalty) ;
-	    m_penalty.optimizeConst(kTRUE);
-	    m_penalty.setOffsetting(kTRUE);
-	    // m_penalty.setVerbose(kTRUE);
-	    m_penalty.setMinimizerType("Minuit2");
-	    // m_penalty.setProfile(kTRUE);
-	    m_penalty.setPrintLevel(-1);
-	    m_penalty.setPrintEvalErrors(-1);
-	    m_penalty.setStrategy(2);
-    
-	    m_penalty.migrad() ;
-	    m_penalty.hesse() ;
-	    fitResult_penalty = m_penalty.save(Form("subRes_%s_%i",shortString.c_str(),is),Form("subRes_%s_%i",shortString.c_str(),is));
-	    
-	    // cout<<penTerm->getCoefficient(1)<<"\t"<<penTerm->getCoefficient(5)<<"\t"<<P5p->getValV()<<endl;
-	    // fitResult_penalty->Print("v");
-	    
-	    if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 ) {
-	      if ( boundary->getValV()==0 ) {
-		isPhysical = true;
-		cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-		break;
-	      } else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-	    } else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-	  }
-	  if (isPhysical) break;
-	}
-	if (isPhysical) break;
-      }
-    
+    if (usedPenalty) {
+      fitResult->SetName (Form("subRes_%s_%i",shortString.c_str(),is));
+      fitResult->SetTitle(Form("subRes_%s_%i",shortString.c_str(),is));
+    } else {
+      fitResult->SetName (("result_" + shortString + Form("subs%d",is)).c_str()) ; 
+      fitResult->SetTitle(("result_" + shortString + Form("subs%d",is)).c_str()) ; 
     }
 
     subTime.Stop();
@@ -469,7 +371,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     co5->setVal(0);
 
     if (usedPenalty) {
-      if (isPhysical) {
+      if (fitResult) {
 	co1->setVal(coeff1);
 	co4->setVal(coeff4);
 	co5->setVal(coeff5);
@@ -478,8 +380,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     double boundCheck = boundary->getValV();
     bool convCheck = false;
-    if (usedPenalty && fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3) convCheck = true;
-    if (!usedPenalty && fitResult->status()==0 && fitResult->covQual()==3) convCheck = true;
+    if (fitResult) convCheck = true;
 
     TStopwatch distTime;
     distTime.Start(true);
@@ -522,10 +423,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     // Save fit results in file
-    if (save) {
+    if (save && fitResult) {
       fout->cd();
-      if (usedPenalty) fitResult_penalty->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
-      else fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
+      fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }
   }  
 
@@ -809,5 +709,145 @@ int main(int argc, char** argv)
     simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, fac5, base1, base4, base5, max1, max4, max5);
 
   return 0;
+
+}
+
+RooFitResult* fit (RooDataSet* combData,
+		   RooAbsPdf* simPdf,
+		   RooAbsPdf* simPdf_penalty,
+		   RooAbsReal* nll,
+		   RooAbsReal* nll_penalty,
+		   BoundCheck* boundary,
+		   Penalty* penTerm,
+		   double fac1,
+		   double fac4,
+		   double fac5,
+		   double base1,
+		   double base4,
+		   double base5,
+		   double max1,
+		   double max4,
+		   double max5)
+{
+
+    coeff1 = 0;
+    coeff4 = 0;
+    coeff5 = 0;
+
+    nll = simPdf->createNLL(*combData,
+                            RooFit::Extended(kFALSE),
+                            RooFit::NumCPU(1)
+                            );
+         
+    RooMinimizer m(*nll) ;
+    m.optimizeConst (kTRUE); // do not recalculate constant terms
+    m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
+    // m.setVerbose(kTRUE);
+    m.setPrintLevel(-1);
+    m.setPrintEvalErrors(-1);
+    //  Minuit2.setEps(1e-16) ;
+    m.setMinimizerType("Minuit2");
+
+    m.setStrategy(0);
+  //   m.setEvalErrorWall(false);
+    m.migrad() ;
+    m.hesse() ;
+    // std::cout << std::endl;
+    // std::cout << "######################### now strategy 2 #########################"<< std::endl;
+    m.setStrategy(2);
+    m.migrad() ;
+    m.hesse() ;
+    // m.minos() ;
+    
+    RooFitResult* fitResult = m.save("result") ; 
+    // fitResult->Print("v");
+
+    RooFitResult* fitResult_penalty = 0;
+    usedPenalty = false;
+
+    if ( fitResult->status()==0 && fitResult->covQual()==3 && boundary->getValV() == 0 ) return fitResult;
+
+    usedPenalty = true;
+
+    bool inCTL4  = true;
+    bool inCTL15 = true;
+
+    if ( !boundary->isInCTL4()  ) inCTL4  = false;
+    if ( !boundary->isInCTL15() ) inCTL15 = false;
+
+    int totCoeff, iCoeff1, iCoeff4;
+    bool isPhysical = false;
+
+    for (totCoeff=0; fac1*pow(base1,totCoeff)<=maxCoeff; ++totCoeff) {
+
+      for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
+	coeff1 = fac1 * pow(base1,iCoeff1);
+	if (max1>0 && coeff1>max1) continue;
+	// if ( inCTL15 ) {
+	//   if ( iCoeff1>0 ) continue;
+	//   coeff1 = 0;
+	// }
+	penTerm->setCoefficient(1,coeff1);
+
+	// for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
+	iCoeff4=totCoeff-iCoeff1; // new
+	{                         // new
+
+	  coeff4 = fac4 * pow(base4,iCoeff4);
+	  if (max4>0 && coeff4>max4) continue;
+	  // if ( inCTL4 ) {
+	  //   if ( iCoeff4>0 ) continue;
+	  //   coeff4 = 0;
+	  // }
+
+	  // coeff5 = fac5 * pow(base5,totCoeff-iCoeff1-iCoeff4);
+	  coeff5 = pow(coeff1,1.5) / 316.2; // new
+
+	  if (max5>0 && coeff5>max5) continue;
+	  // if ( inCTL15 ) {
+	  //   if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
+	  //   coeff5 = 0;
+	  // }
+
+	  penTerm->setCoefficient(4,coeff4);
+	  penTerm->setCoefficient(5,coeff5);
+
+	  nll_penalty = simPdf_penalty->createNLL(*combData,
+						  RooFit::Extended(kFALSE),
+						  RooFit::NumCPU(1)
+						  );
+
+	  RooMinimizer m_penalty (*nll_penalty) ;
+	  m_penalty.optimizeConst(kTRUE);
+	  m_penalty.setOffsetting(kTRUE);
+	  // m_penalty.setVerbose(kTRUE);
+	  m_penalty.setMinimizerType("Minuit2");
+	  // m_penalty.setProfile(kTRUE);
+	  m_penalty.setPrintLevel(-1);
+	  m_penalty.setPrintEvalErrors(-1);
+	  m_penalty.setStrategy(2);
+    
+	  m_penalty.migrad() ;
+	  m_penalty.hesse() ;
+	  fitResult_penalty = m_penalty.save("result");
+	    
+	  // cout<<penTerm->getCoefficient(1)<<"\t"<<penTerm->getCoefficient(5)<<"\t"<<P5p->getValV()<<endl;
+	  // fitResult_penalty->Print("v");
+	    
+	  if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 ) {
+	    if ( boundary->getValV()==0 ) {
+	      isPhysical = true;
+	      cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	      break;
+	    } else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	  } else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	}
+	if (isPhysical) break;
+      }
+      if (isPhysical) break;
+    }
+    
+    if (isPhysical) return fitResult_penalty;
+    else return 0;
 
 }
