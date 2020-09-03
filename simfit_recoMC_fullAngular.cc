@@ -347,22 +347,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     P6p->setVal(0);
     P8p->setVal(0);
 
-    // define variables needed for adaptive procedure
-
-    subTime.Start(true);
-
     // run the fit
+    subTime.Start(true);
     RooFitResult* fitResult = fit(combData,simPdf,simPdf_penalty,nll,nll_penalty,boundary,penTerm,fac1,fac4,fac5,base1_corr,base4_corr,base5_corr,max1,max4,max5);
-
-    if (usedPenalty) {
-      fitResult->SetName (Form("subRes_%s_%i",shortString.c_str(),is));
-      fitResult->SetTitle(Form("subRes_%s_%i",shortString.c_str(),is));
-    } else {
-      fitResult->SetName (("result_" + shortString + Form("subs%d",is)).c_str()) ; 
-      fitResult->SetTitle(("result_" + shortString + Form("subs%d",is)).c_str()) ; 
-    }
-
     subTime.Stop();
+
+    // include fit time in dataset with per-toy informations
     fitTime->setVal(subTime.CpuTime());
     // fitTime->setVal(subTime.RealTime());
 
@@ -370,18 +360,28 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     co4->setVal(0);
     co5->setVal(0);
 
-    if (usedPenalty) {
-      if (fitResult) {
+    bool convCheck = false;
+    bool boundCheck = boundary->getValV() == 0;
+
+    if (fitResult) {
+      
+      convCheck = true;
+
+      fitResult->SetName (Form("result_%s_subs%i",shortString.c_str(),is));
+      fitResult->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
+      fitResult->Print("v");
+
+      if (usedPenalty) {
+	// include coefficient values in dataset with per-toy informations
 	co1->setVal(coeff1);
 	co4->setVal(coeff4);
 	co5->setVal(coeff5);
       }
+
     }
 
-    double boundCheck = boundary->getValV();
-    bool convCheck = false;
-    if (fitResult) convCheck = true;
-
+    // Compute distance from boundary, print it
+    // and save it in dataset with per-toy informations
     TStopwatch distTime;
     distTime.Start(true);
     double boundDistVal = bound_dist->getValV();
@@ -392,33 +392,35 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     if (boundDistVal>0.02 && usedPenalty)
       cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
 
+    // fill fit-status-dependent counters
     ++cnt[8];
     int iCnt = 0;
     if (!convCheck) iCnt += 4;
-    if (boundCheck>0) iCnt += 2;
+    if (!boundCheck) iCnt += 2;
     if (usedPenalty) iCnt += 1;
     ++cnt[iCnt];
 
-    if (boundCheck>0) {
+    // print fit status and time
+    if (!boundCheck) {
       if (convCheck) {
 	subNegConv->add(savePars);
-	cout<<"Converged in unphysical region"<<endl;
+	cout<<"Converged in unphysical region ("<<fitTime->getValV()<<"s)"<<endl;
       } else {
 	subNegNotc->add(savePars);
-	cout<<"Not converged (result in unphysical region)"<<endl;
+	cout<<"Not converged (result in unphysical region) ("<<fitTime->getValV()<<"s)"<<endl;
       }
     } else {
       if (convCheck) {
 	if (usedPenalty) {
 	  subPosConv->add(savePars);
-	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<endl;
+	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<" ("<<fitTime->getValV()<<"s)"<<endl;
 	} else {
 	  subNoPen->add(savePars);
-	  cout<<"Converged without penalty"<<endl;
+	  cout<<"Converged without penalty ("<<fitTime->getValV()<<"s)"<<endl;
 	}
       } else {
 	subPosNotc->add(savePars);
-	cout<<"Not converged (result in physical region)"<<endl;
+	cout<<"Not converged (result in physical region) ("<<fitTime->getValV()<<"s)"<<endl;
       }
     }
 
@@ -427,6 +429,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       fout->cd();
       fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }
+
   }  
 
   if (multiSample) {
@@ -760,7 +763,6 @@ RooFitResult* fit (RooDataSet* combData,
     // m.minos() ;
     
     RooFitResult* fitResult = m.save("result") ; 
-    // fitResult->Print("v");
 
     RooFitResult* fitResult_penalty = 0;
     usedPenalty = false;
