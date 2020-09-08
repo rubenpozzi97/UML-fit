@@ -5,6 +5,7 @@
 #include <TLegend.h>
 #include <TMath.h>
 #include <TH3D.h>
+#include <TLine.h>
 
 #include <RooRealVar.h>
 #include <RooAbsPdf.h>
@@ -47,9 +48,9 @@ double coeff4 = 0;
 double coeff5 = 0;
 bool usedPenalty = false;
 
-RooFitResult* fit (RooDataSet* combData, RooAbsPdf* simPdf, RooAbsPdf* simPdf_penalty, RooAbsReal* nll, RooAbsReal* nll_penalty, BoundCheck* boundary, Penalty* penTerm, double fac1, double fac4, double base1, double base4, double max1, double max4);
+RooFitResult* fit (RooDataSet* combData, RooAbsPdf* simPdf, RooAbsPdf* simPdf_penalty, RooAbsReal* & nll, RooAbsReal* & nll_penalty, BoundCheck* boundary, Penalty* penTerm, double fac1, double fac4, double base1, double base4, double max1, double max4);
                          
-void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
+void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -133,7 +134,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]); 
+    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]);
+    if (localFiles) filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
 
     // import data (or MC as data proxy)
     fin_data.push_back( TFile::Open( filename_data.c_str() ) );
@@ -149,8 +151,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   
 
     // import KDE efficiency histograms and partial integral histograms
-    string filename = "/eos/cms/store/user/fiorendi/p5prime/effKDE/";
-    filename = filename + Form((parity==0 ? "%i/lmnr/KDEeff_b%i_ev_%i.root" : "%i/lmnr/KDEeff_b%i_od_%i.root"),years[iy],q2Bin,years[iy]);
+    string filename = "";
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]);
+    filename = filename + Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -428,6 +431,243 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }
 
+    // run MINOS error
+    RooAbsReal* nll_MINOS = 0;
+    RooAbsReal* nll_penalty_MINOS = 0;
+
+    double precision = 0.1;
+
+    vector<double> vConfInterLow  (0);
+    vector<double> vConfInterHigh (0);
+    vector<double> vFitResult  (0);
+    vector<double> vFitErrLow  (0);
+    vector<double> vFitErrHigh (0);
+
+    TStopwatch minosTime;
+    minosTime.Start(true);
+
+    double NLL_min = nll->getValV();
+
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+
+      RooRealVar* par = (RooRealVar*)pars.at(iPar);
+      vFitResult .push_back(par->getValV());
+      vFitErrLow .push_back(par->getErrorLo());
+      vFitErrHigh.push_back(par->getErrorHi());
+
+    }
+
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+
+      RooRealVar* par = (RooRealVar*)pars.at(iPar);
+      par->setConstant();
+
+      double p_best = par->getValV();
+      cout<<par->GetName()<<" best: "<<p_best<<endl;
+
+      vector<double> vPval (0);
+      vector< vector<double> > vPars (0);
+      vector<double> vdNLL (0);
+      vPval.push_back(p_best);
+      vdNLL.push_back(0);
+      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+    	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	vPars.push_back(vector<double>(0));
+	vPars[iPar1].push_back(par1->getValV());
+      }
+
+      double p_in = p_best;
+      double p_out = par->getMin();
+      double NLL_in = NLL_min;
+      double NLL_out = 1e99;
+
+      double p_test = p_best + vFitErrLow[iPar];
+
+      do {
+
+    	par->setVal(p_test);
+
+    	RooFitResult* MINOS_fitResult = fit(combData,simPdf,simPdf_penalty,nll_MINOS,nll_penalty_MINOS,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
+
+    	if (MINOS_fitResult) {
+	  
+    	  double nll_test = nll_MINOS->getValV();
+	  cout<<p_test<<"\tdeltaNLL: "<<(nll_test-NLL_min)<<(usedPenalty?" converging penalised fit":" converging free fit")<<endl;
+
+	  vPval.push_back(p_test);
+	  vdNLL.push_back(nll_test-NLL_min);
+	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	    vPars[iPar1].push_back(par1->getValV());
+	  }
+
+    	  if ( nll_test < NLL_min+0.5 ) {
+
+	    if (nll_test>NLL_in) {
+	      p_in = p_test;
+	      NLL_in = nll_test;
+	    }
+
+    	    if (NLL_out<1e99) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) + 0.03 ) );
+    	    else p_test = p_best + ( (p_in-p_best) * sqrt( 0.55 / (NLL_in-NLL_min) ) );
+
+    	  } else {
+
+	    if (nll_test<NLL_out) {
+	      p_out = p_test;
+	      NLL_out = nll_test;
+	    }
+
+    	    if (NLL_in>NLL_min) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) - 0.03 ) );
+	    else p_test = p_best + ( (p_out-p_best) * sqrt( 0.45 / (NLL_out-NLL_min) ) );
+	    
+    	  }
+
+    	} else {
+
+	  cout<<p_test<<"\tnot converging"<<endl;
+
+	  p_test = 2.05 * ( p_in + (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) ) - 1.05 * p_test;
+
+	}
+
+      } while ( NLL_out-NLL_in > precision && fabs(p_out-p_in) > 0.001 );
+
+      double confInterLow = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) );
+      vConfInterLow.push_back(confInterLow);
+      cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
+      
+      // Look for high extreme of confidence interval
+      p_in = p_best;
+      p_out = par->getMax();
+      NLL_in = NLL_min;
+      NLL_out = 1e99;
+
+      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+    	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+    	par1->setVal(vFitResult[iPar1]);
+      }
+
+      p_test = p_best + vFitErrHigh[iPar];
+
+      do {
+
+    	par->setVal(p_test);
+
+    	RooFitResult* MINOS_fitResult = fit(combData,simPdf,simPdf_penalty,nll_MINOS,nll_penalty_MINOS,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
+
+    	if (MINOS_fitResult) {
+	  
+    	  double nll_test = nll_MINOS->getValV();
+	  cout<<p_test<<"\tdeltaNLL: "<<(nll_test-NLL_min)<<(usedPenalty?" converging penalised fit":" converging free fit")<<endl;
+
+	  vPval.push_back(p_test);
+	  vdNLL.push_back(nll_test-NLL_min);
+	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	    vPars[iPar1].push_back(par1->getValV());
+	  }
+
+    	  if ( nll_test < NLL_min+0.5 ) {
+
+	    if (nll_test>NLL_in) {
+	      p_in = p_test;
+	      NLL_in = nll_test;
+	    }
+
+    	    if (NLL_out<1e99) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) + 0.03 ) );
+    	    else p_test = p_best + ( (p_in-p_best) * sqrt( 0.55 / (NLL_in-NLL_min) ) );
+
+    	  } else {
+
+	    if (nll_test<NLL_out) {
+	      p_out = p_test;
+	      NLL_out = nll_test;
+	    }
+
+    	    if (NLL_in>NLL_min) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) - 0.03 ) );
+	    else p_test = p_best + ( (p_out-p_best) * sqrt( 0.45 / (NLL_out-NLL_min) ) );
+	    
+    	  }
+
+    	} else {
+
+	  cout<<p_test<<"\tnot converging"<<endl;
+
+	  p_test = 2.05 * ( p_in + (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) ) - 1.05 * p_test;
+
+	}
+
+      } while ( NLL_out-NLL_in > precision && fabs(p_out-p_in) > 0.001 );
+
+      double confInterHigh = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) );
+      vConfInterHigh.push_back(confInterHigh);
+      cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
+      
+      TCanvas* canNLL = new TCanvas(Form("canNLL_%s",par->GetName()),"canNLL",1000,1000);
+      TGraph* grNLL = new TGraph(vPval.size(),&vPval[0],&vdNLL[0]);
+      grNLL->SetName(Form("grNLL_%s",par->GetName()));
+      grNLL->SetTitle(Form("deltaNLL scan for %s",par->GetTitle()));
+      grNLL->GetXaxis()->SetTitle(par->GetName());
+      grNLL->GetYaxis()->SetTitle("deltaNLL");
+      grNLL->SetMarkerStyle(20);
+      grNLL->SetMarkerSize(2);
+      grNLL->SetMarkerColor(9);
+      canNLL->cd();
+      grNLL->Draw("AP");
+      
+      TLine errLow (confInterLow ,grNLL->GetYaxis()->GetXmin(),confInterLow ,grNLL->GetYaxis()->GetXmax());
+      TLine errHigh(confInterHigh,grNLL->GetYaxis()->GetXmin(),confInterHigh,grNLL->GetYaxis()->GetXmax());
+      errLow .SetLineColor(46);
+      errHigh.SetLineColor(46);
+      errLow .Draw();
+      errHigh.Draw();
+
+      canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
+
+      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	if (iPar1==iPar) continue;
+	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+
+	TCanvas* canNLL2 = new TCanvas(Form("canNLL_%s_%s",par->GetName(),par1->GetName()),"canNLL",1000,1000);
+	TGraph* grNLL2 = new TGraph(vPval.size(),&vPval[0],&vPars[iPar1][0]);
+	grNLL2->SetName(Form("grNLL_%s_%s",par->GetName(),par1->GetName()));
+	grNLL2->SetTitle(Form("Profiled %s values in the %s scan",par1->GetTitle(),par->GetTitle()));
+	grNLL2->GetXaxis()->SetTitle(par->GetName());
+	grNLL2->GetYaxis()->SetTitle(par1->GetName());
+	grNLL2->GetYaxis()->SetTitleOffset(0.5);
+	grNLL2->SetMarkerStyle(20);
+	grNLL->SetMarkerSize(1);
+	grNLL2->SetMarkerColor(9);
+	canNLL2->cd();
+	grNLL2->Draw("AP");
+	
+	TLine errLow2 (confInterLow ,grNLL2->GetYaxis()->GetXmin(),confInterLow ,grNLL2->GetYaxis()->GetXmax());
+	TLine errHigh2(confInterHigh,grNLL2->GetYaxis()->GetXmin(),confInterHigh,grNLL2->GetYaxis()->GetXmax());
+	errLow2 .SetLineColor(46);
+	errHigh2.SetLineColor(46);
+	errLow2 .Draw();
+	errHigh2.Draw();
+	
+	canNLL2->SaveAs(Form("plotSimFit_d/profilePath-%s-%s_%s_%s_s%i.pdf",par1->GetName(),par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
+
+      }
+
+      par->setConstant(false);
+
+      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+    	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+    	par1->setVal(vFitResult[iPar1]);
+      }
+    }
+
+    minosTime.Stop();
+    cout<<"MINOS errors computed in "<<minosTime.CpuTime()<<" s"<<endl;
+
+    cout<<"Error ratio [custMINOS/fit], lower and higher:"<<endl;
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+      cout<<(vConfInterLow[iPar]-vFitResult[iPar])/vFitErrLow[iPar]<<"\t"<<(vConfInterHigh[iPar]-vFitResult[iPar])/vFitErrHigh[iPar]<<endl;
+      
   }  
 
   if (multiSample) {
@@ -481,7 +721,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
     cDist->cd();
     fDist->Draw();
-    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,base1,base4,max1,max4)).c_str() );
+    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f_b-%.3f-%.3f_m-%.0f-%.0f.pdf",fac1,fac4,base1,base4,max1,max4)).c_str() );
   }
 
   if (!plot || multiSample) return;
@@ -626,13 +866,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 }
 
 
-void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
+void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
 {
   if ( parity==-1 )
     for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
   else
-    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
 }
 
 int main(int argc, char** argv)
@@ -670,20 +910,23 @@ int main(int argc, char** argv)
 
   if (nSample==0) multiSample = false;
 
+  bool localFiles = false;
+  if ( argc > 11 && atoi(argv[11]) > 0 ) localFiles = true;
+
   bool plot = true;
   bool save = true;
 
-  if ( argc > 11 && atoi(argv[11]) == 0 ) plot = false;
-  if ( argc > 12 && atoi(argv[12]) == 0 ) save = false;
+  if ( argc > 12 && atoi(argv[12]) == 0 ) plot = false;
+  if ( argc > 13 && atoi(argv[13]) == 0 ) save = false;
 
   std::vector<int> years;
-  if ( argc > 13 && atoi(argv[13]) != 0 ) years.push_back(atoi(argv[13]));
+  if ( argc > 14 && atoi(argv[14]) != 0 ) years.push_back(atoi(argv[14]));
   else {
     cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc > 14 && atoi(argv[14]) != 0 ) years.push_back(atoi(argv[14]));
   if ( argc > 15 && atoi(argv[15]) != 0 ) years.push_back(atoi(argv[15]));
+  if ( argc > 16 && atoi(argv[16]) != 0 ) years.push_back(atoi(argv[16]));
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
   if ( parity  < -1 || parity  > 1      ) return 1;
@@ -699,9 +942,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
   else
-    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
 
   return 0;
 
@@ -710,8 +953,8 @@ int main(int argc, char** argv)
 RooFitResult* fit (RooDataSet* combData,
 		   RooAbsPdf* simPdf,
 		   RooAbsPdf* simPdf_penalty,
-		   RooAbsReal* nll,
-		   RooAbsReal* nll_penalty,
+		   RooAbsReal* & nll,
+		   RooAbsReal* & nll_penalty,
 		   BoundCheck* boundary,
 		   Penalty* penTerm,
 		   double fac1,
@@ -751,9 +994,9 @@ RooFitResult* fit (RooDataSet* combData,
     m.setStrategy(2);
     m.migrad() ;
     m.hesse() ;
-    // m.minos() ;
+    m.minos() ;
     
-    RooFitResult* fitResult = m.save("result") ; 
+    RooFitResult* fitResult = m.save("result") ;
 
     RooFitResult* fitResult_penalty = 0;
     usedPenalty = false;
