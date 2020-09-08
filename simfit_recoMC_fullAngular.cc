@@ -470,11 +470,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       vector<double> vdNLL (0);
       vPval.push_back(p_best);
       vdNLL.push_back(0);
-      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-    	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	vPars.push_back(vector<double>(0));
-	vPars[iPar1].push_back(par1->getValV());
-      }
+      if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	  vPars.push_back(vector<double>(0));
+	  vPars[iPar1].push_back(par1->getValV());
+	}
 
       double p_in = p_best;
       double p_out = par->getMin();
@@ -496,10 +496,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
 	  vPval.push_back(p_test);
 	  vdNLL.push_back(nll_test-NLL_min);
-	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	    vPars[iPar1].push_back(par1->getValV());
-	  }
+	  if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	      vPars[iPar1].push_back(par1->getValV());
+	    }
 
     	  if ( nll_test < NLL_min+0.5 ) {
 
@@ -563,10 +563,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
 	  vPval.push_back(p_test);
 	  vdNLL.push_back(nll_test-NLL_min);
-	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	    vPars[iPar1].push_back(par1->getValV());
-	  }
+	  if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	      vPars[iPar1].push_back(par1->getValV());
+	    }
 
     	  if ( nll_test < NLL_min+0.5 ) {
 
@@ -625,33 +625,33 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
       canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
 
-      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	if (iPar1==iPar) continue;
-	RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+      if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  if (iPar1==iPar) continue;
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 
-	TCanvas* canNLL2 = new TCanvas(Form("canNLL_%s_%s",par->GetName(),par1->GetName()),"canNLL",1000,1000);
-	TGraph* grNLL2 = new TGraph(vPval.size(),&vPval[0],&vPars[iPar1][0]);
-	grNLL2->SetName(Form("grNLL_%s_%s",par->GetName(),par1->GetName()));
-	grNLL2->SetTitle(Form("Profiled %s values in the %s scan",par1->GetTitle(),par->GetTitle()));
-	grNLL2->GetXaxis()->SetTitle(par->GetName());
-	grNLL2->GetYaxis()->SetTitle(par1->GetName());
-	grNLL2->GetYaxis()->SetTitleOffset(0.5);
-	grNLL2->SetMarkerStyle(20);
-	grNLL->SetMarkerSize(1);
-	grNLL2->SetMarkerColor(9);
-	canNLL2->cd();
-	grNLL2->Draw("AP");
+	  TCanvas* canNLL2 = new TCanvas(Form("canNLL_%s_%s",par->GetName(),par1->GetName()),"canNLL",1000,1000);
+	  TGraph* grNLL2 = new TGraph(vPval.size(),&vPval[0],&vPars[iPar1][0]);
+	  grNLL2->SetName(Form("grNLL_%s_%s",par->GetName(),par1->GetName()));
+	  grNLL2->SetTitle(Form("Profiled %s values in the %s scan",par1->GetTitle(),par->GetTitle()));
+	  grNLL2->GetXaxis()->SetTitle(par->GetName());
+	  grNLL2->GetYaxis()->SetTitle(par1->GetName());
+	  grNLL2->GetYaxis()->SetTitleOffset(0.5);
+	  grNLL2->SetMarkerStyle(20);
+	  grNLL->SetMarkerSize(1);
+	  grNLL2->SetMarkerColor(9);
+	  canNLL2->cd();
+	  grNLL2->Draw("AP");
 	
-	TLine errLow2 (confInterLow ,grNLL2->GetYaxis()->GetXmin(),confInterLow ,grNLL2->GetYaxis()->GetXmax());
-	TLine errHigh2(confInterHigh,grNLL2->GetYaxis()->GetXmin(),confInterHigh,grNLL2->GetYaxis()->GetXmax());
-	errLow2 .SetLineColor(46);
-	errHigh2.SetLineColor(46);
-	errLow2 .Draw();
-	errHigh2.Draw();
+	  TLine errLow2 (confInterLow ,grNLL2->GetYaxis()->GetXmin(),confInterLow ,grNLL2->GetYaxis()->GetXmax());
+	  TLine errHigh2(confInterHigh,grNLL2->GetYaxis()->GetXmin(),confInterHigh,grNLL2->GetYaxis()->GetXmax());
+	  errLow2 .SetLineColor(46);
+	  errHigh2.SetLineColor(46);
+	  errLow2 .Draw();
+	  errHigh2.Draw();
 	
-	canNLL2->SaveAs(Form("plotSimFit_d/profilePath-%s-%s_%s_%s_s%i.pdf",par1->GetName(),par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
+	  canNLL2->SaveAs(Form("plotSimFit_d/profilePath-%s-%s_%s_%s_s%i.pdf",par1->GetName(),par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
 
-      }
+	}
 
       par->setConstant(false);
 
