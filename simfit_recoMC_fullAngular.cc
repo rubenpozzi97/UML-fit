@@ -6,6 +6,7 @@
 #include <TMath.h>
 #include <TH3D.h>
 #include <TLine.h>
+#include <TRandom3.h>
 
 #include <RooRealVar.h>
 #include <RooAbsPdf.h>
@@ -442,11 +443,18 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     vector<double> vFitResult  (0);
     vector<double> vFitErrLow  (0);
     vector<double> vFitErrHigh (0);
+    vector<double> vRefinedConfInterLow  (0);
+    vector<double> vRefinedConfInterHigh (0);
 
     TStopwatch minosTime;
     minosTime.Start(true);
 
     double NLL_min = nll->getValV();
+
+    TRandom3 randGen (1);
+    double refinedExtreme;
+    double refTest;
+    double probedNLL;
 
     for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
 
@@ -536,6 +544,25 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       double confInterLow = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) );
       vConfInterLow.push_back(confInterLow);
       cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
+
+      refinedExtreme = confInterLow;
+      for (int iGen=0; iGen<1e5; ++iGen) {
+	do refTest = refinedExtreme - randGen.Exp(0.1*fabs(refinedExtreme-p_best));
+	while (refTest>par->getMax() || refTest<par->getMin());
+	par->setVal(refTest);
+	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  if (iPar1==iPar) continue;
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	  double par1val = vFitResult[iPar1];
+	  do par1val = randGen.Gaus(vFitResult[iPar1],0.5*(vFitErrHigh[iPar1]+vFitErrLow[iPar1]));
+	  while (par1val>par1->getMax() || par1val<par1->getMin());
+	  par1->setVal(par1val);
+	}
+	if (boundary->getValV()>0) continue;
+	probedNLL = nll->getValV();
+	if (probedNLL<NLL_min+0.5) {refinedExtreme = refTest; cout<<refTest<<"    \t"<<probedNLL-NLL_min<<endl;}
+      }
+      vRefinedConfInterLow.push_back(refinedExtreme);
       
       // Look for high extreme of confidence interval
       p_in = p_best;
@@ -604,6 +631,25 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       vConfInterHigh.push_back(confInterHigh);
       cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
       
+      refinedExtreme = confInterHigh;
+      for (int iGen=0; iGen<1e5; ++iGen) {
+	do refTest = refinedExtreme + randGen.Exp(0.1*fabs(refinedExtreme-p_best));
+	while (refTest>par->getMax() || refTest<par->getMin());
+	par->setVal(refTest);
+	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  if (iPar1==iPar) continue;
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	  double par1val = vFitResult[iPar1];
+	  do par1val = randGen.Gaus(vFitResult[iPar1],0.5*(vFitErrHigh[iPar1]+vFitErrLow[iPar1]));
+	  while (par1val>par1->getMax() || par1val<par1->getMin());
+	  par1->setVal(par1val);
+	}
+	if (boundary->getValV()>0) continue;
+	probedNLL = nll->getValV();
+	if (probedNLL<NLL_min+0.5) {refinedExtreme = refTest; cout<<refTest<<"    \t"<<probedNLL-NLL_min<<endl;}
+      }
+      vRefinedConfInterHigh.push_back(refinedExtreme);
+      
       TCanvas* canNLL = new TCanvas(Form("canNLL_%s",par->GetName()),"canNLL",1000,1000);
       TGraph* grNLL = new TGraph(vPval.size(),&vPval[0],&vdNLL[0]);
       grNLL->SetName(Form("grNLL_%s",par->GetName()));
@@ -666,7 +712,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     cout<<"Error ratio [custMINOS/fit], lower and higher:"<<endl;
     for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-      cout<<(vConfInterLow[iPar]-vFitResult[iPar])/vFitErrLow[iPar]<<"\t"<<(vConfInterHigh[iPar]-vFitResult[iPar])/vFitErrHigh[iPar]<<endl;
+      cout<<(vConfInterLow[iPar]-vFitResult[iPar])/vFitErrLow[iPar]<<"\t"
+	  <<(vConfInterHigh[iPar]-vFitResult[iPar])/vFitErrHigh[iPar]<<endl;
       
   }  
 
