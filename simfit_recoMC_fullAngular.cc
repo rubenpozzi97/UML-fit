@@ -433,12 +433,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     // run MINOS error
-    RooAbsReal* nll_MINOS = 0;
-    RooAbsReal* nll_penalty_MINOS = 0;
-
-    // NLL difference in the fork around 0.5 to be satisfied with the result
-    double precision = 0.1;
-
     vector<double> vConfInterLow  (0);
     vector<double> vConfInterHigh (0);
     vector<double> vFitResult  (0);
@@ -456,7 +450,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     // Random generator used to refine the result
     TRandom3 randGen (1);
     double refinedExtreme;
-    double refTest;
+    // double refTest;
     double probedNLL;
 
     // get best-fit results and errors from the fit
@@ -481,112 +475,104 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
       // vectors for TGraph plots
       vector<double> vPval (0);
-      vector< vector<double> > vPars (0);
       vector<double> vdNLL (0);
       vPval.push_back(p_best);
       vdNLL.push_back(0);
-      if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	  vPars.push_back(vector<double>(0));
-	  vPars[iPar1].push_back(par1->getValV());
-	}
 
       double confInterHigh, confInterLow;
 
       // firstly low, then high error
       for (int isErrHigh=0; isErrHigh<2; ++isErrHigh) {
 
-	// initial values of the NLL fork are the extremes
-	// to be narrowed down during the process
-	double NLL_in = NLL_min;
-	double NLL_out = 1e99;
-	double p_in = p_best;
-	double p_out = par->getMin();
-	double p_test = p_best + vFitErrLow[iPar];
+	vector<double> vLastHit(0);
+	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1)
+	  vLastHit.push_back(vFitResult[iPar1]);
+
+	TH1D* parRandomPool = 0;
+	int nHistBins = 0;
 	if (isErrHigh>0) {
-	  p_out = par->getMax();
-	  p_test = p_best + vFitErrHigh[iPar];
+	  nHistBins = (int)((par->getMax()-p_best)/0.0005);
+	  // nHistBins = (int)((par->getMax()-p_best+0.0005)/0.001);
+	  if (nHistBins<1) nHistBins=1;
+	  parRandomPool = new TH1D(Form("hRandPoolH%i",iPar),
+				   Form("hRandPoolH%i",iPar),
+				   nHistBins,par->getMax()-0.0005*nHistBins,par->getMax());
+				   // nHistBins,par->getMax()+0.0005-0.001*nHistBins,par->getMax()+0.0005);
+	} else {
+	  nHistBins = (int)((p_best-par->getMin())/0.0005);
+	  // nHistBins = (int)((p_best-par->getMin()+0.0005)/0.001);
+	  if (nHistBins<1) nHistBins=1;
+	  parRandomPool = new TH1D(Form("hRandPoolL%i",iPar),
+				   Form("hRandPoolL%i",iPar),
+				   nHistBins,par->getMin(),par->getMin()+0.0005*nHistBins);
+				   // nHistBins,par->getMin()-0.0005,par->getMin()-0.0005+0.001*nHistBins);
 	}
- 
-	// start testing new values p_test of the parameter iPar
-	// until the conditions are satisfied:
-	// |p_in-p_out| < 0.001 (which is the smaller digit we will use to report the result)
-	// OR
-	// NLL_out - NLL_in < precision (we are happy of the linear interpolation when the fork is small enough)
+	double sigma = fabs(isErrHigh>0?vFitErrHigh[iPar]:vFitErrLow[iPar]);
+	if (sigma<0.0005) sigma = 0.0005;
+	// if (sigma<0.001) sigma = 0.001;
+	for (int iBin=1; iBin<=nHistBins; ++iBin) {
+	  double x = (parRandomPool->GetBinCenter(iBin)-p_best) / sigma;
+	  parRandomPool->SetBinContent(iBin,fabs(x)*exp(-0.5*x*x));
+	}
+
+	double p_in = p_best;
+	double p_test = 0;
+
+	int iPnt=0;
+
 	do {
 
-	  // set the parameter to probe and perform the fit
+	  do p_test = parRandomPool->GetRandom();
+	  while (p_test>par->getMax() || p_test<par->getMin());
 	  par->setVal(p_test);
-
-	  RooFitResult* MINOS_fitResult = fit(combData,simPdf,simPdf_penalty,nll_MINOS,nll_penalty_MINOS,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
-
-	  if (MINOS_fitResult) {
-	  
-	    // get and print profiled value of the likelihood
-	    double nll_test = nll_MINOS->getValV();
-	    cout<<p_test<<"   \tdeltaNLL: "<<(nll_test-NLL_min)<<(usedPenalty?" converging penalised fit":" converging free fit")<<endl;
-
-	    // fill the plotting vectors
-	    vPval.push_back(p_test);
-	    vdNLL.push_back(nll_test-NLL_min);
-	    if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-		RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-		vPars[iPar1].push_back(par1->getValV());
-	      }
-
-	    if ( nll_test < NLL_min+0.5 ) {
-	      // if we are inside 1 sigma (deltaNLL<0.5)
-
-	      // if the new result is narrowing the fork use it as new inner extreme
-	      if (nll_test>NLL_in) {
-		p_in = p_test;
-		NLL_in = nll_test;
-	      }
-
-	      // set the following parameter's value to probe:
-	      // - if both extremes of the for are defined use linear interpolation to get close to 0.5 + 3% toward the outside, to possibly define a new powerful outer extreme of the fork
-	      // - if the outer extreme is not defined yet, use parabolic extrapolation to get close to 0.5 + 0.05, to possibly define a new powerful outer extreme of the fork
-	      if (NLL_out<1e99) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) + 0.03 ) );
-	      else p_test = p_best + ( (p_in-p_best) * sqrt( 0.55 / (NLL_in-NLL_min) ) );
-
-	    } else {
-	      // if we are outside 1 sigma
-
-	      // if the new result is narrowing the fork use it as new outer extreme
-	      if (nll_test<NLL_out) {
-		p_out = p_test;
-		NLL_out = nll_test;
-	      }
-
-	      // set the following parameter's value to probe:
-	      // - if both extremes of the for are defined use linear interpolation to get close to 0.5 + 3% toward the inside, to possibly define a new powerful inner extreme of the fork
-	      // - if the inner extreme is not defined yet, use parabolic extrapolation to get close to 0.5 - 0.05, to possibly define a new powerful inner extreme of the fork
-	      if (NLL_in>NLL_min) p_test = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) - 0.03 ) );
-	      else p_test = p_best + ( (p_out-p_best) * sqrt( 0.45 / (NLL_out-NLL_min) ) );
-	    
+	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	    if (iPar1==iPar) continue;
+	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	    double par1val = 0;
+	    do par1val = randGen.Gaus(vLastHit[iPar1],0.05*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]));
+	    while (par1val>par1->getMax() || par1val<par1->getMin());
+	    par1->setVal(par1val);
+	  }
+	  // check if the point is physical
+	  if (boundary->getValV()>0) continue;
+	  // get and test the local likelihood
+	  probedNLL = nll->getValV();
+	  if (probedNLL<=NLL_min+0.5) {
+	    p_in = p_test;
+	    for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	      vLastHit[iPar1] = par1->getValV();
 	    }
-
+	    cout<<p_test<<"    \t"<<probedNLL-NLL_min<<endl;
+	    if (isErrHigh>0)
+	      for (int iBin=1; iBin<=parRandomPool->FindBin(p_test); ++iBin)
+		parRandomPool->SetBinContent(iBin,0);
+	    else 
+	      for (int iBin=parRandomPool->FindBin(p_test); iBin<=nHistBins; ++iBin)
+		parRandomPool->SetBinContent(iBin,0);
 	  } else {
-	    // if the MINOS fit did not converge try to probe a new parameter's value inside the fork
-	    // (here refplected on the opposite side of the fork + 0.05 to avoid that after two failed fits the same values are probed)
-
-	    cout<<p_test<<"\tnot converging"<<endl;
-
-	    p_test = 2.05 * ( p_in + (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) ) - 1.05 * p_test;
-
+	    parRandomPool->Fill(p_test,0.02/(probedNLL-NLL_min-0.5));
+	  }
+	  
+	  // fill the plotting vectors
+	  if (probedNLL-NLL_min<4.5) {
+	    vPval.push_back(p_test);
+	    vdNLL.push_back(probedNLL-NLL_min);
 	  }
 
+	  ++iPnt;
+	  if (iPnt%1000==0) cout<<"---"<<iPnt<<"---"<<endl;
 	  // apply conditions
-	} while ( NLL_out-NLL_in > precision && fabs(p_out-p_in) > 0.001 );
+	} while ( iPnt < 1e4 );
 
 	// use linear interpolation to get the parameter's value at deltaNLL=0.5
 	if (isErrHigh>0) {
-	  confInterHigh = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) );
+	  confInterHigh = p_in;
 	  vConfInterHigh.push_back(confInterHigh);
 	  cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
 	  refinedExtreme = confInterHigh;
 	} else {
-	  confInterLow = p_in + ( (p_out-p_in) * ( (NLL_min-NLL_in+0.5) / (NLL_out-NLL_in) ) );
+	  confInterLow = p_in;
 	  vConfInterLow.push_back(confInterLow);
 	  cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
 	  refinedExtreme = confInterLow;
@@ -596,41 +582,32 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	// [better: more extreme values with deltaNLL<=0.5]
 	// the points are generated with exponentially decaying distribution for the probed parameter
 	// and uncorrelated Gaussian shape for all the other parameters
-	for (int iGen=0; iGen<1e4; ++iGen) {
-	  do refTest = refinedExtreme + randGen.Exp(0.01*(refinedExtreme-p_best));
-	  while (refTest>par->getMax() || refTest<par->getMin());
-	  par->setVal(refTest);
-	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	    if (iPar1==iPar) continue;
-	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	    double par1val = vFitResult[iPar1];
-	    do par1val = randGen.Gaus(vFitResult[iPar1],0.5*(vFitErrHigh[iPar1]+vFitErrLow[iPar1]));
-	    while (par1val>par1->getMax() || par1val<par1->getMin());
-	    par1->setVal(par1val);
-	  }
-	  // check if the point is physical
-	  if (boundary->getValV()>0) continue;
-	  // get and test the local likelihood
-	  probedNLL = nll->getValV();
-	  if (probedNLL<NLL_min+0.5) {
-	    refinedExtreme = refTest;
-	    cout<<refTest<<"    \t"<<probedNLL-NLL_min<<endl;
-	  }
-	}
+	// for (int iGen=0; iGen<1e4; ++iGen) {
+	//   do refTest = refinedExtreme + randGen.Exp(0.01*(refinedExtreme-p_best));
+	//   while (refTest>par->getMax() || refTest<par->getMin());
+	//   par->setVal(refTest);
+	//   for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	//     if (iPar1==iPar) continue;
+	//     RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	//     double par1val = vFitResult[iPar1];
+	//     do par1val = randGen.Gaus(vFitResult[iPar1],0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]));
+	//     while (par1val>par1->getMax() || par1val<par1->getMin());
+	//     par1->setVal(par1val);
+	//   }
+	//   // check if the point is physical
+	//   if (boundary->getValV()>0) continue;
+	//   // get and test the local likelihood
+	//   probedNLL = nll->getValV();
+	//   if (probedNLL<NLL_min+0.5) {
+	//     refinedExtreme = refTest;
+	//     cout<<refTest<<"    \t"<<probedNLL-NLL_min<<endl;
+	//   }
+	// }
 
 	if (isErrHigh>0) vRefinedConfInterHigh.push_back(refinedExtreme);
 	else vRefinedConfInterLow.push_back(refinedExtreme);
 
-	// reset the parameters to the initial values for a new error estimation
-	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	  par1->setVal(vFitResult[iPar1]);
-	}
-
       }
-
-      // remove contraint on the parameter iPar to have it free to float when probing other parameters
-      par->setConstant(false);
 
       // produce deltaNLL vs parameter graph, with the probed points
       TCanvas* canNLL = new TCanvas(Form("canNLL_%s",par->GetName()),"canNLL",1000,1000);
@@ -639,8 +616,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       grNLL->SetTitle(Form("deltaNLL scan for %s",par->GetTitle()));
       grNLL->GetXaxis()->SetTitle(par->GetName());
       grNLL->GetYaxis()->SetTitle("deltaNLL");
-      grNLL->SetMarkerStyle(20);
-      grNLL->SetMarkerSize(2);
+      grNLL->SetMarkerStyle(7);
+      // grNLL->SetMarkerStyle(20);
+      // grNLL->SetMarkerSize(2);
       grNLL->SetMarkerColor(9);
       canNLL->cd();
       grNLL->Draw("AP");
@@ -652,48 +630,17 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       errLow .Draw();
       errHigh.Draw();
 
-      canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
-
-      // Produce (other profiled parameter) vs (probed parameter) graph, to check for correlations
-      if (!localFiles) for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	  if (iPar1==iPar) continue;
-	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-
-	  TCanvas* canNLL2 = new TCanvas(Form("canNLL_%s_%s",par->GetName(),par1->GetName()),"canNLL",1000,1000);
-	  TGraph* grNLL2 = new TGraph(vPval.size(),&vPval[0],&vPars[iPar1][0]);
-	  grNLL2->SetName(Form("grNLL_%s_%s",par->GetName(),par1->GetName()));
-	  grNLL2->SetTitle(Form("Profiled %s values in the %s scan",par1->GetTitle(),par->GetTitle()));
-	  grNLL2->GetXaxis()->SetTitle(par->GetName());
-	  grNLL2->GetYaxis()->SetTitle(par1->GetName());
-	  grNLL2->GetYaxis()->SetTitleOffset(0.5);
-	  grNLL2->SetMarkerStyle(20);
-	  grNLL->SetMarkerSize(1);
-	  grNLL2->SetMarkerColor(9);
-	  canNLL2->cd();
-	  grNLL2->Draw("AP");
-	
-	  TLine errLow2 (confInterLow ,grNLL2->GetYaxis()->GetXmin(),confInterLow ,grNLL2->GetYaxis()->GetXmax());
-	  TLine errHigh2(confInterHigh,grNLL2->GetYaxis()->GetXmin(),confInterHigh,grNLL2->GetYaxis()->GetXmax());
-	  errLow2 .SetLineColor(46);
-	  errHigh2.SetLineColor(46);
-	  errLow2 .Draw();
-	  errHigh2.Draw();
-	
-	  canNLL2->SaveAs(Form("plotSimFit_d/profilePath-%s-%s_%s_%s_s%i.pdf",par1->GetName(),par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
-
-	}
+      canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_randLik_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
 
     }
 
     minosTime.Stop();
     cout<<"MINOS errors computed in "<<minosTime.CpuTime()<<" s"<<endl;
 
-    cout<<"Error ratio [custMINOS/fit], lower and higher:"<<endl;
+    cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
     for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-      cout<<(vConfInterLow[iPar]-vFitResult[iPar])/vFitErrLow[iPar]<<"   \t"
-	  <<(vConfInterHigh[iPar]-vFitResult[iPar])/vFitErrHigh[iPar]<<"   \t"
-	  <<vRefinedConfInterLow[iPar]-vConfInterLow[iPar]<<"   \t"
-	  <<vRefinedConfInterHigh[iPar]-vConfInterHigh[iPar]<<endl;
+      cout<<vConfInterLow[iPar]-vFitResult[iPar]-vFitErrLow[iPar]<<"   \t"
+	  <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
       
   }  
 
