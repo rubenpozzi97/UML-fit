@@ -10,8 +10,8 @@ nsamp       = ( \$(ProcId) / 6 ) + 1
 bin         = \$(ProcId) % 6
 Arguments   = \$INT(nsamp) \$INT(bin)
 Log         = logs_parSub/sub_\$(ClusterId).log
-Output      = logs_parSub/simfit_recoMC_fullAngular_randLik_\$INT(nsamp)_\$INT(bin).out
-Error       = logs_parSub/simfit_recoMC_fullAngular_randLik_\$INT(nsamp)_\$INT(bin).err
+Output      = logs_parSub/simfit_recoMC_fullAngular_randLikelihood_\$INT(nsamp)_\$INT(bin).out
+Error       = logs_parSub/simfit_recoMC_fullAngular_randLikelihood_\$INT(nsamp)_\$INT(bin).err
 +JobFlavour = "testmatch"
 EOF
 
