@@ -441,6 +441,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     vector<double> vRefinedConfInterLow  (0);
     vector<double> vRefinedConfInterHigh (0);
 
+    RooAbsReal* nll_MINOS = 0;
+    RooAbsReal* nll_penalty_MINOS = 0;
+
     TStopwatch minosTime;
     minosTime.Start(true);
 
@@ -467,7 +470,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
 
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
-      par->setConstant(); 	// fixed parameter in MINOS fits
 
       // get and print the best-fit result
       double p_best = vFitResult[iPar];
@@ -476,6 +478,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       // vectors for TGraph plots
       vector<double> vPval (0);
       vector<double> vdNLL (0);
+      vector<double> validPars (0);
+      vector<double> validNLL (0);
       vPval.push_back(p_best);
       vdNLL.push_back(0);
 
@@ -570,42 +574,59 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	  confInterHigh = p_in;
 	  vConfInterHigh.push_back(confInterHigh);
 	  cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
-	  refinedExtreme = confInterHigh;
 	} else {
 	  confInterLow = p_in;
 	  vConfInterLow.push_back(confInterLow);
 	  cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
-	  refinedExtreme = confInterLow;
 	}
 
-	// Pruduce a bunch of random points to find better extreme for the confidence interval
-	// [better: more extreme values with deltaNLL<=0.5]
-	// the points are generated with exponentially decaying distribution for the probed parameter
-	// and uncorrelated Gaussian shape for all the other parameters
-	// for (int iGen=0; iGen<1e4; ++iGen) {
-	//   do refTest = refinedExtreme + randGen.Exp(0.01*(refinedExtreme-p_best));
-	//   while (refTest>par->getMax() || refTest<par->getMin());
-	//   par->setVal(refTest);
-	//   for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	//     if (iPar1==iPar) continue;
-	//     RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	//     double par1val = vFitResult[iPar1];
-	//     do par1val = randGen.Gaus(vFitResult[iPar1],0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]));
-	//     while (par1val>par1->getMax() || par1val<par1->getMin());
-	//     par1->setVal(par1val);
-	//   }
-	//   // check if the point is physical
-	//   if (boundary->getValV()>0) continue;
-	//   // get and test the local likelihood
-	//   probedNLL = nll->getValV();
-	//   if (probedNLL<NLL_min+0.5) {
-	//     refinedExtreme = refTest;
-	//     cout<<refTest<<"    \t"<<probedNLL-NLL_min<<endl;
-	//   }
-	// }
+	// Validate by running two fits on a fork around the estimated extreme
+	double val_test = p_in;
+	double val1 = 0;
+	double val2 = 0;
+	double val1_dNLL = 0;
+	double val2_dNLL = 0;
+	RooFitResult* MINOS_fitResult;
+	par->setConstant(); 	// fixed parameter in MINOS fits
+	// reset the parameters to the initial values for a new error estimation
+	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	  par1->setVal(vFitResult[iPar1]);
+	}
+	do {
+	  val_test -= 0.001;
+	  par->setVal(val_test);
+	  MINOS_fitResult = fit(combData,simPdf,simPdf_penalty,nll_MINOS,nll_penalty_MINOS,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
+	} while (!MINOS_fitResult);
+	val1_dNLL = nll_MINOS->getValV();
+	val1 = val_test;
+	validPars.push_back(val1);
+	validNLL.push_back(val1_dNLL-NLL_min);
 
+	val_test = p_in;
+	// reset the parameters to the initial values for a new error estimation
+	for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+	  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+	  par1->setVal(vFitResult[iPar1]);
+	}
+	do {
+	  val_test += 0.001;
+	  par->setVal(val_test);
+	  MINOS_fitResult = fit(combData,simPdf,simPdf_penalty,nll_MINOS,nll_penalty_MINOS,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
+	} while (!MINOS_fitResult);
+	val2_dNLL = nll_MINOS->getValV();
+	val2 = val_test;
+	validPars.push_back(val2);
+	validNLL.push_back(val2_dNLL-NLL_min);
+
+	cout<<"Fits: "<<endl
+	    <<val1<<"   \t"<<val1_dNLL-NLL_min<<endl
+	    <<val2<<"   \t"<<val2_dNLL-NLL_min<<endl;
+	refinedExtreme = val1 + ( (val2-val1) * ( (NLL_min-val1_dNLL+0.5) / (val2_dNLL-val1_dNLL) ) );
 	if (isErrHigh>0) vRefinedConfInterHigh.push_back(refinedExtreme);
 	else vRefinedConfInterLow.push_back(refinedExtreme);
+
+	par->setConstant(false);
 
       }
 
@@ -622,13 +643,23 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       grNLL->SetMarkerColor(9);
       canNLL->cd();
       grNLL->Draw("AP");
+
+      TGraph* grVal = new TGraph(validPars.size(),&validPars[0],&validNLL[0]);
+      grVal->SetMarkerStyle(3);
+      grNLL->SetMarkerSize(10);
+      grVal->SetMarkerColor(8);
+      grVal->Draw("P");
       
       TLine errLow (confInterLow ,grNLL->GetYaxis()->GetXmin(),confInterLow ,grNLL->GetYaxis()->GetXmax());
       TLine errHigh(confInterHigh,grNLL->GetYaxis()->GetXmin(),confInterHigh,grNLL->GetYaxis()->GetXmax());
+      TLine DeltaNLL0p5 (grNLL->GetXaxis()->GetXmin(),0.5,grNLL->GetXaxis()->GetXmax(),0.5);
       errLow .SetLineColor(46);
       errHigh.SetLineColor(46);
+      DeltaNLL0p5.SetLineColor(13);
+      DeltaNLL0p5.SetLineStyle(9);
       errLow .Draw();
       errHigh.Draw();
+      DeltaNLL0p5.Draw();
 
       canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_randLik_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
 
