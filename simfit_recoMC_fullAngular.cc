@@ -43,6 +43,10 @@ double maxCoeff = 1e8;
 
 double min_base = 1.05;
 
+// lower threshold to parameters' uncertainties
+// to build the randomisation models (too small leads to many useless points)
+double minParError = 0.01;
+
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
 double coeff4 = 0;
@@ -512,8 +516,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 				   // nHistBins,par->getMin()-0.0005,par->getMin()-0.0005+0.001*nHistBins);
 	}
 	double sigma = fabs(isErrHigh>0?vFitErrHigh[iPar]:vFitErrLow[iPar]);
-	if (sigma<0.0005) sigma = 0.0005;
-	// if (sigma<0.001) sigma = 0.001;
+	if (sigma<minParError) sigma = minParError;
 	for (int iBin=1; iBin<=nHistBins; ++iBin) {
 	  double x = (parRandomPool->GetBinCenter(iBin)-p_best) / sigma;
 	  parRandomPool->SetBinContent(iBin,fabs(x)*exp(-0.5*x*x));
@@ -533,7 +536,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	    if (iPar1==iPar) continue;
 	    RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 	    double par1val = 0;
-	    do par1val = randGen.Gaus(vLastHit[iPar1],0.05*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]));
+	    do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
 	    while (par1val>par1->getMax() || par1val<par1->getMin());
 	    par1->setVal(par1val);
 	  }
