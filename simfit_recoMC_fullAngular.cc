@@ -563,13 +563,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	  // apply conditions
 	} while ( iPnt < 1e4 );
 
-	// use linear interpolation to get the parameter's value at deltaNLL=0.5
+	int extremeBin = parRandomPool->FindBin(p_in);
 	if (isErrHigh>0) {
-	  confInterHigh = p_in;
+	  confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
+	  if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
 	  vConfInterHigh.push_back(confInterHigh);
 	  cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
 	} else {
-	  confInterLow = p_in;
+	  confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
+	  if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
 	  vConfInterLow.push_back(confInterLow);
 	  cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
 	}
@@ -610,7 +612,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
     for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-      cout<<vConfInterLow[iPar]-vFitResult[iPar]-vFitErrLow[iPar]<<"   \t"
+      cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
 	  <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
       
   }  
