@@ -6,7 +6,7 @@ multi=0
 nsam=${1}
 
 plot=0
-save=0
+save=1
 
 f1=100
 f4=10

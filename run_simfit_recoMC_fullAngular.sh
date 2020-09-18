@@ -6,7 +6,7 @@ multi=0
 nsam=${1}
 
 plot=0
-save=0
+save=1
 
 f1=100
 f4=10
@@ -86,6 +86,8 @@ echo ./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m
 ./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
 
 cp plotSimFit_d/* $HOME/plotSimFit_d/
+
+for file in simFitResults/* ; do cp $file $HOME/${file//.root/_${multi}s${nsam}.root}; done
 
 rm -rf plotSimFit_d
 rm -rf simFitResults

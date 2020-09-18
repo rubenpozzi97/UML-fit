@@ -311,6 +311,31 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooDataSet* subNegConv = new RooDataSet("subNegConv","subNegConv",savePars);
   RooDataSet* subNegNotc = new RooDataSet("subNegNotc","subNegNotc",savePars);
 
+  // TTree with the MINOS output
+  vector<double> vConfInterLow  (pars.getSize());
+  vector<double> vConfInterHigh (pars.getSize());
+  vector<double> vFitResult  (pars.getSize());
+  vector<double> vFitErrLow  (pars.getSize());
+  vector<double> vFitErrHigh (pars.getSize());
+  fout->cd();
+  TTree* MINOS_output = (TTree*)fout->Get("MINOS_output");
+  if (!MINOS_output || MINOS_output->IsZombie()) {
+    MINOS_output = new TTree("MINOS_output","MINOS_output");
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+      RooRealVar* par = (RooRealVar*)pars.at(iPar);
+      MINOS_output->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
+      MINOS_output->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
+      MINOS_output->Branch(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+    }
+  } else {
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+      RooRealVar* par = (RooRealVar*)pars.at(iPar);
+      MINOS_output->SetBranchAddress(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
+      MINOS_output->SetBranchAddress(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
+      MINOS_output->SetBranchAddress(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+    }
+  }
+
   // Timer for fitting time
   TStopwatch subTime;
 
@@ -437,11 +462,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     // run MINOS error
-    vector<double> vConfInterLow  (0);
-    vector<double> vConfInterHigh (0);
-    vector<double> vFitResult  (0);
-    vector<double> vFitErrLow  (0);
-    vector<double> vFitErrHigh (0);
 
     TStopwatch minosTime;
     minosTime.Start(true);
@@ -457,9 +477,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
 
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
-      vFitResult .push_back(par->getValV());
-      vFitErrLow .push_back(par->getErrorLo());
-      vFitErrHigh.push_back(par->getErrorHi());
+      vFitResult [iPar] = par->getValV();
+      vFitErrLow [iPar] = par->getErrorLo();
+      vFitErrHigh[iPar] = par->getErrorHi();
 
     }
 
@@ -567,12 +587,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	if (isErrHigh>0) {
 	  confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
 	  if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
-	  vConfInterHigh.push_back(confInterHigh);
+	  vConfInterHigh[iPar] = confInterHigh;
 	  cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
 	} else {
 	  confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
 	  if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
-	  vConfInterLow.push_back(confInterLow);
+	  vConfInterLow[iPar] = confInterLow;
 	  cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
 	}
 
@@ -614,6 +634,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     for (int iPar = 0; iPar < pars.getSize(); ++iPar)
       cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
 	  <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
+
+    MINOS_output->Fill();
       
   }  
 
@@ -656,7 +678,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     fout->cd();
-    wksp->Write();
+    // wksp->Write();
+    MINOS_output->Write();
+
   }
 
   fout->Close();
