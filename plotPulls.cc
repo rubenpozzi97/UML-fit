@@ -69,10 +69,20 @@ void plotPulls (int q2Bin, int parity=1)
   TCanvas cPulls("cPulls",Form("Pull distributions for q2 bin %i",q2Bin),2000,1000);
   cPulls.Divide(4,2);
 
+  int covLow  = vPull[0].FindBin(-0.999);
+  int covHigh = vPull[0].FindBin( 0.999);
+  cout<<"Coverage values:"<<endl;
+
   for (int iPar=0; iPar<nPars; ++iPar) {
 
     cPulls.cd(iPar+1);
     vPull[iPar].Draw();
+
+    double inside = vPull[iPar].Integral(covLow,covHigh);
+    double all = vPull[iPar].Integral();
+    double cover = inside / all;
+    double coverErr = sqrt( inside * (all-inside) / all / all / all );
+    printf("%s:\t%.1f +/- %.1f %%\n",parName[iPar].c_str(),100*cover,100*coverErr);
 
   }
 
