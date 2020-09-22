@@ -17,7 +17,7 @@ string parName [nPars] = {"Fl","P1","P2","P3","P4p","P5p","P6p","P8p"};
 void plotPulls (int q2Bin, int parity=1)
 {
   string shortString = Form("b%ip%i",q2Bin,parity);
-  /*
+
   string fResultName = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_MCStat_b%i.root", q2Bin);
   auto fResult = TFile::Open(fResultName.c_str());
   if (!fResult || fResult->IsZombie()) {
@@ -30,7 +30,7 @@ void plotPulls (int q2Bin, int parity=1)
     cout<<"Fit result "<<fitResName<<" not found in file "<<fResultName<<endl;
     return;
   }
-  */
+
   TChain MINOS_output("MINOS_output","");
   // string filename = Form("simFitResults/simFitResults_2_6/simFitResult_recoMC_fullAngular201620172018_dataStat_b%i.root",q2Bin);
   string filename = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_dataStat_b%i_*.root",q2Bin);
@@ -53,8 +53,7 @@ void plotPulls (int q2Bin, int parity=1)
 		       Form("%s pull distribution - q2 bin %i",parName[iPar].c_str(),q2Bin),
 		       24,-4.0,4.0);
 
-    // vRef[iPar] = ((RooRealVar*)fitRes->floatParsFinal().find(parName[iPar].c_str()))->getValV();
-    vRef[iPar] = 0;
+    vRef[iPar] = ((RooRealVar*)fitRes->floatParsFinal().find(parName[iPar].c_str()))->getValV();
 
   }
 
