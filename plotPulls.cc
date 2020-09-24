@@ -5,40 +5,54 @@
 #include <TH1D.h>
 #include <TLine.h>
 
-#include <RooRealVar.h>
-#include <RooFitResult.h>
-
 using namespace std;
-using namespace RooFit;
 
 static const int nPars = 8;
 string parName [nPars] = {"Fl","P1","P2","P3","P4p","P5p","P6p","P8p"};
 
 void plotPulls (int q2Bin, int parity=1)
 {
-  string shortString = Form("b%ip%i",q2Bin,parity);
 
-  string fResultName = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_MCStat_b%i.root", q2Bin);
-  auto fResult = TFile::Open(fResultName.c_str());
-  if (!fResult || fResult->IsZombie()) {
-    cout<<"File not found: "<<fResultName<<endl;
+  vector<double> vRef (nPars);
+  fstream fs ("../confSF/toy_coord.list", fstream::in);
+  vector<string> splitLine;
+  string fullLine = "";
+  getline(fs,fullLine);
+  while (!fullLine.empty()) {
+    stringstream ss(fullLine);
+    istream_iterator<string> begin(ss);
+    istream_iterator<string> end;
+    vector<string> vstrings(begin, end);
+    if (vstrings.size()>0 && vstrings[0]==Form("%i",q2Bin)) {
+      splitLine = vstrings;
+      break;
+    }
+    getline(fs,fullLine);
+  }
+  if (splitLine.empty()) {
+    cout<<"q2 bin "<<q2Bin<<" not found in cofig file"<<endl;
     return;
   }
-  string fitResName = "simFitResult_"+shortString+"subs0";
-  auto fitRes = (RooFitResult*)fResult->Get(fitResName.c_str());
-  if (!fitRes || fitRes->IsZombie()) {
-    cout<<"Fit result "<<fitResName<<" not found in file "<<fResultName<<endl;
+  if (splitLine.size()!=1+nPars) {
+    cout<<"Number of parameters not correct: "<<nPars<<" expected, "<<splitLine.size()-1<<" read"<<endl;
     return;
+  }
+  for (int iPar=0; iPar<nPars; ++iPar) {
+    vRef[iPar] = atof(splitLine[iPar+1].c_str());
+    // cout<<parName[iPar]<<":\t"<<vRef[iPar]<<endl;
   }
 
   TChain MINOS_output("MINOS_output","");
   // string filename = Form("simFitResults/simFitResults_2_6/simFitResult_recoMC_fullAngular201620172018_dataStat_b%i.root",q2Bin);
-  string filename = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_dataStat_b%i_*.root",q2Bin);
+  // string filename = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_dataStat_b%i_*.root",q2Bin);
+  string confString = Form("b%i_",q2Bin);
+  for (int iPar=0; iPar<nPars; ++iPar)
+    confString = confString + Form((iPar>0?"-%.3f":"%.3f"),vRef[iPar]);
+  string filename = "toyFitResults/simFitResult_toy_fullAngular_201620172018_"+confString+"_s*.root";
   MINOS_output.Add(filename.c_str());
 
   cout<<MINOS_output.GetEntries()<<endl;
 
-  vector<double> vRef (nPars);
   vector<double> vBest(nPars);
   vector<double> vHigh(nPars);
   vector<double> vLow (nPars);
@@ -52,8 +66,6 @@ void plotPulls (int q2Bin, int parity=1)
     vPull[iPar] = TH1D(Form("hPull%s",parName[iPar].c_str()),
 		       Form("%s pull distribution - q2 bin %i",parName[iPar].c_str(),q2Bin),
 		       24,-4.0,4.0);
-
-    vRef[iPar] = ((RooRealVar*)fitRes->floatParsFinal().find(parName[iPar].c_str()))->getValV();
 
   }
 
@@ -86,6 +98,6 @@ void plotPulls (int q2Bin, int parity=1)
 
   }
 
-  cPulls.SaveAs(Form("plotSimFit_d/pullDistr_%s.pdf",shortString.c_str()));
+  cPulls.SaveAs(Form("plotSimFit_d/pullDistr_%s.pdf",confString.c_str()));
 
 }
