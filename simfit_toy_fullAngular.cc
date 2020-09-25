@@ -268,7 +268,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
   }
 
-  string fout_name = "toyFitResults/simFitResult_toy_fullAngular_" + all_years + Form("_b%i_",q2Bin);
+  string fout_name = "toyFitResults/simFitResult_toy2_fullAngular_" + all_years + Form("_b%i_",q2Bin);
   for (int iPar=0; iPar<pars.getSize(); ++iPar)
     fout_name = fout_name + Form((iPar>0?"-%.3f":"%.3f"),genPars[iPar]);
   fout_name = fout_name + Form("_s%i.root",seed);
@@ -402,6 +402,39 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       // and save it in dataset with per-toy informations
       double boundDistVal = bound_dist->getValV();
       boundDist->setVal(boundDistVal);
+
+      // Improve global fit result
+      if (usedPenalty) {
+	vector<double> vTestPar(pars.getSize());
+	vector<double> vImprovPar(pars.getSize());
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  vImprovPar[iPar] = ((RooRealVar*)pars.at(iPar))->getValV();
+	double NLL_before = nll->getValV();
+	double improvNLL = NLL_before;
+	double testNLL = 0;
+	int iImprove = 0;
+	do {
+	  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+	    RooRealVar* par = (RooRealVar*)pars.at(iPar);
+	    do vTestPar[iPar] = randGen.Gaus(vImprovPar[iPar],TMath::Max(boundDistVal,0.002));
+	    while (vTestPar[iPar]>par->getMax() || vTestPar[iPar]<par->getMin());
+	    par->setVal(vTestPar[iPar]);
+	  }
+	  if (boundary->getValV()>0) continue;
+	  testNLL = nll->getValV();
+	  if (improvNLL>testNLL) {
+	    improvNLL = testNLL;
+	    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	      vImprovPar[iPar] = vTestPar[iPar];
+	  }
+	  ++iImprove;
+	} while (iImprove<1e4);
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  ((RooRealVar*)pars.at(iPar))->setVal(vImprovPar[iPar]);
+
+	// double improvDistVal = bound_dist->getValV();
+	// cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<boundDistVal<<" -> "<<improvDistVal<<endl;
+      }
 
       // run MINOS error
       TStopwatch minosTime;

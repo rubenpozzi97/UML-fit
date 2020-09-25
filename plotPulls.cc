@@ -48,7 +48,7 @@ void plotPulls (int q2Bin, int parity=1)
   string confString = Form("b%i_",q2Bin);
   for (int iPar=0; iPar<nPars; ++iPar)
     confString = confString + Form((iPar>0?"-%.3f":"%.3f"),vRef[iPar]);
-  string filename = "toyFitResults/simFitResult_toy_fullAngular_201620172018_"+confString+"_s*.root";
+  string filename = "toyFitResults/simFitResult_toy2_fullAngular_201620172018_"+confString+"_s*.root";
   MINOS_output.Add(filename.c_str());
 
   cout<<MINOS_output.GetEntries()<<endl;
@@ -98,6 +98,6 @@ void plotPulls (int q2Bin, int parity=1)
 
   }
 
-  cPulls.SaveAs(Form("plotSimFit_d/pullDistr_%s.pdf",confString.c_str()));
+  cPulls.SaveAs(Form("plotSimFit_d/pullDistr2_%s.pdf",confString.c_str()));
 
 }

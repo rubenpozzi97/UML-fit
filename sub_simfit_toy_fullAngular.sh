@@ -10,8 +10,8 @@ seed        = ( \$(ProcId) / 6 ) + 1
 bin         = \$(ProcId) % 6
 Arguments   = \$INT(seed) \$INT(bin)
 Log         = logs_parSub/sub_\$(ClusterId).log
-Output      = logs_parSub/simfit_toy_fullAngular_randLikelihood_\$INT(seed)_\$INT(bin).out
-Error       = logs_parSub/simfit_toy_fullAngular_randLikelihood_\$INT(seed)_\$INT(bin).err
+Output      = logs_parSub/simfit_toy2_fullAngular_randLikelihood_\$INT(seed)_\$INT(bin).out
+Error       = logs_parSub/simfit_toy2_fullAngular_randLikelihood_\$INT(seed)_\$INT(bin).err
 +JobFlavour = "testmatch"
 EOF
 
