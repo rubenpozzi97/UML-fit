@@ -18,7 +18,7 @@ EOF
 if [ "${USER}" == "fiorendi" ]; then
     echo '+AccountingGroup = "group_u_CMST3.all"'>>temp_sub_simfit_toy_fullAngular_oneBin.sub
 fi
-echo 'Queue 600'>>temp_sub_simfit_toy_fullAngular_oneBin.sub
+echo 'Queue 1200'>>temp_sub_simfit_toy_fullAngular_oneBin.sub
 
 # Compilation, submission and file removal
 if make simfit_toy_fullAngular

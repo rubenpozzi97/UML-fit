@@ -1,7 +1,7 @@
 #!/bin/bash
 
 seed=${1}
-nsam=20
+nsam=10
 
 save=1
 
