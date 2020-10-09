@@ -19,6 +19,7 @@
 #include <RooDataHist.h>
 #include <RooSimultaneous.h>
 #include <RooNumIntConfig.h>
+#include <RooAddition.h>
 
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
@@ -590,6 +591,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   penTerm_eff->setPower(power);
   RooFormulaVar* penLog = new RooFormulaVar("penLog","penLog","-1.0 * log(penTerm_eff)",RooArgList(*penTerm_eff));
 
+  RooAbsReal* nll_penalty_plot = new RooAddition("nll_penalty_plot", "nll_penalty_plot", RooArgList(*nll,*penLog));
+
   double xZoom = 200.0;
   if (nSample>0) xZoom = 2.0;
 
@@ -625,8 +628,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
       if (usedPenalty) {
 
-	nll_penalty->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty->getVal()+10),LineColor(kBlue),LineWidth(2));
-	nll_penalty->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty->getVal()+10),LineColor(kBlue),LineWidth(2));
+	nll_penalty_plot->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty_plot->getVal()+10),LineColor(kBlue),LineWidth(2));
+	nll_penalty_plot->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(nll_penalty_plot->getVal()+10),LineColor(kBlue),LineWidth(2));
 
 	penLog->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
 	penLog->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
