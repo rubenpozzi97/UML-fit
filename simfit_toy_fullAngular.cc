@@ -523,6 +523,8 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	    probedNLL = nll->getValV();
 	    if (probedNLL<=NLL_min+0.5) {
 	      p_in = p_test;
+	      if ( isErrHigh > 0 ) { if ( p_in > par->getMax()-parRandomPool->GetBinWidth(1) ) break; }
+	      else if ( p_in < par->getMin()+parRandomPool->GetBinWidth(1) ) break;
 	      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
 		RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 		vLastHit[iPar1] = par1->getValV();
