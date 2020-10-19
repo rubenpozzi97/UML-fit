@@ -48,7 +48,7 @@ void plotPulls (int q2Bin, int parity=1)
   string confString = Form("b%i_",q2Bin);
   for (int iPar=0; iPar<nPars; ++iPar)
     confString = confString + Form((iPar>0?"-%.3f":"%.3f"),vRef[iPar]);
-  string filename = "toyFitResults/simFitResult_toy2_fullAngular_201620172018_"+confString+"_s*.root";
+  string filename = Form("toyFitResults_b%i/simFitResult_toy2_fullAngular_201620172018_",q2Bin)+confString+"_s*.root";
   MINOS_output.Add(filename.c_str());
 
   cout<<MINOS_output.GetEntries()<<endl;

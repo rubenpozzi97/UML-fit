@@ -14,7 +14,15 @@ b4=50
 m1=0
 m4=0
 
-ibin=${2}
+bin=${2}
+gen1=${3}
+gen2=${4}
+gen3=${5}
+gen4=${6}
+gen5=${7}
+gen6=${8}
+gen7=${9}
+gen8=${10}
 
 export HOME=/afs/cern.ch/work/a/aboletti/private/Kstmumu-Run2/UML-custMinos
 export CMSSWDIR=/afs/cern.ch/work/a/aboletti/private/Kstmumu-Run2/CMSSW_10_4_0/src
@@ -30,30 +38,9 @@ echo setting CMSSWDIR to $CMSSWDIR
 
 cd $WORKDIR
 
-nbin=0
-while read -a line; do
-    abin[$nbin]=${line[0]}
-    agen1[$nbin]=${line[1]}
-    agen2[$nbin]=${line[2]}
-    agen3[$nbin]=${line[3]}
-    agen4[$nbin]=${line[4]}
-    agen5[$nbin]=${line[5]}
-    agen6[$nbin]=${line[6]}
-    agen7[$nbin]=${line[7]}
-    agen8[$nbin]=${line[8]}
-    nbin=$((nbin+1))
-done < $HOME/../confSF/toy_coord.list
-bin=${abin[$ibin]}
-gen1=${agen1[$ibin]}
-gen2=${agen2[$ibin]}
-gen3=${agen3[$ibin]}
-gen4=${agen4[$ibin]}
-gen5=${agen5[$ibin]}
-gen6=${agen6[$ibin]}
-gen7=${agen7[$ibin]}
-gen8=${agen8[$ibin]}
-
-echo 'now submitting for bin ' ${bin}
+if [ ! -d $HOME/toyFitResults_b${bin} ]; then
+    mkdir $HOME/toyFitResults_b${bin}
+fi
 
 if [ ! -r $SAMPLEDIR/2016/lmnr/recoMCDataset_b${bin}_2016.root ]; then
     echo $SAMPLEDIR/2016/lmnr/recoMCDataset_b${bin}_2016.root not found
@@ -94,10 +81,10 @@ cp $HOME/simfit_toy_fullAngular .
 
 mkdir toyFitResults
 
-echo 
+echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 
-cp toyFitResults/* $HOME/toyFitResults/
+cp toyFitResults/* $HOME/toyFitResults_b${bin}/
 
 rm -rf toyFitResults
 
