@@ -30,8 +30,8 @@ seed        = ${seed}
 bin         = ${bin}
 Arguments   = \$INT(seed) \$INT(bin) ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8}
 Log         = logs_parSub/sub_\$(ClusterId).log
-Output      = logs_parSub/toy_b${bin}/simfit_${gen1}_${gen2}_${gen3}_${gen4}_${gen5}_${gen6}_${gen7}_${gen8}_\$INT(seed).out
-Error       = logs_parSub/toy_b${bin}/simfit_${gen1}_${gen2}_${gen3}_${gen4}_${gen5}_${gen6}_${gen7}_${gen8}_\$INT(seed).err
+Output      = logs_parSub/toy_b${bin}/simfit3_${gen1}_${gen2}_${gen3}_${gen4}_${gen5}_${gen6}_${gen7}_${gen8}_\$INT(seed).out
+Error       = logs_parSub/toy_b${bin}/simfit3_${gen1}_${gen2}_${gen3}_${gen4}_${gen5}_${gen6}_${gen7}_${gen8}_\$INT(seed).err
 +JobFlavour = "testmatch"
 EOF
 

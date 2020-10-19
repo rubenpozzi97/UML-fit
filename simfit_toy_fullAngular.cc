@@ -45,7 +45,7 @@ double min_base = 1.05;
 
 // lower threshold to parameters' uncertainties
 // to build the randomisation models (too small leads to many useless points)
-double minParError = 0.01;
+double minParError = 0.02;
 
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
@@ -268,7 +268,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
   }
 
-  string fout_name = "toyFitResults/simFitResult_toy2_fullAngular_" + all_years + Form("_b%i_",q2Bin);
+  string fout_name = "toyFitResults/simFitResult_toy3_fullAngular_" + all_years + Form("_b%i_",q2Bin);
   for (int iPar=0; iPar<pars.getSize(); ++iPar)
     fout_name = fout_name + Form((iPar>0?"-%.3f":"%.3f"),genPars[iPar]);
   fout_name = fout_name + Form("_s%i.root",seed);
@@ -513,7 +513,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	      if (iPar1==iPar) continue;
 	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 	      double par1val = 0;
-	      do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
+	      do par1val = randGen.Gaus(vLastHit[iPar1],0.1*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
 	      while (par1val>par1->getMax() || par1val<par1->getMin());
 	      par1->setVal(par1val);
 	    }
@@ -541,7 +541,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	  
 	    ++iPnt;
 	    // apply conditions
-	  } while ( iPnt < 1e4 );
+	  } while ( iPnt < 1e5 );
 
 	  int extremeBin = parRandomPool->FindBin(p_in);
 	  if (isErrHigh>0) {
