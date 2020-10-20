@@ -26,6 +26,7 @@
 #include <RooAddPdf.h>
 #include <RooProdPdf.h>
 #include <RooConstVar.h>
+#include <RooCBShape.h>
 #include "RooDoubleCBFast.h"
 
 
@@ -57,7 +58,6 @@ RooPlot* prepareFrame(RooPlot* frame){
     return frame;
 }
 RooGaussian* constrainVar(RooRealVar* var, string inVarName,  RooWorkspace *w, int year){
-    cout << "value from workspace "<<  w ->var(inVarName.c_str())->getVal() << endl;
     RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
                                                   Form("c_%s_%i", inVarName.c_str(), year) , 
                                                   *var,  
@@ -293,10 +293,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     RooRealVar* mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , wsp_mcmass[iy]->var(Form("mean_{RT}^{%i}",q2Bin))->getVal()     ,      5,    6, "GeV");
     RooRealVar* sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , wsp_mcmass[iy]->var(Form("#sigma_{RT1}^{%i}",q2Bin))->getVal()  ,      0,    1, "GeV");
     RooRealVar* alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , wsp_mcmass[iy]->var(Form("#alpha_{RT1}^{%i}", q2Bin))->getVal() ,      0,   10 );
-    RooRealVar* alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , wsp_mcmass[iy]->var(Form("#alpha_{RT2}^{%i}", q2Bin))->getVal() ,      0,   10 );
-    RooRealVar* n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  20.);
-    RooRealVar* n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  20.);
-    RooDoubleCBFast* dcb_rt   = new RooDoubleCBFast ( Form("dcb_rt_%i", years[iy])  , "dcb_rt"      , *mass, *mean_rt, *sigma_rt, *alpha_rt1, *n_rt1, *alpha_rt2, *n_rt2);
+    RooRealVar* alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , wsp_mcmass[iy]->var(Form("#alpha_{RT2}^{%i}", q2Bin))->getVal() ,    -10,   10 );
+    RooRealVar* n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
+    RooRealVar* n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
 
     /// create constrain RT 
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
@@ -312,7 +311,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     c_vars.add(*n_rt1);       c_pdfs.add(*c_n_rt1[iy]);
     c_vars.add(*n_rt2);       c_pdfs.add(*c_n_rt2[iy]);
 
-
+    RooAbsPdf* dcb_rt;
     RooRealVar* sigma_rt2, *f1rt;
     if (q2Bin >= 5){
       sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() , 0,   0.12, "GeV");
@@ -321,15 +320,22 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       c_f1rt     .push_back(  constrainVar(f1rt      , Form("f^{RT%i}"         ,q2Bin), wsp_mcmass[iy], years[iy]));
       c_vars.add(*sigma_rt2);    c_pdfs.add(*c_sigma_rt2[iy]);
       c_vars.add(*f1rt);         c_pdfs.add(*c_f1rt[iy]);
+
+      RooCBShape* cbshape_rt1 = new RooCBShape (Form("cbshape_rt1_%i", years[iy]) , Form("cbshape_rt1_%i", years[iy]) ,  *mass, *mean_rt, *sigma_rt , *alpha_rt1, *n_rt1);
+      RooCBShape* cbshape_rt2 = new RooCBShape (Form("cbshape_rt2_%i", years[iy]) , Form("cbshape_rt2_%i", years[iy]) ,  *mass, *mean_rt, *sigma_rt2, *alpha_rt2, *n_rt2);
+      dcb_rt = new RooAddPdf  (Form("dcb_rt_%i", years[iy])      , Form("dcb_rt_%i", years[iy])      ,  RooArgList(*cbshape_rt1,*cbshape_rt2), RooArgList(*f1rt));
     }
+    else 
+        dcb_rt   = new RooDoubleCBFast ( Form("dcb_rt_%i", years[iy])  , "dcb_rt"      , *mass, *mean_rt, *sigma_rt, *alpha_rt1, *n_rt1, *alpha_rt2, *n_rt2);
+
 
     /// create WT component
     RooRealVar* mean_wt     = new RooRealVar (Form("mean_{WT}^{%i}",years[iy])      , "masswt"     ,  wsp_mcmass[iy]->var(Form("mean_{WT}^{%i}", q2Bin))->getVal()    ,      5,    6, "GeV");
     RooRealVar* sigma_wt    = new RooRealVar (Form("#sigma_{WT1}^{%i}",years[iy])   , "sigmawt"    ,  wsp_mcmass[iy]->var(Form("#sigma_{WT1}^{%i}", q2Bin))->getVal() ,      0,    1, "GeV");
     RooRealVar* alpha_wt1   = new RooRealVar (Form("#alpha_{WT1}^{%i}",years[iy] )  , "alphawt1"   ,  wsp_mcmass[iy]->var(Form("#alpha_{WT1}^{%i}", q2Bin))->getVal() ,      0,   10 );
     RooRealVar* alpha_wt2   = new RooRealVar (Form("#alpha_{WT2}^{%i}",years[iy] )  , "alphawt2"   ,  wsp_mcmass[iy]->var(Form("#alpha_{WT2}^{%i}", q2Bin))->getVal() ,      0,   10 );
-    RooRealVar* n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       ,  wsp_mcmass[iy]->var(Form("n_{WT1}^{%i}", q2Bin))->getVal()      ,      0.,  20.);
-    RooRealVar* n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       ,  wsp_mcmass[iy]->var(Form("n_{WT2}^{%i}", q2Bin))->getVal()      ,      0.,  20.);
+    RooRealVar* n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       ,  wsp_mcmass[iy]->var(Form("n_{WT1}^{%i}", q2Bin))->getVal()      ,      0., 100.);
+    RooRealVar* n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       ,  wsp_mcmass[iy]->var(Form("n_{WT2}^{%i}", q2Bin))->getVal()      ,      0., 100.);
     RooDoubleCBFast* dcb_wt = new RooDoubleCBFast ( Form("dcb_wt_%i", years[iy])    , "dcb_wt"     , *mass, *mean_wt, *sigma_wt, *alpha_wt1, *n_wt1, *alpha_wt2, *n_wt2);
 
     /// create constrain WT 
@@ -346,21 +352,22 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     c_vars.add(*n_wt2);       c_pdfs.add(*c_n_wt2[iy]);
 
     //// creating constraints for the difference between the two peaks
-    RooFormulaVar* deltaPeaks = new RooFormulaVar("deltaPeaks", "@0 - @1", RooArgList(*mean_rt, *mean_wt))  ;
-    c_deltaPeaks.push_back(     new RooGaussian("c_deltaPeaks" , "c_deltaPeaks", *deltaPeaks, 
+    RooFormulaVar* deltaPeaks = new RooFormulaVar(Form("deltaPeaks^{%i}", years[iy]), "@0 - @1", RooArgList(*mean_rt, *mean_wt))  ;
+    c_deltaPeaks.push_back(     new RooGaussian(Form("c_deltaPeaks^{%i}", years[iy]), "c_deltaPeaks", *deltaPeaks, 
                                                 RooConst( deltaPeaks->getVal() ), 
                                                 RooConst( 0.0005 ) 
                                                ) );
     c_vars.add(*deltaPeaks);       c_pdfs.add(*c_deltaPeaks[iy]);
 
-    RooRealVar*  frt          = new RooRealVar(Form("F_{RT}%i",q2Bin) , "frt" , 0.8 , 0, 1);
-    RooAddPdf* signalFunction = new RooAddPdf (Form("signal_%i",q2Bin) , "rt+wt" , RooArgList(*dcb_rt,*dcb_wt), RooArgList(*frt));
+    //// creating signal function, adding RT and WT components
+    RooRealVar*  frt          = new RooRealVar(Form("F_{RT}^{%i}", years[iy]) , "frt" , 0.8 , 0, 1);
+    RooAddPdf* signalFunction = new RooAddPdf (Form("signal_%i", years[iy]) , "rt+wt" , RooArgList(*dcb_rt,*dcb_wt), RooArgList(*frt));
 
     //// creating constraints on FRT
     double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal(); 
     double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal(); 
     double fraction = nrt_mc / (nrt_mc + nwt_mc);
-    c_frt.push_back(new RooGaussian(Form("c_frt%i",q2Bin) , "c_frt" , *frt,  
+    c_frt.push_back(new RooGaussian(Form("c_frt^{%i}",years[iy]) , "c_frt" , *frt,  
                                     RooConst(fraction) , 
                                     RooConst(frt_sigmas[years[iy]][q2Bin])
                                     ) );
@@ -523,7 +530,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 //     // m.minos() ;
     
     RooFitResult* fitResult = m.save(("result_" + shortString + Form("subs%d",is)).c_str()) ; 
-    // fitResult->Print("v");
+    fitResult->Print("v");
 
     RooFitResult* fitResult_penalty = 0;
     usedPenalty = false;
