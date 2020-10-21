@@ -8,9 +8,9 @@
 #include <list>
 #include <map>
 
-#include <RooRealVar.h>
+// #include <RooRealVar.h>
 #include <RooAbsPdf.h>
-#include <RooWorkspace.h>
+// #include <RooWorkspace.h>
 #include <RooCategory.h>
 #include <RooSuperCategory.h>
 #include <RooDataSet.h>
@@ -22,7 +22,7 @@
 #include <RooSimultaneous.h>
 #include <RooNumIntConfig.h>
 #include <RooAddition.h>
-#include <RooGaussian.h>
+// #include <RooGaussian.h>
 #include <RooAddPdf.h>
 #include <RooProdPdf.h>
 #include <RooConstVar.h>
@@ -34,6 +34,7 @@
 #include "BoundCheck.h"
 #include "BoundDist.h"
 #include "Penalty.h"
+#include "utils.h"
 
 using namespace RooFit;
 using namespace std;
@@ -51,46 +52,46 @@ double maxCoeff = 1e8;
 
 double min_base = 1.05;
 
-RooPlot* prepareFrame(RooPlot* frame){
-    frame->GetYaxis()->SetTitleOffset(1.8);
-    frame->SetMaximum(frame->GetMaximum()*1.15);
-    frame->SetMinimum(0);
-    return frame;
-}
-RooGaussian* constrainVar(RooRealVar* var, string inVarName,  RooWorkspace *w, int year){
-    RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  *var,  
-                                                  RooConst( w->var(inVarName.c_str())->getVal()  ), 
-                                                  RooConst( w->var(inVarName.c_str())->getError())
-                                                 ); 
-    gauss_constr ->Print();
-    return gauss_constr;                 
-}
-
-void retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name){
-
-    TFile* f =  TFile::Open( filename.c_str() ) ;
-    if ( !f || !f->IsOpen() ) {
-      cout << "File not found: " << filename << endl;
-      return;
-    }
-    RooWorkspace* open_w = (RooWorkspace*)f->Get(ws_name.c_str());
-    if ( !open_w || open_w->IsZombie() ) {
-      cout<<"Workspace "<< ws_name <<  "not found in file: " << filename << endl;
-      return;
-    }
-    ws.push_back( open_w );
-    f->Close();
-}
-
-
-
-std::map<int,std::vector<float>> frt_sigmas = {
-  {2016, {0.0040, 0.0046, 0.0043, 0.0040, 0.0038, 0.0037, 0.0037, 0.0040}},
-  {2017, {0.0039, 0.0039, 0.0042, 0.0035, 0.0035, 0.0038, 0.0042, 0.0042}},
-  {2018, {0.0025, 0.0028, 0.0028, 0.0025, 0.0025, 0.0026, 0.0026, 0.0026}},
-};
+// RooPlot* prepareFrame(RooPlot* frame){
+//     frame->GetYaxis()->SetTitleOffset(1.8);
+//     frame->SetMaximum(frame->GetMaximum()*1.15);
+//     frame->SetMinimum(0);
+//     return frame;
+// }
+// RooGaussian* constrainVar(RooRealVar* var, string inVarName,  RooWorkspace *w, int year){
+//     RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
+//                                                   Form("c_%s_%i", inVarName.c_str(), year) , 
+//                                                   *var,  
+//                                                   RooConst( w->var(inVarName.c_str())->getVal()  ), 
+//                                                   RooConst( w->var(inVarName.c_str())->getError())
+//                                                  ); 
+//     gauss_constr ->Print();
+//     return gauss_constr;                 
+// }
+// 
+// void retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name){
+// 
+//     TFile* f =  TFile::Open( filename.c_str() ) ;
+//     if ( !f || !f->IsOpen() ) {
+//       cout << "File not found: " << filename << endl;
+//       return;
+//     }
+//     RooWorkspace* open_w = (RooWorkspace*)f->Get(ws_name.c_str());
+//     if ( !open_w || open_w->IsZombie() ) {
+//       cout<<"Workspace "<< ws_name <<  "not found in file: " << filename << endl;
+//       return;
+//     }
+//     ws.push_back( open_w );
+//     f->Close();
+// }
+// 
+// 
+// 
+// std::map<int,std::vector<float>> frt_sigmas = {
+//   {2016, {0.0040, 0.0046, 0.0043, 0.0040, 0.0038, 0.0037, 0.0037, 0.0040}},
+//   {2017, {0.0039, 0.0039, 0.0042, 0.0035, 0.0035, 0.0038, 0.0042, 0.0042}},
+//   {2018, {0.0025, 0.0028, 0.0028, 0.0025, 0.0025, 0.0026, 0.0026, 0.0026}},
+// };
 
 
 void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double fac5, double base1, double base4, double base5, double max1, double max4, double max5)
@@ -165,7 +166,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       isample.clear(); isample.assign( Form("%i",is) );
       sample.defineType(("data"+year+"_subs"+isample).c_str());
     }
-  }
+  } 
 
   // Construct a simultaneous pdf using category sample as index
   RooSimultaneous* simPdf = new RooSimultaneous("simPdf", "simultaneous pdf", sample);
@@ -286,6 +287,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 							     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
 							     *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],*penTerm));
 
+    // Mass Component
     // import mass PDF from fits to the MC
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i.root",years[iy]);
     retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w");
@@ -297,29 +299,21 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     RooRealVar* n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
     RooRealVar* n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
 
-    /// create constrain RT 
+    /// create constrain RT and add them to list of constraining pdf and vars
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
-    c_sigma_rt.push_back(  constrainVar(sigma_rt , Form("#sigma_{RT1}^{%i}",q2Bin), wsp_mcmass[iy], years[iy]));
-    c_alpha_rt1.push_back( constrainVar(alpha_rt1, Form("#alpha_{RT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy]));
-    c_alpha_rt2.push_back( constrainVar(alpha_rt2, Form("#alpha_{RT2}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy]));
-    c_n_rt1.push_back(     constrainVar(n_rt1    , Form("n_{RT1}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy]));
-    c_n_rt2.push_back(     constrainVar(n_rt2    , Form("n_{RT2}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy]));
-
-    c_vars.add(*sigma_rt);    c_pdfs.add(*c_sigma_rt[iy]);
-    c_vars.add(*alpha_rt1);   c_pdfs.add(*c_alpha_rt1[iy]);
-    c_vars.add(*alpha_rt2);   c_pdfs.add(*c_alpha_rt2[iy]);
-    c_vars.add(*n_rt1);       c_pdfs.add(*c_n_rt1[iy]);
-    c_vars.add(*n_rt2);       c_pdfs.add(*c_n_rt2[iy]);
+    c_sigma_rt.push_back(  constrainVar(sigma_rt , Form("#sigma_{RT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_alpha_rt1.push_back( constrainVar(alpha_rt1, Form("#alpha_{RT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_alpha_rt2.push_back( constrainVar(alpha_rt2, Form("#alpha_{RT2}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_n_rt1.push_back(     constrainVar(n_rt1    , Form("n_{RT1}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_n_rt2.push_back(     constrainVar(n_rt2    , Form("n_{RT2}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
 
     RooAbsPdf* dcb_rt;
     RooRealVar* sigma_rt2, *f1rt;
     if (q2Bin >= 5){
       sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() , 0,   0.12, "GeV");
       f1rt      = new RooRealVar (Form("f^{RT%i}",years[iy])          , "f1rt"      ,   wsp_mcmass[iy]->var(Form("f^{RT%i}", q2Bin))->getVal()         , 0.,  20.);
-      c_sigma_rt2.push_back(  constrainVar(sigma_rt2 , Form("#sigma_{RT2}^{%i}",q2Bin), wsp_mcmass[iy], years[iy]));
-      c_f1rt     .push_back(  constrainVar(f1rt      , Form("f^{RT%i}"         ,q2Bin), wsp_mcmass[iy], years[iy]));
-      c_vars.add(*sigma_rt2);    c_pdfs.add(*c_sigma_rt2[iy]);
-      c_vars.add(*f1rt);         c_pdfs.add(*c_f1rt[iy]);
+      c_sigma_rt2.push_back(  constrainVar(sigma_rt2 , Form("#sigma_{RT2}^{%i}",q2Bin), wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+      c_f1rt     .push_back(  constrainVar(f1rt      , Form("f^{RT%i}"         ,q2Bin), wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
 
       RooCBShape* cbshape_rt1 = new RooCBShape (Form("cbshape_rt1_%i", years[iy]) , Form("cbshape_rt1_%i", years[iy]) ,  *mass, *mean_rt, *sigma_rt , *alpha_rt1, *n_rt1);
       RooCBShape* cbshape_rt2 = new RooCBShape (Form("cbshape_rt2_%i", years[iy]) , Form("cbshape_rt2_%i", years[iy]) ,  *mass, *mean_rt, *sigma_rt2, *alpha_rt2, *n_rt2);
@@ -340,16 +334,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     /// create constrain WT 
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_WT_%i",q2Bin));
-    c_sigma_wt.push_back(  constrainVar(sigma_rt , Form("#sigma_{WT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy]));
-    c_alpha_wt1.push_back( constrainVar(alpha_wt1, Form("#alpha_{WT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy]));
-    c_alpha_wt2.push_back( constrainVar(alpha_wt2, Form("#alpha_{WT2}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy]));
-    c_n_wt1.push_back(     constrainVar(n_wt1    , Form("n_{WT1}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy]));
-    c_n_wt2.push_back(     constrainVar(n_wt2    , Form("n_{WT2}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy]));
-    c_vars.add(*sigma_wt);    c_pdfs.add(*c_sigma_wt[iy]);
-    c_vars.add(*alpha_wt1);   c_pdfs.add(*c_alpha_wt1[iy]);
-    c_vars.add(*alpha_wt2);   c_pdfs.add(*c_alpha_wt2[iy]);
-    c_vars.add(*n_wt1);       c_pdfs.add(*c_n_wt1[iy]);
-    c_vars.add(*n_wt2);       c_pdfs.add(*c_n_wt2[iy]);
+    c_sigma_wt.push_back(  constrainVar(sigma_rt , Form("#sigma_{WT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_alpha_wt1.push_back( constrainVar(alpha_wt1, Form("#alpha_{WT1}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_alpha_wt2.push_back( constrainVar(alpha_wt2, Form("#alpha_{WT2}^{%i}",q2Bin) , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_n_wt1.push_back(     constrainVar(n_wt1    , Form("n_{WT1}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
+    c_n_wt2.push_back(     constrainVar(n_wt2    , Form("n_{WT2}^{%i}",q2Bin)      , wsp_mcmass[iy], years[iy], true, c_vars, c_pdfs));
 
     //// creating constraints for the difference between the two peaks
     RooFormulaVar* deltaPeaks = new RooFormulaVar(Form("deltaPeaks^{%i}", years[iy]), "@0 - @1", RooArgList(*mean_rt, *mean_wt))  ;
@@ -372,7 +361,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                                     RooConst(frt_sigmas[years[iy]][q2Bin])
                                     ) );
     c_vars.add(*frt);       c_pdfs.add(*c_frt[iy]);
-
 
     /// create constrained PDF for mass
     RooArgList constr_list = RooArgList(c_pdfs);
