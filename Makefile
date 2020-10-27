@@ -26,8 +26,10 @@ CLASS4     := RooDoubleCBFast
 CLASS5     := BoundCheck
 CLASS6     := Penalty
 CLASS7     := BoundDist
+CLASS8     := PdfSigAngMass
 CLASSDICT  := AngDict
 CLASSDICT2 := RooDoubleCBDict
+CLASSDICT3 := AngMassDict
 
 #compiling options
 DEBUGFLAGS := -O3 -Wall -std=c++11
@@ -42,6 +44,10 @@ $(CLASSDICT): $(INCLUDEDIR)/$(CLASS0).h $(INCLUDEDIR)/$(CLASS1).h $(INCLUDEDIR)/
 	$(ROOTCINT) -f $@.cc -c $^
 
 $(CLASSDICT2): $(INCLUDEDIR)/$(CLASS4).h
+	@echo "Generating dictionary $@ using rootcint ..."
+	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
+
+$(CLASSDICT3): $(INCLUDEDIR)/$(CLASS8).h
 	@echo "Generating dictionary $@ using rootcint ..."
 	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
 
@@ -68,7 +74,7 @@ $(EXECUTABLE6): $(EXECUTABLE6).cc
 
 $(EXECUTABLE7): $(EXECUTABLE7).cc 
 # 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS8).cc $(CLASSDICT2).cc $(CLASSDICT3).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 
 
