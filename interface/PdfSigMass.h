@@ -30,18 +30,26 @@ class PdfSigMass : public RooAbsPdf {
 
   RooRealProxy m ;
   
-  RooRealProxy mean     ;
-  RooRealProxy sigma1   ;
-  RooRealProxy sigma2   ;
-  RooRealProxy alpha1   ;
-  RooRealProxy alpha2   ;
-  RooRealProxy n1       ;
-  RooRealProxy n2       ;
-  RooRealProxy f1rt     ;
+  RooRealProxy mean_rt     ;
+  RooRealProxy sigma_rt1   ;
+  RooRealProxy sigma_rt2   ;
+  RooRealProxy alpha_rt1   ;
+  RooRealProxy alpha_rt2   ;
+  RooRealProxy n_rt1       ;
+  RooRealProxy n_rt2       ;
+  RooRealProxy f1rt        ;
+
+  RooRealProxy mean_wt     ;
+  RooRealProxy sigma_wt1   ;
+  RooRealProxy alpha_wt1   ;
+  RooRealProxy alpha_wt2   ;
+  RooRealProxy n_wt1       ;
+  RooRealProxy n_wt2       ;
   
   RooRealProxy mFrac ;
 
   RooRealProxy rtMassTerm;
+  RooRealProxy wtMassTerm;
 
 //   RooRealProxy myrtMassTermPdf;
   
@@ -75,12 +83,12 @@ class PdfSigMass : public RooAbsPdf {
 //   PdfCBShape* myrtMassTermPdf() const  {
 //     PdfCBShape* rt =  new PdfCBShape("cbs", "Crystal Ball shape", 
 //                                    *(RooAbsReal*)m.absArg(), 
-//                                    *(RooAbsReal*)mean_rt.absArg(), 
+//                                    *(RooAbsReal*)mean_rt_rt.absArg(), 
 //                                    *(RooAbsReal*)sigma_rt.absArg(), 
-//                                    *(RooAbsReal*)alpha1.absArg(), 
-//                                    *(RooAbsReal*)n1.absArg(), 
-//                                    *(RooAbsReal*)alpha2.absArg(), 
-//                                    *(RooAbsReal*)n2.absArg());
+//                                    *(RooAbsReal*)alpha_rt1.absArg(), 
+//                                    *(RooAbsReal*)n_rt1.absArg(), 
+//                                    *(RooAbsReal*)alpha_rt2.absArg(), 
+//                                    *(RooAbsReal*)n_rt2.absArg());
 //   
 //     return rt;
 //   }
@@ -90,27 +98,43 @@ class PdfSigMass : public RooAbsPdf {
   PdfSigMass() {} ; 
   PdfSigMass(const char *name, const char *title,
 	    RooAbsReal& _m,
-	    RooAbsReal& _mean  ,
-	    RooAbsReal& _sigma1,
-	    RooAbsReal& _alpha1,
-	    RooAbsReal& _alpha2,
-	    RooAbsReal& _n1    ,
-	    RooAbsReal& _n2    ,
-	    RooAbsReal& _mFrac ,
-	    RooAbsReal& _rtMassTerm	    );
+	    RooAbsReal& _mean_rt  ,
+	    RooAbsReal& _sigma_rt1,
+	    RooAbsReal& _alpha_rt1,
+	    RooAbsReal& _alpha_rt2,
+	    RooAbsReal& _n_rt1    ,
+	    RooAbsReal& _n_rt2    ,
+	    RooAbsReal& _mean_wt  ,
+	    RooAbsReal& _sigma_wt1,
+	    RooAbsReal& _alpha_wt1,
+	    RooAbsReal& _alpha_wt2,
+	    RooAbsReal& _n_wt1    ,
+	    RooAbsReal& _n_wt2    ,
+	    RooAbsReal& _mFrac    ,
+	    RooAbsReal& _rtMassTerm,
+	    RooAbsReal& _wtMassTerm
+	    );
 
   PdfSigMass(const char *name, const char *title,
 	    RooAbsReal& _m,
-	    RooAbsReal& _mean  ,
-	    RooAbsReal& _sigma1,
-	    RooAbsReal& _sigma2,
-	    RooAbsReal& _alpha1,
-	    RooAbsReal& _alpha2,
-	    RooAbsReal& _n1    ,
-	    RooAbsReal& _n2    ,
-	    RooAbsReal& _f1rt  ,
+	    RooAbsReal& _mean_rt  ,
+	    RooAbsReal& _sigma_rt1,
+	    RooAbsReal& _sigma_rt2,
+	    RooAbsReal& _alpha_rt1,
+	    RooAbsReal& _alpha_rt2,
+	    RooAbsReal& _n_rt1    ,
+	    RooAbsReal& _n_rt2    ,
+	    RooAbsReal& _f1rt     ,  
+	    RooAbsReal& _mean_wt  ,
+	    RooAbsReal& _sigma_wt1,
+	    RooAbsReal& _alpha_wt1,
+	    RooAbsReal& _alpha_wt2,
+	    RooAbsReal& _n_wt1    ,
+	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac ,
-	    RooAbsReal& _rtMassTerm	    );
+	    RooAbsReal& _rtMassTerm,
+	    RooAbsReal& _wtMassTerm
+  	    );
 
   PdfSigMass(const PdfSigMass& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new PdfSigMass(*this,newname); }
