@@ -47,6 +47,10 @@ double min_base = 1.05;
 // to build the randomisation models (too small leads to many useless points)
 double minParError = 0.01;
 
+// MINOS parameters
+int nGenMINOS = 1e5;
+double widthScale = 0.05;
+
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
 double coeff4 = 0;
@@ -463,9 +467,6 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	// get and print the best-fit result
 	double p_best = vFitResult[iPar];
 
-	double confInterHigh = p_best;
-	double confInterLow  = p_best;
-
 	// firstly low, then high error
 	for (int isErrHigh=0; isErrHigh<2; ++isErrHigh) {
 
@@ -513,7 +514,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	      if (iPar1==iPar) continue;
 	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 	      double par1val = 0;
-	      do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
+	      do par1val = randGen.Gaus(vLastHit[iPar1],widthScale*TMath::Max(0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]),minParError));
 	      while (par1val>par1->getMax() || par1val<par1->getMin());
 	      par1->setVal(par1val);
 	    }
@@ -541,18 +542,10 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	  
 	    ++iPnt;
 	    // apply conditions
-	  } while ( iPnt < 1e4 );
+	  } while ( iPnt < nGenMINOS );
 
-	  int extremeBin = parRandomPool->FindBin(p_in);
-	  if (isErrHigh>0) {
-	    confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
-	    vConfInterHigh[iPar] = confInterHigh;
-	  } else {
-	    confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
-	    vConfInterLow[iPar] = confInterLow;
-	  }
+	  if (isErrHigh>0) vConfInterHigh[iPar] = p_in;
+	  else vConfInterLow[iPar] = p_in;
 
 	}
 
@@ -563,6 +556,8 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
       // save MINOS errors
       MINOS_output->Fill();
+
+      cout<<"CPU time: "<<subTime.CpuTime()<<"\t"<<minosTime.CpuTime()<<endl;
     
     }
 
