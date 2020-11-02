@@ -1,7 +1,7 @@
 #!/bin/bash
 
 seed=${1}
-nsam=10
+nsam=1
 
 save=1
 
@@ -24,6 +24,10 @@ gen6=${8}
 gen7=${9}
 gen8=${10}
 
+nGenMIN=${11}
+widthSc=${12}
+conf=${13}
+
 export HOME=/afs/cern.ch/work/a/aboletti/private/Kstmumu-Run2/UML-custMinos
 export CMSSWDIR=/afs/cern.ch/work/a/aboletti/private/Kstmumu-Run2/CMSSW_10_4_0/src
 export SAMPLEDIR=/eos/cms/store/user/fiorendi/p5prime/effKDE
@@ -38,8 +42,8 @@ echo setting CMSSWDIR to $CMSSWDIR
 
 cd $WORKDIR
 
-if [ ! -d $HOME/toyFitResults_b${bin} ]; then
-    mkdir $HOME/toyFitResults_b${bin}
+if [ ! -d $HOME/toyFitResults_b${bin}_v${conf} ]; then
+    mkdir $HOME/toyFitResults_b${bin}_v${conf}
 fi
 
 if [ ! -r $SAMPLEDIR/2016/lmnr/recoMCDataset_b${bin}_2016.root ]; then
@@ -81,10 +85,10 @@ cp $HOME/simfit_toy_fullAngular .
 
 mkdir toyFitResults
 
-echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
-./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
+echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${nGenMIN} ${widthSc} ${conf} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
+./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${nGenMIN} ${widthSc} ${conf} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 
-cp toyFitResults/* $HOME/toyFitResults_b${bin}/
+cp toyFitResults/* $HOME/toyFitResults_b${bin}_v${conf}/
 
 rm -rf toyFitResults
 

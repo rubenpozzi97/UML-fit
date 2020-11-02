@@ -45,7 +45,7 @@ double min_base = 1.05;
 
 // lower threshold to parameters' uncertainties
 // to build the randomisation models (too small leads to many useless points)
-double minParError = 0.02;
+double minParError = 0.01;
 
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
@@ -55,7 +55,7 @@ bool usedPenalty = false;
 
 RooFitResult* fit (RooDataSet* combData, RooAbsPdf* simPdf, RooAbsPdf* simPdf_penalty, RooAbsReal* & nll, RooAbsReal* & nll_penalty, BoundCheck* boundary, Penalty* penTerm, double fac1, double fac4, double base1, double base4, double max1, double max4);
                          
-void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uint nSample, bool localFiles, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
+void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uint nSample, bool localFiles, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4, int nGenMINOS, double widthScale, string confLabel)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -268,7 +268,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
   }
 
-  string fout_name = "toyFitResults/simFitResult_toy3_fullAngular_" + all_years + Form("_b%i_",q2Bin);
+  string fout_name = "toyFitResults/simFitResult_toy" + confLabel + "_fullAngular_" + all_years + Form("_b%i_",q2Bin);
   for (int iPar=0; iPar<pars.getSize(); ++iPar)
     fout_name = fout_name + Form((iPar>0?"-%.3f":"%.3f"),genPars[iPar]);
   fout_name = fout_name + Form("_s%i.root",seed);
@@ -513,7 +513,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	      if (iPar1==iPar) continue;
 	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 	      double par1val = 0;
-	      do par1val = randGen.Gaus(vLastHit[iPar1],0.1*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
+	      do par1val = randGen.Gaus(vLastHit[iPar1],widthScale*TMath::Max(0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]),minParError));
 	      while (par1val>par1->getMax() || par1val<par1->getMin());
 	      par1->setVal(par1val);
 	    }
@@ -541,17 +541,19 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	  
 	    ++iPnt;
 	    // apply conditions
-	  } while ( iPnt < 1e5 );
+	  } while ( iPnt < nGenMINOS );
 
-	  int extremeBin = parRandomPool->FindBin(p_in);
+	  // int extremeBin = parRandomPool->FindBin(p_in);
 	  if (isErrHigh>0) {
-	    confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
-	    vConfInterHigh[iPar] = confInterHigh;
+	    // confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
+	    // if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
+	    // vConfInterHigh[iPar] = confInterHigh;
+	    vConfInterHigh[iPar] = p_in;
 	  } else {
-	    confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
-	    vConfInterLow[iPar] = confInterLow;
+	    // confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
+	    // if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
+	    // vConfInterLow[iPar] = confInterLow;
+	    vConfInterLow[iPar] = p_in;
 	  }
 
 	}
@@ -563,6 +565,8 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
       // save MINOS errors
       MINOS_output->Fill();
+
+      cout<<"CPU time: "<<subTime.CpuTime()<<"\t"<<minosTime.CpuTime()<<endl;
     
     }
 
@@ -623,13 +627,8 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
 int main(int argc, char** argv)
 {
-  // q2-bin format: [0-8] for one bin
-  //                [-1] for each bin recursively
-  // parity format: [0] even efficiency
-  //                [1] odd efficiency
-  //                [-1] for each parity recursively
 
-  int q2Bin   = -1;
+  int q2Bin = -1;
 
   if ( argc > 1 ) q2Bin   = atoi(argv[1]);
 
@@ -638,6 +637,14 @@ int main(int argc, char** argv)
     if ( argc > 2+iPar ) genPars[iPar] = atof(argv[2+iPar]);
     else genPars[iPar] = 0;
 
+  int nGenMINOS = 1e4;
+  double widthScale = 0.2;
+  string confLabel = "b";
+
+  if ( argc > 10 ) nGenMINOS = atoi(argv[10]);
+  if ( argc > 11 ) widthScale = atof(argv[11]);
+  if ( argc > 12 ) confLabel = argv[12];
+
   double fac1 = 1;
   double fac4 = 1;
   double base1 = 3;
@@ -645,37 +652,35 @@ int main(int argc, char** argv)
   double max1 = 0;
   double max4 = 0;
 
-  if ( argc > 10 ) fac1  = atof(argv[10]) / 1000.0;
-  if ( argc > 11 ) fac4  = atof(argv[11]) / 1000.0;
-  if ( argc > 12 ) base1 = atof(argv[12]) / 1000.0;
-  if ( argc > 13 ) base4 = atof(argv[13]) / 1000.0;
-  if ( argc > 14 ) max1  = atof(argv[14]);
-  if ( argc > 15 ) max4  = atof(argv[15]);
+  if ( argc > 13 ) fac1  = atof(argv[13]) / 1000.0;
+  if ( argc > 14 ) fac4  = atof(argv[14]) / 1000.0;
+  if ( argc > 15 ) base1 = atof(argv[15]) / 1000.0;
+  if ( argc > 16 ) base4 = atof(argv[16]) / 1000.0;
+  if ( argc > 17 ) max1  = atof(argv[17]);
+  if ( argc > 18 ) max4  = atof(argv[18]);
 
   uint seed = 1;
   uint nSample = 1;
-  if ( argc > 16 ) seed = atoi(argv[16]);
-  if ( argc > 17 ) nSample = atoi(argv[17]);
+  if ( argc > 19 ) seed = atoi(argv[19]);
+  if ( argc > 20 ) nSample = atoi(argv[20]);
 
   bool localFiles = false;
-  if ( argc > 18 && atoi(argv[18]) > 0 ) localFiles = true;
+  if ( argc > 21 && atoi(argv[21]) > 0 ) localFiles = true;
 
   bool save = true;
 
-  if ( argc > 19 && atoi(argv[19]) == 0 ) save = false;
+  if ( argc > 22 && atoi(argv[22]) == 0 ) save = false;
 
   std::vector<int> years;
-  if ( argc > 20 && atoi(argv[20]) != 0 ) years.push_back(atoi(argv[20]));
+  if ( argc > 23 && atoi(argv[23]) != 0 ) years.push_back(atoi(argv[23]));
   else {
     cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc > 21 && atoi(argv[21]) != 0 ) years.push_back(atoi(argv[21]));
-  if ( argc > 22 && atoi(argv[22]) != 0 ) years.push_back(atoi(argv[22]));
+  if ( argc > 24 && atoi(argv[24]) != 0 ) years.push_back(atoi(argv[24]));
+  if ( argc > 25 && atoi(argv[25]) != 0 ) years.push_back(atoi(argv[25]));
 
-  if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
-
-  if ( q2Bin==-1 )   cout << "Running all the q2 bins" << endl;
+  if ( q2Bin < 0 || q2Bin >= nBins ) return 1;
 
   std::map<int,float> scale_to_data;
   // https://docs.google.com/spreadsheets/d/1gG-qowySO9WJpMmr_bAWmOAu05J8zr95yJXGIYCY9-A/edit?usp=sharing
@@ -683,11 +688,7 @@ int main(int argc, char** argv)
   scale_to_data.insert(std::make_pair(2017, 0.005*2 /2.05 ));
   scale_to_data.insert(std::make_pair(2018, 0.007*2 /1.9  ));
 
-  if ( q2Bin==-1 )
-    for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
-  else
-    simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+  simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4, nGenMINOS, widthScale, confLabel);
 
   return 0;
 
