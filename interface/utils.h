@@ -54,6 +54,26 @@ RooGaussian* constrainVar(RooRealVar* var,
     return gauss_constr;                 
 }
 
+void constrainVar2(RooRealVar* var, 
+                          string inVarName,  
+                          RooWorkspace *w, 
+                          int year,
+                          bool addToList,
+                          RooArgSet &c_vars,
+                          RooArgSet &c_pdfs
+                          ){
+    RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
+                                                  Form("c_%s_%i", inVarName.c_str(), year) , 
+                                                  *var,  
+                                                  RooConst( w->var(inVarName.c_str())->getVal()  ), 
+                                                  RooConst( w->var(inVarName.c_str())->getError())
+                                                 ); 
+    if (addToList){
+      c_vars.add(*var);    
+      c_pdfs.add(*gauss_constr);
+    }
+}
+
 
 bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name){
 
