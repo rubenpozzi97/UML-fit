@@ -73,8 +73,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   RooRealVar* rand = new RooRealVar("rand","rand", 0,1);
   RooArgSet reco_vars ( *mass, *rand);
 
-  RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",0.87, 0, 2);
-  mFrac->setConstant();
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -107,6 +105,9 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i.root",years[iy]);
     if (!retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w"))  return;
 
+    RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
+    //   mFrac->setConstant();
+ 
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
     RooRealVar* mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , wsp_mcmass[iy]->var(Form("mean_{RT}^{%i}",q2Bin))->getVal()     ,      5,    6, "GeV");
     RooRealVar* sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , wsp_mcmass[iy]->var(Form("#sigma_{RT1}^{%i}",q2Bin))->getVal()  ,      0,    1, "GeV");
@@ -126,10 +127,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     else    
         dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2 , wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt  );
    
-//     cout << "RT contraints: "  ;
-//     c_pdfs_rt.Print();
-//     cout << endl;
-    
     /// create constrained PDF for RT mass
     RooArgList constr_rt_list = RooArgList(c_pdfs_rt);
     constr_rt_list.add(*dcb_rt);
@@ -174,7 +171,23 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       		                               *c_dcb_wt
       		                               ));
 
- 
+    
+    /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
+    double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal(); 
+    double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal(); 
+    double fraction = nwt_mc / (nrt_mc + nwt_mc);
+    c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,  
+                                    RooConst(fraction) , 
+                                    RooConst(fM_sigmas[years[iy]][q2Bin])
+                                    ) );
+    cout << fraction << "   " << fM_sigmas[years[iy]][q2Bin] << endl;                                    
+    c_vars.add(*mFrac);       
+
+    RooProdPdf* final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(), 
+                                           ("final_PDF_"+year).c_str(),
+                                           RooArgList(*PDF_sig_mass[iy],*c_fm[iy]));
+   
+    
     // insert sample in the category map, to be imported in the combined dataset
     // and associate model with the data
     if (multiSample) for (uint is = firstSample; is <= lastSample; is++) {
@@ -183,7 +196,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 	  return;
 	}
 	map.insert( map.cbegin(), std::pair<const string,RooDataSet*>(("data"+year+Form("_subs%d",is)).c_str(), data[iy][is]) );
-	simPdf->addPdf(*PDF_sig_mass[iy], ("data"+year+Form("_subs%d",is)).c_str());
+	simPdf->addPdf(*final_PDF, ("data"+year+Form("_subs%d",is)).c_str());
     }
     else {
       if ( !data[iy][0] || data[iy][0]->IsZombie() ) {
@@ -191,7 +204,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 	return;
       }
       map.insert( map.cbegin(), std::pair<const string,RooDataSet*>(("data"+year+Form("_subs%d",firstSample)).c_str(), data[iy][0]) );
-      simPdf->addPdf(*PDF_sig_mass[iy], ("data"+year+Form("_subs%d",firstSample)).c_str());
+      simPdf->addPdf(*final_PDF, ("data"+year+Form("_subs%d",firstSample)).c_str());
     }
   }
 
@@ -258,7 +271,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
     // Save fit results in file
     if (save) {
-      cout << fout->GetName() << endl;
       fout->cd();
       fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }

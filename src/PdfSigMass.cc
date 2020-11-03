@@ -171,7 +171,7 @@ Double_t PdfSigMass::evaluate() const
 //   std::cout<<"pdfSigMass: " << m <<  ": " << myrtMassTermPdf()->eval() << " : " << sara  << std::endl;
 
 //    return mCT ;
-   return mCT + (1-mFrac)*mWT;
+   return mCT + (mFrac)*mWT;
 
 }
 
