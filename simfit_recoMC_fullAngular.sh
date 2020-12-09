@@ -29,12 +29,12 @@ if make simfit_recoMC_fullAngular; then
     while read -a line; do
 	bin=${line[0]}
 	
-	# for year in {2016..2018}; do
+	for year in {2016..2018}; do
 	
-	#     ./simfit_recoMC_fullAngular ${bin} ${par} ${pow} ${multi} ${nsam} ${plot} ${save} ${year} \
-	# 	&>logs_simFit/simfit_recoMC_fullAngular_${bin}_${par}_${pow}_${multi}_${nsam}_${year}.out &
+	    ./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${multi} ${nsam} 0 ${plot} ${save} ${year} \
+		&>logs_simFit/simfit_recoMC_fullAngular_randLik_${bin}_${par}_${f1}_${f4}_${b1}_${b4}_${m1}_${m4}_${year}.out &
 	
-	# done
+	done
 
 	./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${multi} ${nsam} 0 ${plot} ${save} 2016 2017 2018 \
 	    &>logs_simFit/simfit_recoMC_fullAngular_randLik_${bin}_${par}_${f1}_${f4}_${b1}_${b4}_${m1}_${m4}_${multi}_${nsam}_2016_2017_2018.out &
