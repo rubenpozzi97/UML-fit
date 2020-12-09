@@ -239,6 +239,12 @@ Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) )
       return 1 ;
   }
+  if ( matchArgs(allVars,analVars,ctK,ctL,phi) ){
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
+      std::cout << "now code 2" << std::endl;
+      return 2 ;
+      }
+  }
   // the lack of analytical integral for the subsets of angular variables does not slow down the fit
   // since only the complete integration is used there
   // if one wants to speed up also the PDF projection for plotting, the other analytical integrals can be computed
@@ -249,58 +255,106 @@ Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 
 Double_t PdfSigAngMass::analyticalIntegral(Int_t code, const char* rangeName) const
 {
-  assert(code>0 && code<2) ;
+  assert(code>0 && code<3) ;
 
-  // use the pre-computed integrals from histogram
-  Double_t retCT =  9./(32*3.14159265) * (
-					  0.75*(1-Fl)              * intCPart[0]
-					  + Fl                     * intCPart[1]
-					  + 0.25*(1-Fl)            * intCPart[2]
-					  - Fl                     * intCPart[3]
-					  + 0.5*P1*(1-Fl)          * intCPart[4]
-					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
-					  + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
-					  - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
-					  + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
-					  + 2*(1-Fl)*P2            * intCPart[9]
-					  - P3*(1-Fl)              * intCPart[10]
-					  );
+  double theIntegral;
+  if (code < 2){
+      // use the pre-computed integrals from histogram
+    Double_t retCT =  9./(32*3.14159265) * (
+  					  0.75*(1-Fl)              * intCPart[0]
+  					  + Fl                     * intCPart[1]
+  					  + 0.25*(1-Fl)            * intCPart[2]
+  					  - Fl                     * intCPart[3]
+  					  + 0.5*P1*(1-Fl)          * intCPart[4]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
+  					  + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
+  					  - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
+  					  + 2*(1-Fl)*P2            * intCPart[9]
+  					  - P3*(1-Fl)              * intCPart[10]
+  					  );
+    
+    Double_t retWT =  9./(32*3.14159265) * (
+  					  0.75*(1-Fl)              * intWPart[0]
+  					  + Fl                     * intWPart[1]
+  					  + 0.25*(1-Fl)            * intWPart[2]
+  					  - Fl                     * intWPart[3]
+  					  + 0.5*P1*(1-Fl)          * intWPart[4]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
+  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
+  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
+  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
+  					  - 2*(1-Fl)*P2            * intWPart[9]
+  					  + P3*(1-Fl)              * intWPart[10]
+  					  );
   
-  Double_t retWT =  9./(32*3.14159265) * (
-					  0.75*(1-Fl)              * intWPart[0]
-					  + Fl                     * intWPart[1]
-					  + 0.25*(1-Fl)            * intWPart[2]
-					  - Fl                     * intWPart[3]
-					  + 0.5*P1*(1-Fl)          * intWPart[4]
-					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
-					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
-					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
-					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
-					  - 2*(1-Fl)*P2            * intWPart[9]
-					  + P3*(1-Fl)              * intWPart[10]
-					  );
-
-
-  if (retCT<=0) {
-    if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
-    else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
-    return 1e-55;
+  
+    if (retCT<=0) {
+        if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
+        else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
+        return 1e-55;
+      }
+    if (retWT<=0) {
+        if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
+        else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
+        return 1e-55;
+      }
+    //   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
+    //   double rtMass = rtMassTerm.analyticalIntegral();
+    //   RooAbsReal& marg = m.absArg() ; 
+    RooAbsReal & marg = (RooAbsReal&)m.arg();
+    
+    RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
+    double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
+    
+    RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
+    double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
+    theIntegral = retCT*rtMassIntegral + mFrac*retWT*wtMassIntegral  ;
   }
-  if (retWT<=0) {
-    if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
-    else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
-    return 1e-55;
+  
+  
+  
+  else if (code ==2){
+    Double_t retCT =  9./(32*3.14159265) * (
+  					  0.75*(1-Fl)              * intCPart[0]
+  					  + Fl                     * intCPart[1]
+  					  + 0.25*(1-Fl)            * intCPart[2]
+  					  - Fl                     * intCPart[3]
+  					  + 0.5*P1*(1-Fl)          * intCPart[4]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
+  					  + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
+  					  - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
+  					  + 2*(1-Fl)*P2            * intCPart[9]
+  					  - P3*(1-Fl)              * intCPart[10]
+  					  );
+    
+    Double_t retWT =  9./(32*3.14159265) * (
+  					  0.75*(1-Fl)              * intWPart[0]
+  					  + Fl                     * intWPart[1]
+  					  + 0.25*(1-Fl)            * intWPart[2]
+  					  - Fl                     * intWPart[3]
+  					  + 0.5*P1*(1-Fl)          * intWPart[4]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
+  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
+  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
+  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
+  					  - 2*(1-Fl)*P2            * intWPart[9]
+  					  + P3*(1-Fl)              * intWPart[10]
+    					  );
+    
+    
+    if (retCT<=0) {
+      if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
+      else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
+      return 1e-55;
+    }
+    if (retWT<=0) {
+      if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
+      else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
+      return 1e-55;
+    }
+    theIntegral = retCT + mFrac*retWT ;
   }
-//   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
-//   double rtMass = rtMassTerm.analyticalIntegral();
-//   RooAbsReal& marg = m.absArg() ; 
-  RooAbsReal & marg = (RooAbsReal&)m.arg();
-
-  RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
-  double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-
-  RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
-  double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-  return (retCT*rtMassIntegral + mFrac*retWT*wtMassIntegral ) ;
-
+  return theIntegral;
 }

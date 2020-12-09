@@ -98,7 +98,7 @@ using namespace RooFit;
  Double_t RooDoubleCBFast::analyticalIntegral(Int_t code, const char* rangeName) const 
  {
    assert(code==1) ;
- 
+
    double central=0;
    double left=0;
    double right=0;
