@@ -52,14 +52,14 @@ void createDataset(int year, int q2Bin = -1, bool plot = false)
   string year_str = "2016";
   if ( year==6 ) {
     // 2016
-    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/ntuple_01_10_2019/2016MC_LMNR.root/ntuple");
+    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2016/skims/newphi/2016MC_LMNR.root/ntuple");
   } else if ( year==7 ) {
     // 2017
-    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2017/skims/2017MC_LMNR.root/ntuple");
+    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2017/skims/newphi/2017MC_LMNR.root/ntuple");
     year_str = "2017";
   } else if ( year==8 ) {
     // 2018
-    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2018/skims/2018MC_LMNR.root/ntuple");
+    t_num->Add("/eos/cms/store/user/fiorendi/p5prime/2018/skims/newphi/2018MC_LMNR.root/ntuple");
     year_str = "2018";
   }
   int numEntries = t_num->GetEntries();
@@ -183,7 +183,7 @@ void createDataset(int year, int q2Bin = -1, bool plot = false)
       ws_od[i]->import( *data_ctRECO_od[i] );
       ws_ev[i]->import( *data_wtRECO_ev[i] );
       ws_od[i]->import( *data_wtRECO_od[i] );
-      TFile* fout = new TFile( ( "recoMCDataset_"+shortString[i]+ "_" + year_str + "_tagged.root" ).c_str(), "RECREATE" );
+      TFile* fout = new TFile( ( "recoMCDataset_"+shortString[i]+ "_" + year_str + "_tagged_newphi.root" ).c_str(), "RECREATE" );
       ws_ev[i]->Write();
       ws_od[i]->Write();
       fout->Close();

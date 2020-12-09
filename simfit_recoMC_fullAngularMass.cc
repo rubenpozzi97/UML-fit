@@ -120,7 +120,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
   RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
   RooRealVar* mFrac = new RooRealVar("mFrac","mistag fraction",1, 0, 2);
-//   mFrac->setConstant();
+  mFrac->setConstant();
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -334,11 +334,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal(); 
     double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal(); 
     double fraction = nrt_mc / (nrt_mc + nwt_mc);
-    c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,  
-                                    RooConst(fraction) , 
-                                    RooConst(fM_sigmas[years[iy]][q2Bin])
-                                    ) );
-    c_vars.add(*mFrac);       
+//     c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,  
+//                                     RooConst(fraction) , 
+//                                     RooConst(fM_sigmas[years[iy]][q2Bin])
+//                                     ) );
+//     c_vars.add(*mFrac);       
     //c_pdfs.add(*c_fm[iy]);
 
     /// create 4d pdf (angular x mass)
@@ -354,10 +354,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       		                                              *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
       		                                              *c_dcb_rt, *c_dcb_wt
       		                                            );
-    PDF_sig_ang_mass.push_back(new RooProdPdf (("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(), 
-                                               ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
-                                                RooArgList(*PDF_sig_ang_mass_unc, *c_fm[iy])) 
-                               );
+    PDF_sig_ang_mass.push_back(PDF_sig_ang_mass_unc); 
+//     PDF_sig_ang_mass.push_back(new RooProdPdf (("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(), 
+//                                                ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
+//                                                 RooArgList(*PDF_sig_ang_mass_unc, *c_fm[iy])) 
+//                                );
     
     PdfSigAngMass* PDF_sig_ang_mass_penalty_unc = new PdfSigAngMass( ( "PDF_sig_ang_mass_unc_"+shortString+"_"+year).c_str(),
                                                                       ("PDF_sig_ang_mass_unc_"+year).c_str(),
@@ -366,11 +367,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                           		                               *penTerm,
       		                                                       *c_dcb_rt, *c_dcb_wt
       		                                                       );
+    PDF_sig_ang_mass_penalty.push_back(PDF_sig_ang_mass_penalty_unc); 
 
-    PDF_sig_ang_mass_penalty.push_back(new RooProdPdf (("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(), 
-                                                       ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
-                                                        RooArgList(*PDF_sig_ang_mass_penalty_unc, *c_fm[iy])) 
-                                       );
+//     PDF_sig_ang_mass_penalty.push_back(new RooProdPdf (("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(), 
+//                                                        ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
+//                                                         RooArgList(*PDF_sig_ang_mass_penalty_unc, *c_fm[iy])) 
+//                                        );
 
     // insert sample in the category map, to be imported in the combined dataset
     // and associate model with the data
@@ -771,7 +773,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 // 	penLog->plotOn(frame[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
 // 	penLog->plotOn(fZoom[iPar],PrintEvalErrors(-1),ShiftToZero(),EvalErrorValue(penLog->getVal()+10),LineColor(8),LineWidth(2));
 // 
-//       }
+//       }  
 // 
 //       frame[iPar]->SetMaximum(hMax);
 // 
@@ -813,7 +815,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   string longString  = "Fit to reconstructed events";
   longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);
 
-  // plot fit projections
+  // plot fit projections 
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Fit to RECO-level MC - "+longString).c_str(),3000,1400);
   c[confIndex]->Divide(4, years.size());
   
@@ -822,17 +824,28 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     year.clear(); year.assign(Form("%i",years[iy]));
   
     std::vector<RooPlot*> frames;
+    frames.push_back( prepareFrame( mass ->frame(Title((longString+year).c_str()))));
     frames.push_back( prepareFrame( ctK ->frame(Title((longString+year).c_str())) ));
     frames.push_back( prepareFrame( ctL ->frame(Title((longString+year).c_str())) ));
     frames.push_back( prepareFrame( phi ->frame(Title((longString+year).c_str())) ));
-    frames.push_back( prepareFrame( mass ->frame(Title((longString+year).c_str()))));
     TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);
 
     cout<<"canvas ready"<<endl;
     for (unsigned int fr = 0; fr < frames.size(); fr++){
+        cout<<"fr " << fr<<endl;
         combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+"_subs0").c_str()), Name(("plData"+year).c_str()));
+        
+        ctK->setBins(20) ;
+        ctL->setBins(20) ;
+        phi->setBins(20) ;
+        mass->setBins(20) ;
+        RooDataHist* projData;
+        if (fr==0) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *ctL, *phi),*combData) ;
+        if (fr==1) projData = new RooDataHist ("projData","projData",RooArgSet(*ctL, *phi, *mass),*combData) ;
+        if (fr==2) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *phi, *mass),*combData) ;
+        if (fr==3) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *ctL, *mass),*combData) ;
         simPdf  ->plotOn(frames[fr], Slice(sample, ("data"+year+"_subs0").c_str()), 
-                                     ProjWData(RooArgSet(sample,*ctK,*ctL,*phi), *combData), 
+                                     ProjWData(RooArgSet(sample), *combData), 
                                      LineWidth(1), 
                                      Name(("plPDF"+year).c_str()), 
                                      NumCPU(4));
@@ -844,6 +857,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
         gPad->SetLeftMargin(0.19); 
         frames[fr]->Draw();
         leg->Draw("same");
+        break;
     }
   }
   c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  ".pdf").c_str() );

@@ -140,23 +140,40 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   
   std::vector<TGraphAsymmErrors*> GrCT, GrWT, Gr, GrDiffCT, GrDiffWT, GrDiff;
 
-  string finGenName = "simFitResults/fitResult_genMC_penalty.root";
-  TFile* finGen = TFile::Open(finGenName.c_str());
+//   string finGenName = "simFitResults/fitResult_genMC_penalty.root";
+//   string finGenName = "../eff-KDE/fitResults/newphi/fitResult_genMC_forAN.root";
+//   TFile* finGen = TFile::Open(finGenName.c_str());
+//   if ( !finGen || finGen->IsZombie() ) {
+//     cout<<"Missing gen file: "<<finGenName<<endl;
+//     return;
+//   }
+// 
+//   // first fill for gen results
+//   for (int i=0; i<nBins; ++i) {
+//     RooWorkspace* wspRes = (RooWorkspace*)finGen->Get(Form("ws_b%ip%i_subs0_pow1.0",i,parity));
+//     if (wspRes && !wspRes->IsZombie()) {
+//       RooFitResult* fitResultGen = (RooFitResult*)wspRes->obj("fitResult");
+//       if (fitResultGen && !fitResultGen->IsZombie() && fitResultGen->status()==0 && fitResultGen->covQual()==3) {
+// 	fillVectors(fitResultGen, ParIndx, genRes, genErrH, genErrL, i);
+//       }
+//     }
+//   }
+
+
+  TFile* finGen = TFile::Open("../eff-KDE/fitResults/newphi/fitResult_genMC_forAN.root");
   if ( !finGen || finGen->IsZombie() ) {
-    cout<<"Missing gen file: "<<finGenName<<endl;
+    cout<<"Missing gen file: fitResults/fitResult_genMC.root"<<endl;
     return;
   }
 
   // first fill for gen results
   for (int i=0; i<nBins; ++i) {
-    RooWorkspace* wspRes = (RooWorkspace*)finGen->Get(Form("ws_b%ip%i_s0_pow1.0",i,parity));
-    if (wspRes && !wspRes->IsZombie()) {
-      RooFitResult* fitResultGen = (RooFitResult*)wspRes->obj("fitResult");
-      if (fitResultGen && !fitResultGen->IsZombie() && fitResultGen->status()==0 && fitResultGen->covQual()==3) {
-	fillVectors(fitResultGen, ParIndx, genRes, genErrH, genErrL, i);
-      }
+    RooFitResult* fitResultGen = (RooFitResult*)finGen->Get(Form("fitResult_b%ip%i",i,parity));
+    if (fitResultGen && !fitResultGen->IsZombie() && fitResultGen->status()==0 && fitResultGen->covQual()==3) {
+      fillVectors(fitResultGen, ParIndx, genRes, genErrH, genErrL, i);
     }
   }
+
   finGen->Close();
   cout << genRes[0] << endl;
   
@@ -173,13 +190,13 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
 //     ErrH[i] = ErrL[i] = DiffErrH[i] = DiffErrL[i] = 0;
 
     TFile* finReco;
-    if (plotCT || plotWT) finReco = TFile::Open(("simFitResults/simFitResult_recoMC_singleComponent" + year + stat + ".root").c_str());
+    if (plotCT || plotWT) finReco = TFile::Open(("simFitResults/newphi/simFitResult_recoMC_singleComponent" + year + stat + ".root").c_str());
     TFile* finFullReco;
 
     for (int i=0; i<nBins; ++i) {
       if (i==4 || i==6 || i==8) continue;
 
-      if (plotRECO) finFullReco = TFile::Open(("simFitResults/simFitResult_recoMC_fullAngular" + year  + Form("_MCStat_b%i.root",i)).c_str());
+      if (plotRECO) finFullReco = TFile::Open(("simFitResults/newphi/simFitResult_recoMC_fullAngular" + year  + Form("_MCStat_b%i.root",i)).c_str());
 
       // fill for CT events
       if ( plotCT && finReco && !finReco->IsZombie() ) {
@@ -349,7 +366,7 @@ void plotFitResultsBin(int parity, int ParIndx, bool plotCT, bool plotWT, bool p
   line->Draw();
   resDiffCover->Draw("e2");
 
-  string confString = "plotSimFit_d/fitResult_";
+  string confString = "plotSimFit_d/newphi/fitResult_";
   if (plotCT) confString = confString + "ctRes_";
   if (plotWT) confString = confString + "wtRes_";
   if (plotRECO) confString = confString + "recoRes_";

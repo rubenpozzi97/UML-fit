@@ -86,8 +86,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooRealVar* phi = new RooRealVar("phi", "phi", -3.14159, 3.14159  );
   RooArgList vars (* ctK,* ctL,* phi);
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
-  RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
-  RooArgSet reco_vars (*ctK, *ctL, *phi, *rand, *mass);
+//   RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
+//   RooArgSet reco_vars (*ctK, *ctL, *phi, *rand, *mass);
+  RooArgSet reco_vars (*ctK, *ctL, *phi, *rand);
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
@@ -127,7 +128,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]); 
+//     string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/effDataset_b%i_%i.root", years[iy], q2Bin, years[iy]); 
+    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/recoMCDataset_b%i_%i_tagged_newphi.root", years[iy], q2Bin, years[iy]); 
 
     // import data (or MC as data proxy)
     fin_data.push_back( TFile::Open( filename_data.c_str() ) );
@@ -142,9 +144,10 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
   
 
-    // import KDE efficiency histograms and partial integral histograms
+    // import KDE efficiency histograms and partial integr histograms
     string filename = "/eos/cms/store/user/fiorendi/p5prime/effKDE/";
-    filename = filename + Form((parity==0 ? "%i/lmnr/KDEeff_b%i_ev_%i.root" : "%i/lmnr/KDEeff_b%i_od_%i.root"),years[iy],q2Bin,years[iy]);
+//     string filename = "/eos/cms/store/user/fiorendi/p5prime/effKDE/";
+    filename = filename + Form((parity==0 ? "%i/lmnr/newphi/KDEeff_b%i_ev_%i.root" : "%i/lmnr/newphi/KDEeff_b%i_od_%i.root"),years[iy],q2Bin,years[iy]);
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -264,7 +267,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
 
-  TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
+  TFile* fout = new TFile(("simFitResults/newphi/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
@@ -582,7 +585,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
     cDist->cd();
     fDist->Draw();
-    cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
+    cDist->SaveAs( ("plotSimFit_d/newphi/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
   }
 
   if (!plot || multiSample) return;
@@ -664,13 +667,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   if (nSample>0) plotString = plotString + Form("_s%i",nSample);
 
   cnll->Update();
-  cnll->SaveAs( ("plotSimFit_d/recoNLL_scan_" + plotString + ".pdf").c_str() );
+  cnll->SaveAs( ("plotSimFit_d/newphi/recoNLL_scan_" + plotString + ".pdf").c_str() );
 
   cZoom->Update();
-  cZoom->SaveAs( ("plotSimFit_d/recoNLL_scan_" + plotString + "_zoom.pdf").c_str() );
+  cZoom->SaveAs( ("plotSimFit_d/newphi/recoNLL_scan_" + plotString + "_zoom.pdf").c_str() );
 
   cPen->Update();
-  cPen->SaveAs( ("plotSimFit_d/recoPenTerm_" + plotString + ".pdf").c_str() );
+  cPen->SaveAs( ("plotSimFit_d/newphi/recoPenTerm_" + plotString + ".pdf").c_str() );
   return;
 
   int confIndex = 2*nBins*parity  + q2Bin;
@@ -724,7 +727,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
   
-  c[confIndex]->SaveAs( ("plotSimFit_d/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + ".pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimFit_d/newphi/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + ".pdf").c_str() );
 
 }
 
