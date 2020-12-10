@@ -47,6 +47,8 @@ double min_base = 1.05;
 // to build the randomisation models (too small leads to many useless points)
 double minParError = 0.01;
 
+double widthScale = 0.05;
+
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
 double coeff4 = 0;
@@ -136,10 +138,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
 
+   // Random generator
+   TRandom3 randGen (1);
+
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]);
+    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]);
     if (localFiles) filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
 
     // import data (or MC as data proxy)
@@ -157,7 +162,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     // import KDE efficiency histograms and partial integral histograms
     string filename = "";
-    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]);
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/",years[iy]);
     filename = filename + Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
@@ -278,7 +283,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
 
-  TFile* fout = new TFile(("simFitResults/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
+  TFile* fout = new TFile(("simFitResults/newphi/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"UPDATE");
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
@@ -420,6 +425,41 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
     boundDist->setVal(boundDistVal);
 
+    // new addition from alessio
+    // Improve global fit result
+      if (usedPenalty) {
+	vector<double> vTestPar(pars.getSize());
+	vector<double> vImprovPar(pars.getSize());
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  vImprovPar[iPar] = ((RooRealVar*)pars.at(iPar))->getValV();
+	double NLL_before = nll->getValV();
+	double improvNLL = NLL_before;
+	double testNLL = 0;
+	int iImprove = 0;
+	do {
+	  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+	    RooRealVar* par = (RooRealVar*)pars.at(iPar);
+	    do vTestPar[iPar] = randGen.Gaus(vImprovPar[iPar],TMath::Max(boundDistVal,0.002));
+	    while (vTestPar[iPar]>par->getMax() || vTestPar[iPar]<par->getMin());
+	    par->setVal(vTestPar[iPar]);
+	  }
+	  if (boundary->getValV()>0) continue;
+	  testNLL = nll->getValV();
+	  if (improvNLL>testNLL) {
+	    improvNLL = testNLL;
+	    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	      vImprovPar[iPar] = vTestPar[iPar];
+	  }
+	  ++iImprove;
+	} while (iImprove<1e4);
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  ((RooRealVar*)pars.at(iPar))->setVal(vImprovPar[iPar]);
+
+	// double improvDistVal = bound_dist->getValV();
+	// cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<boundDistVal<<" -> "<<improvDistVal<<endl;
+      }
+
+
     if (boundDistVal>0.02 && usedPenalty)
       cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
 
@@ -470,8 +510,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       // NLL of the best-fit result
       double NLL_min = nll->getValV();
 
-      // Random generator
-      TRandom3 randGen (1);
       double probedNLL;
 
       // get best-fit results and errors from the fit
@@ -539,7 +577,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	  double p_test = 0;
 
 	  int iPnt=0;
-
 	  do {
 
 	    do p_test = parRandomPool->GetRandom();
@@ -549,7 +586,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	      if (iPar1==iPar) continue;
 	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 	      double par1val = 0;
-	      do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
+	      do par1val = randGen.Gaus(vLastHit[iPar1],widthScale*TMath::Max(0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]),minParError));
+// 	      do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
 	      while (par1val>par1->getMax() || par1val<par1->getMin());
 	      par1->setVal(par1val);
 	    }
@@ -559,6 +597,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	    probedNLL = nll->getValV();
 	    if (probedNLL<=NLL_min+0.5) {
 	      p_in = p_test;
+              // fix from Alessio  
+	      if ( isErrHigh > 0 ) { if ( p_in > par->getMax()-parRandomPool->GetBinWidth(1) ) break; }
+	      else if ( p_in < par->getMin()+parRandomPool->GetBinWidth(1) ) break;
 	      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
 		RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
 		vLastHit[iPar1] = par1->getValV();
@@ -583,6 +624,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	    ++iPnt;
 	    if (iPnt%1000==0) cout<<"---"<<iPnt<<"---"<<endl;
 	    // apply conditions
+            // fix from alessio
 	  } while ( iPnt < 1e4 );
 
 	  int extremeBin = parRandomPool->FindBin(p_in);
