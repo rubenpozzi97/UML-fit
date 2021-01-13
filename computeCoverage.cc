@@ -7,13 +7,22 @@
 
 using namespace std;
 
-string label = "toy2";
+string label = "toy-b2tuned";
+bool isExtended = true;
 
 static const int nPars = 8;
 string parName [nPars] = {"Fl","P1","P2","P3","P4p","P5p","P6p","P8p"};
+string parTitle[nPars] = {"F_{L}","P_{1}","P_{2}","P_{3}","P'_{4}","P'_{5}","P'_{6}","P'_{8}"};
 
-void computeCoverage (int toyIndex, int parity=1)
+void computeCoverage (int Index, int parity=1)
 {
+
+  int binIndex = -1;
+  int toyIndex = Index;
+  if (isExtended) {
+    binIndex = Index;
+    toyIndex = -1;
+  }    
 
   vector< vector<double> > vCover (nPars);
   vector< vector<double> > vCoErr (nPars);
@@ -21,11 +30,12 @@ void computeCoverage (int toyIndex, int parity=1)
   vector< vector<double> > vX (nPars);
   vector< vector<double> > vXe (nPars);
 
-  vector< char* > binLab (0);
+  vector< string > binLab (0);
 
   fstream fs ("../confSF/toy_coord.list", fstream::in);
   string fullLine = "";
 
+  uint iLabel = 0;
   for (int iToy=0; (toyIndex<0 || iToy<=toyIndex); ++iToy) {
     getline(fs,fullLine);
     if (fullLine.empty()) break;
@@ -43,17 +53,22 @@ void computeCoverage (int toyIndex, int parity=1)
     }
 
     int q2Bin = atoi(splitLine[0].c_str());
+    if (binIndex>=0 && binIndex!=q2Bin) continue;
     vector<double> vRef (nPars);
     for (int iPar=0; iPar<nPars; ++iPar)
       vRef[iPar] = atof(splitLine[iPar+1].c_str());
 
-    binLab.push_back(Form("bin %i",q2Bin));
+    string binLabel = Form("Bin %i",q2Bin);
+    if (isExtended) binLabel = parTitle[iLabel/2] + (iLabel%2==0?" high":" low");
+    binLab.push_back(binLabel);
+    ++iLabel;
 
     TChain MINOS_output("MINOS_output","");
     string confString = Form("b%i_",q2Bin);
     for (int iPar=0; iPar<nPars; ++iPar)
       confString = confString + Form((iPar>0?"-%.3f":"%.3f"),vRef[iPar]);
-    string filename = Form("toyFitResults_b%i/simFitResult_",q2Bin)+label+"_fullAngular_201620172018_"+confString+"_s*.root";
+    // string filename = Form("toyFitResults_b%i/simFitResult_",q2Bin)+label+"_fullAngular_201620172018_"+confString+"_s*.root";
+    string filename = Form("toyFitResults4_b%i/simFitResult_toy2_fullAngular_201620172018_",q2Bin)+confString+"_s*.root";
     MINOS_output.Add(filename.c_str());
 
     int ntoys = MINOS_output.GetEntries();
@@ -109,11 +124,13 @@ void computeCoverage (int toyIndex, int parity=1)
 
   gStyle->SetOptStat(0);
   cCover.cd()->SetTicky(2);
-  auto hLab = new TH1S ("hLab","Toy coverage study;;coverage",binLab.size(),0,binLab.size());
+  string plotTitle = "Toy coverage study;;coverage";
+  if (isExtended) plotTitle = Form("Toy coverage study - q2 bin %i;;coverage",binIndex);
+  auto hLab = new TH1S ("hLab",plotTitle.c_str(),binLab.size(),0,binLab.size());
   for (int iBin=0; iBin<binLab.size(); ++iBin)
-    hLab->GetXaxis()->SetBinLabel(iBin+1,binLab[iBin]);
-  hLab->SetMinimum(63);
-  hLab->SetMaximum(78);
+    hLab->GetXaxis()->SetBinLabel(iBin+1,binLab[iBin].c_str());
+  hLab->SetMinimum(58);
+  hLab->SetMaximum(88);
   hLab->GetYaxis()->SetTickLength(0.006);
   hLab->Draw();
 
