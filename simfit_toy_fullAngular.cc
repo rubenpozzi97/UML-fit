@@ -48,8 +48,8 @@ double min_base = 1.05;
 double minParError = 0.01;
 
 // MINOS parameters
-int nGenMINOS = 1e5;
-double widthScale = 0.05;
+int nGenMINOS = 2e4;
+double widthScale = 0.1;
 
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
