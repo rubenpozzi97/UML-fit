@@ -21,6 +21,7 @@
 #include <RooDataHist.h>
 #include <RooSimultaneous.h>
 #include <RooNumIntConfig.h>
+#include <RooRandom.h>
 
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
@@ -46,6 +47,10 @@ double min_base = 1.05;
 // lower threshold to parameters' uncertainties
 // to build the randomisation models (too small leads to many useless points)
 double minParError = 0.01;
+
+// MINOS parameters
+int nGenMINOS = 2e4;
+double widthScale = 0.1;
 
 // Variables to be used both in the main function and the fit subfunc
 double coeff1 = 0;
@@ -136,11 +141,16 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
 
+  // Random generators
+  RooRandom::randomGenerator()->SetSeed(1);
+  TRandom3 randGen (1);
+
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]);
-    if (localFiles) filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
+    string filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
+    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/", years[iy]) + filename_data;
+
 
     // import data (or MC as data proxy)
     fin_data.push_back( TFile::Open( filename_data.c_str() ) );
@@ -156,9 +166,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   
 
     // import KDE efficiency histograms and partial integral histograms
-    string filename = "";
-    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]);
-    filename = filename + Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
+    string filename = Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]) + filename;
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -291,12 +300,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
+  RooRealVar* minTime = new RooRealVar("minTime","MINOS time",0,"s");
   RooRealVar* co1 = new RooRealVar("co1","Coefficient 1",0);
   RooRealVar* co4 = new RooRealVar("co4","Coefficient 4",0);
   RooRealVar* co5 = new RooRealVar("co5","Coefficient 5",0);
   RooRealVar* boundDist = new RooRealVar("boundDist","Distance from boundary",0);
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  RooArgSet savePars (*co1,*co4,*co5,*fitTime,*boundDist);
+  RooArgSet savePars (*co1,*co4,*co5,*fitTime,*minTime,*boundDist);
   savePars.add(pars);
   RooCategory resStatus ("resStatus","Status of the fit result");
   resStatus.defineType("convergent-positive-noPenalty",0);
@@ -390,13 +400,16 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     co1->setVal(0);
     co4->setVal(0);
     co5->setVal(0);
+    boundDist->setVal(0);
+    minTime->setVal(0);
 
     bool convCheck = false;
-    bool boundCheck = boundary->getValV() == 0;
+    bool boundCheck = false;
 
     if (fitResult) {
       
       convCheck = true;
+      boundCheck = boundary->getValV() == 0;
 
       fitResult->SetName (Form("result_%s_subs%i",shortString.c_str(),is));
       fitResult->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
@@ -407,21 +420,224 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	co1->setVal(coeff1);
 	co4->setVal(coeff4);
 	co5->setVal(coeff5);
+
+	// Compute distance from boundary, print it
+	// and save it in dataset with per-toy informations
+	TStopwatch distTime;
+	distTime.Start(true);
+	double boundDistVal = bound_dist->getValV();
+	distTime.Stop();
+	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
+	boundDist->setVal(boundDistVal);
+
+	// Improve global fit result
+	vector<double> vTestPar(pars.getSize());
+	vector<double> vImprovPar(pars.getSize());
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  vImprovPar[iPar] = ((RooRealVar*)pars.at(iPar))->getValV();
+	double NLL_before = nll->getValV();
+	double improvNLL = NLL_before;
+	double testNLL = 0;
+	int iImprove = 0;
+	do {
+	  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+	    RooRealVar* par = (RooRealVar*)pars.at(iPar);
+	    do vTestPar[iPar] = randGen.Gaus(vImprovPar[iPar],TMath::Max(boundDistVal,0.002));
+	    while (vTestPar[iPar]>par->getMax() || vTestPar[iPar]<par->getMin());
+	    par->setVal(vTestPar[iPar]);
+	  }
+	  if (boundary->getValV()>0) continue;
+	  testNLL = nll->getValV();
+	  if (improvNLL>testNLL) {
+	    improvNLL = testNLL;
+	    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	      vImprovPar[iPar] = vTestPar[iPar];
+	  }
+	  ++iImprove;
+	} while (iImprove<1e4);
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	  ((RooRealVar*)pars.at(iPar))->setVal(vImprovPar[iPar]);
+
+	double improvDistVal = bound_dist->getValV();
+	cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<boundDistVal<<" -> "<<improvDistVal<<endl;
+      }
+
+      if (nSample>0) {
+	// run MINOS error
+	TStopwatch minosTime;
+	minosTime.Start(true);
+
+	// NLL of the best-fit result
+	double NLL_min = nll->getValV();
+
+	TRandom3 randGenMinos (1);
+	double probedNLL;
+
+	// get best-fit results and errors from the fit
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+
+	  RooRealVar* par = (RooRealVar*)pars.at(iPar);
+	  vFitResult [iPar] = par->getValV();
+	  vFitErrLow [iPar] = par->getErrorLo();
+	  vFitErrHigh[iPar] = par->getErrorHi();
+
+	}
+
+	// Loop over the parameters
+	for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+
+	  RooRealVar* par = (RooRealVar*)pars.at(iPar);
+
+	  // get and print the best-fit result
+	  double p_best = vFitResult[iPar];
+	  cout<<par->GetName()<<" best: "<<p_best<<endl;
+
+	  // vectors for TGraph plots
+	  vector<double> vPval (0);
+	  vector<double> vdNLL (0);
+	  if (is==firstSample) {
+	    vPval.push_back(p_best);
+	    vdNLL.push_back(0);
+	  }
+
+	  // firstly low, then high error
+	  for (int isErrHigh=0; isErrHigh<2; ++isErrHigh) {
+
+	    vector<double> vLastHit(0);
+	    for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1)
+	      vLastHit.push_back(vFitResult[iPar1]);
+
+	    TH1D* parRandomPool = 0;
+	    int nHistBins = 0;
+	    if (isErrHigh>0) {
+	      nHistBins = (int)((par->getMax()-p_best)/0.0005);
+	      // nHistBins = (int)((par->getMax()-p_best+0.0005)/0.001);
+	      if (nHistBins<1) nHistBins=1;
+	      parRandomPool = new TH1D(Form("hRandPoolH%i%i",iPar,is),
+				       Form("hRandPoolH%i%i",iPar,is),
+				       nHistBins,par->getMax()-0.0005*nHistBins,par->getMax());
+	      // nHistBins,par->getMax()+0.0005-0.001*nHistBins,par->getMax()+0.0005);
+	    } else {
+	      nHistBins = (int)((p_best-par->getMin())/0.0005);
+	      // nHistBins = (int)((p_best-par->getMin()+0.0005)/0.001);
+	      if (nHistBins<1) nHistBins=1;
+	      parRandomPool = new TH1D(Form("hRandPoolL%i%i",iPar,is),
+				       Form("hRandPoolL%i%i",iPar,is),
+				       nHistBins,par->getMin(),par->getMin()+0.0005*nHistBins);
+	      // nHistBins,par->getMin()-0.0005,par->getMin()-0.0005+0.001*nHistBins);
+	    }
+	    double sigma = fabs(isErrHigh>0?vFitErrHigh[iPar]:vFitErrLow[iPar]);
+	    if (sigma<minParError) sigma = minParError;
+	    for (int iBin=1; iBin<=nHistBins; ++iBin) {
+	      double x = (parRandomPool->GetBinCenter(iBin)-p_best) / sigma;
+	      parRandomPool->SetBinContent(iBin,fabs(x)*exp(-0.5*x*x));
+	    }
+
+	    double p_in = p_best;
+	    double p_test = 0;
+
+	    int iPnt=0;
+
+	    do {
+
+	      do p_test = parRandomPool->GetRandom();
+	      while (p_test>par->getMax() || p_test<par->getMin());
+	      par->setVal(p_test);
+	      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+		if (iPar1==iPar) continue;
+		RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+		double par1val = 0;
+		do par1val = randGenMinos.Gaus(vLastHit[iPar1],widthScale*TMath::Max(0.5*(vFitErrHigh[iPar1]-vFitErrLow[iPar1]),minParError));
+		while (par1val>par1->getMax() || par1val<par1->getMin());
+		par1->setVal(par1val);
+	      }
+	      // check if the point is physical
+	      if (boundary->getValV()>0) continue;
+	      // get and test the local likelihood
+	      probedNLL = nll->getValV();
+	      if (probedNLL<=NLL_min+0.5) {
+		p_in = p_test;
+		if ( isErrHigh > 0 ) { if ( p_in > par->getMax()-parRandomPool->GetBinWidth(1) ) break; }
+		else if ( p_in < par->getMin()+parRandomPool->GetBinWidth(1) ) break;
+		for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
+		  RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
+		  vLastHit[iPar1] = par1->getValV();
+		}
+		if (isErrHigh>0)
+		  for (int iBin=1; iBin<=parRandomPool->FindBin(p_test); ++iBin)
+		    parRandomPool->SetBinContent(iBin,0);
+		else 
+		  for (int iBin=parRandomPool->FindBin(p_test); iBin<=nHistBins; ++iBin)
+		    parRandomPool->SetBinContent(iBin,0);
+	      } else {
+		parRandomPool->Fill(p_test,0.02/(probedNLL-NLL_min-0.5));
+	      }
+	  
+	      // fill the plotting vectors
+	      if (is==firstSample && probedNLL-NLL_min<4.5) {
+		vPval.push_back(p_test);
+		vdNLL.push_back(probedNLL-NLL_min);
+	      }
+
+	      ++iPnt;
+	      // apply conditions
+	    } while ( iPnt < nGenMINOS );
+
+	    if (isErrHigh>0) {
+	      vConfInterHigh[iPar] = p_in;
+	      cout<<par->GetName()<<" high: "<<p_in<<endl;
+	    } else {
+	      vConfInterLow[iPar] = p_in;
+	      cout<<par->GetName()<<" low:  "<<p_in<<endl;
+	    }
+
+	  }
+
+	  if (is==firstSample) {
+	    // produce deltaNLL vs parameter graph, with the probed points
+	    TCanvas* canNLL = new TCanvas(Form("canNLL_%s",par->GetName()),"canNLL",1000,1000);
+	    TGraph* grNLL = new TGraph(vPval.size(),&vPval[0],&vdNLL[0]);
+	    grNLL->SetName(Form("grNLL_%s",par->GetName()));
+	    grNLL->SetTitle(Form("deltaNLL scan for %s",par->GetTitle()));
+	    grNLL->GetXaxis()->SetTitle(par->GetName());
+	    grNLL->GetYaxis()->SetTitle("deltaNLL");
+	    grNLL->SetMarkerStyle(7);
+	    // grNLL->SetMarkerStyle(20);
+	    // grNLL->SetMarkerSize(2);
+	    grNLL->SetMarkerColor(9);
+	    canNLL->cd();
+	    grNLL->Draw("AP");
+      
+	    TLine errLow (vConfInterLow[iPar],grNLL->GetYaxis()->GetXmin(),vConfInterLow[iPar],grNLL->GetYaxis()->GetXmax());
+	    TLine errHigh(vConfInterHigh[iPar],grNLL->GetYaxis()->GetXmin(),vConfInterHigh[iPar],grNLL->GetYaxis()->GetXmax());
+	    TLine DeltaNLL0p5 (grNLL->GetXaxis()->GetXmin(),0.5,grNLL->GetXaxis()->GetXmax(),0.5);
+	    errLow .SetLineColor(46);
+	    errHigh.SetLineColor(46);
+	    DeltaNLL0p5.SetLineColor(13);
+	    DeltaNLL0p5.SetLineStyle(9);
+	    errLow .Draw();
+	    errHigh.Draw();
+	    DeltaNLL0p5.Draw();
+
+	    canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_recoMC%i_%s_%s.pdf",par->GetName(),is,shortString.c_str(),all_years.c_str()));
+	  }
+
+	}
+
+	minosTime.Stop();
+	minTime->setVal(minosTime.CpuTime());
+	cout<<"MINOS errors computed in "<<minosTime.CpuTime()<<" s"<<endl;
+
+	// cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
+	// for (int iPar = 0; iPar < pars.getSize(); ++iPar)
+	// 	cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
+	// 	    <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
+
+	// save MINOS errors
+	MINOS_output->Fill();
       }
 
     }
-
-    // Compute distance from boundary, print it
-    // and save it in dataset with per-toy informations
-    TStopwatch distTime;
-    distTime.Start(true);
-    double boundDistVal = bound_dist->getValV();
-    distTime.Stop();
-    cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
-    boundDist->setVal(boundDistVal);
-
-    if (boundDistVal>0.02 && usedPenalty)
-      cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
 
     // fill fit-status-dependent counters
     ++cnt[8];
@@ -435,25 +651,26 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     if (!boundCheck) {
       if (convCheck) {
 	subNegConv->add(savePars);
-	cout<<"Converged in unphysical region ("<<fitTime->getValV()<<"s)"<<endl;
+	cout<<"Converged in unphysical region";
       } else {
 	subNegNotc->add(savePars);
-	cout<<"Not converged (result in unphysical region) ("<<fitTime->getValV()<<"s)"<<endl;
+	cout<<"Not converged";
       }
     } else {
       if (convCheck) {
 	if (usedPenalty) {
 	  subPosConv->add(savePars);
-	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5<<" ("<<fitTime->getValV()<<"s)"<<endl;
+	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5;
 	} else {
 	  subNoPen->add(savePars);
-	  cout<<"Converged without penalty ("<<fitTime->getValV()<<"s)"<<endl;
+	  cout<<"Converged without penalty";
 	}
       } else {
 	subPosNotc->add(savePars);
-	cout<<"Not converged (result in physical region) ("<<fitTime->getValV()<<"s)"<<endl;
+	cout<<"This should never be printed";
       }
     }
+    cout<<" ("<<fitTime->getValV()<<"s)"<<endl;
 
     // Save fit results in file
     if (save && fitResult) {
@@ -461,186 +678,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }
 
-    if (nSample>0) {
-      // run MINOS error
-
-      TStopwatch minosTime;
-      minosTime.Start(true);
-
-      // NLL of the best-fit result
-      double NLL_min = nll->getValV();
-
-      // Random generator
-      TRandom3 randGen (1);
-      double probedNLL;
-
-      // get best-fit results and errors from the fit
-      for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-
-	RooRealVar* par = (RooRealVar*)pars.at(iPar);
-	vFitResult [iPar] = par->getValV();
-	vFitErrLow [iPar] = par->getErrorLo();
-	vFitErrHigh[iPar] = par->getErrorHi();
-
-      }
-
-      // Loop over the parameters
-      for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-
-	RooRealVar* par = (RooRealVar*)pars.at(iPar);
-
-	// get and print the best-fit result
-	double p_best = vFitResult[iPar];
-	cout<<par->GetName()<<" best: "<<p_best<<endl;
-
-	// vectors for TGraph plots
-	vector<double> vPval (0);
-	vector<double> vdNLL (0);
-	vPval.push_back(p_best);
-	vdNLL.push_back(0);
-
-	double confInterHigh = p_best;
-	double confInterLow  = p_best;
-
-	// firstly low, then high error
-	for (int isErrHigh=0; isErrHigh<2; ++isErrHigh) {
-
-	  vector<double> vLastHit(0);
-	  for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1)
-	    vLastHit.push_back(vFitResult[iPar1]);
-
-	  TH1D* parRandomPool = 0;
-	  int nHistBins = 0;
-	  if (isErrHigh>0) {
-	    nHistBins = (int)((par->getMax()-p_best)/0.0005);
-	    // nHistBins = (int)((par->getMax()-p_best+0.0005)/0.001);
-	    if (nHistBins<1) nHistBins=1;
-	    parRandomPool = new TH1D(Form("hRandPoolH%i",iPar),
-				     Form("hRandPoolH%i",iPar),
-				     nHistBins,par->getMax()-0.0005*nHistBins,par->getMax());
-	    // nHistBins,par->getMax()+0.0005-0.001*nHistBins,par->getMax()+0.0005);
-	  } else {
-	    nHistBins = (int)((p_best-par->getMin())/0.0005);
-	    // nHistBins = (int)((p_best-par->getMin()+0.0005)/0.001);
-	    if (nHistBins<1) nHistBins=1;
-	    parRandomPool = new TH1D(Form("hRandPoolL%i",iPar),
-				     Form("hRandPoolL%i",iPar),
-				     nHistBins,par->getMin(),par->getMin()+0.0005*nHistBins);
-	    // nHistBins,par->getMin()-0.0005,par->getMin()-0.0005+0.001*nHistBins);
-	  }
-	  double sigma = fabs(isErrHigh>0?vFitErrHigh[iPar]:vFitErrLow[iPar]);
-	  if (sigma<minParError) sigma = minParError;
-	  for (int iBin=1; iBin<=nHistBins; ++iBin) {
-	    double x = (parRandomPool->GetBinCenter(iBin)-p_best) / sigma;
-	    parRandomPool->SetBinContent(iBin,fabs(x)*exp(-0.5*x*x));
-	  }
-
-	  double p_in = p_best;
-	  double p_test = 0;
-
-	  int iPnt=0;
-
-	  do {
-
-	    do p_test = parRandomPool->GetRandom();
-	    while (p_test>par->getMax() || p_test<par->getMin());
-	    par->setVal(p_test);
-	    for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-	      if (iPar1==iPar) continue;
-	      RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-	      double par1val = 0;
-	      do par1val = randGen.Gaus(vLastHit[iPar1],0.05*TMath::Max(vFitErrHigh[iPar1]-vFitErrLow[iPar1],2*minParError));
-	      while (par1val>par1->getMax() || par1val<par1->getMin());
-	      par1->setVal(par1val);
-	    }
-	    // check if the point is physical
-	    if (boundary->getValV()>0) continue;
-	    // get and test the local likelihood
-	    probedNLL = nll->getValV();
-	    if (probedNLL<=NLL_min+0.5) {
-	      p_in = p_test;
-	      for (int iPar1 = 0; iPar1 < pars.getSize(); ++iPar1) {
-		RooRealVar* par1 = (RooRealVar*)pars.at(iPar1);
-		vLastHit[iPar1] = par1->getValV();
-	      }
-	      cout<<p_test<<"    \t"<<probedNLL-NLL_min<<endl;
-	      if (isErrHigh>0)
-		for (int iBin=1; iBin<=parRandomPool->FindBin(p_test); ++iBin)
-		  parRandomPool->SetBinContent(iBin,0);
-	      else 
-		for (int iBin=parRandomPool->FindBin(p_test); iBin<=nHistBins; ++iBin)
-		  parRandomPool->SetBinContent(iBin,0);
-	    } else {
-	      parRandomPool->Fill(p_test,0.02/(probedNLL-NLL_min-0.5));
-	    }
-	  
-	    // fill the plotting vectors
-	    if (probedNLL-NLL_min<4.5) {
-	      vPval.push_back(p_test);
-	      vdNLL.push_back(probedNLL-NLL_min);
-	    }
-
-	    ++iPnt;
-	    if (iPnt%1000==0) cout<<"---"<<iPnt<<"---"<<endl;
-	    // apply conditions
-	  } while ( iPnt < 1e4 );
-
-	  int extremeBin = parRandomPool->FindBin(p_in);
-	  if (isErrHigh>0) {
-	    confInterHigh = parRandomPool->GetBinCenter(extremeBin) + 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterHigh > par->getMax() ) confInterHigh = par->getMax();
-	    vConfInterHigh[iPar] = confInterHigh;
-	    cout<<par->GetName()<<" high: "<<confInterHigh<<endl;
-	  } else {
-	    confInterLow = parRandomPool->GetBinCenter(extremeBin) - 0.5*parRandomPool->GetBinWidth(extremeBin);
-	    if ( confInterLow < par->getMin() ) confInterLow = par->getMin();
-	    vConfInterLow[iPar] = confInterLow;
-	    cout<<par->GetName()<<" low:  "<<confInterLow<<endl;
-	  }
-
-	}
-
-	// produce deltaNLL vs parameter graph, with the probed points
-	TCanvas* canNLL = new TCanvas(Form("canNLL_%s",par->GetName()),"canNLL",1000,1000);
-	TGraph* grNLL = new TGraph(vPval.size(),&vPval[0],&vdNLL[0]);
-	grNLL->SetName(Form("grNLL_%s",par->GetName()));
-	grNLL->SetTitle(Form("deltaNLL scan for %s",par->GetTitle()));
-	grNLL->GetXaxis()->SetTitle(par->GetName());
-	grNLL->GetYaxis()->SetTitle("deltaNLL");
-	grNLL->SetMarkerStyle(7);
-	// grNLL->SetMarkerStyle(20);
-	// grNLL->SetMarkerSize(2);
-	grNLL->SetMarkerColor(9);
-	canNLL->cd();
-	grNLL->Draw("AP");
-      
-	TLine errLow (confInterLow ,grNLL->GetYaxis()->GetXmin(),confInterLow ,grNLL->GetYaxis()->GetXmax());
-	TLine errHigh(confInterHigh,grNLL->GetYaxis()->GetXmin(),confInterHigh,grNLL->GetYaxis()->GetXmax());
-	TLine DeltaNLL0p5 (grNLL->GetXaxis()->GetXmin(),0.5,grNLL->GetXaxis()->GetXmax(),0.5);
-	errLow .SetLineColor(46);
-	errHigh.SetLineColor(46);
-	DeltaNLL0p5.SetLineColor(13);
-	DeltaNLL0p5.SetLineStyle(9);
-	errLow .Draw();
-	errHigh.Draw();
-	DeltaNLL0p5.Draw();
-
-	canNLL->SaveAs(Form("plotSimFit_d/profiledNLL-%s_randLikelihood_%s_%s_s%i.pdf",par->GetName(),shortString.c_str(),all_years.c_str(),nSample));
-
-      }
-
-      minosTime.Stop();
-      cout<<"MINOS errors computed in "<<minosTime.CpuTime()<<" s"<<endl;
-
-      cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
-      for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-	cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
-	    <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
-
-      MINOS_output->Fill();
-    
-    }
-  
   }  
 
   if (multiSample) {
@@ -682,7 +719,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     }
 
     fout->cd();
-    // wksp->Write();
+    wksp->Write();
     if (nSample>0) MINOS_output->Write();
 
   }
