@@ -25,16 +25,26 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
 		     RooAbsReal& _P5p,
 		     RooAbsReal& _P6p,
 		     RooAbsReal& _P8p,
-// 	             RooAbsReal& _mean,
-// 	             RooAbsReal& _sigma,
+         	     RooAbsReal& _mean_rt  ,
+         	     RooAbsReal& _sigma_rt1,
+         	     RooAbsReal& _alpha_rt1,
+         	     RooAbsReal& _alpha_rt2,
+         	     RooAbsReal& _n_rt1    ,
+         	     RooAbsReal& _n_rt2    ,
+         	     RooAbsReal& _mean_wt  ,
+         	     RooAbsReal& _sigma_wt1,
+         	     RooAbsReal& _alpha_wt1,
+         	     RooAbsReal& _alpha_wt2,
+         	     RooAbsReal& _n_wt1    ,
+         	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
 		     RooAbsReal& _EffC,
 		     RooAbsReal& _EffW,
 		     std::vector<double> _intCPart,
 		     std::vector<double> _intWPart,
+		     RooAbsReal& _PenTerm,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm//,
-// 	             RooSetProxy& _setProxy
+		     RooAbsReal& _wtMassTerm
 ) :
   RooAbsPdf(name,title), 
   ctK("ctK","ctK",this,_ctK),
@@ -49,8 +59,89 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   P5p("P5p","P5p",this,_P5p),
   P6p("P6p","P6p",this,_P6p),
   P8p("P8p","P8p",this,_P8p),
-//   mean("mean","mean",this,_mean),
-//   sigma("sigma","sigma",this,_sigma),
+  mean_rt("mean_rt"  , "mean_rt"  ,this,_mean_rt  ),
+  sigma_rt1("sigma_rt1" , "sigma_rt1" ,this,_sigma_rt1 ),
+  alpha_rt1("alpha_rt1", "alpha_rt1",this,_alpha_rt1),
+  alpha_rt2("alpha_rt2", "alpha_rt2",this,_alpha_rt2),
+  n_rt1("n_rt1"    , "n_rt1"    ,this,_n_rt1    ),
+  n_rt2("n_rt2"    , "n_rt2"    ,this,_n_rt2    ),
+  mean_wt("mean_wt"  , "mean_wt"  ,this,_mean_wt  ),
+  sigma_wt1("sigma_wt1" , "sigma_wt1" ,this,_sigma_wt1 ),
+  alpha_wt1("alpha_wt1", "alpha_wt1",this,_alpha_wt1),
+  alpha_wt2("alpha_wt2", "alpha_wt2",this,_alpha_wt2),
+  n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
+  n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
+  mFrac("mFrac","mFrac",this,_mFrac),
+  EffC("EffC","corr-tag efficiency",this,_EffC),
+  EffW("EffW","wrong-tag efficiency",this,_EffW),
+  intCPart(_intCPart),
+  intWPart(_intWPart),
+  PenTerm("PenTerm","PenTerm",this,_PenTerm),
+  rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
+  wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
+{
+
+  isPenalised = true;
+
+}
+PdfSigAngMass::PdfSigAngMass(const char *name, const char *title, 
+		     RooAbsReal& _ctK,
+		     RooAbsReal& _ctL,
+		     RooAbsReal& _phi,
+		     RooAbsReal& _m,
+		     RooAbsReal& _Fl,
+		     RooAbsReal& _P1,
+		     RooAbsReal& _P2,
+		     RooAbsReal& _P3,
+		     RooAbsReal& _P4p,
+		     RooAbsReal& _P5p,
+		     RooAbsReal& _P6p,
+		     RooAbsReal& _P8p,
+         	     RooAbsReal& _mean_rt  ,
+         	     RooAbsReal& _sigma_rt1,
+         	     RooAbsReal& _alpha_rt1,
+         	     RooAbsReal& _alpha_rt2,
+         	     RooAbsReal& _n_rt1    ,
+         	     RooAbsReal& _n_rt2    ,
+         	     RooAbsReal& _mean_wt  ,
+         	     RooAbsReal& _sigma_wt1,
+         	     RooAbsReal& _alpha_wt1,
+         	     RooAbsReal& _alpha_wt2,
+         	     RooAbsReal& _n_wt1    ,
+         	     RooAbsReal& _n_wt2    ,
+		     RooAbsReal& _mFrac,
+		     RooAbsReal& _EffC,
+		     RooAbsReal& _EffW,
+		     std::vector<double> _intCPart,
+		     std::vector<double> _intWPart,
+		     RooAbsReal& _rtMassTerm,
+		     RooAbsReal& _wtMassTerm
+) :
+  RooAbsPdf(name,title), 
+  ctK("ctK","ctK",this,_ctK),
+  ctL("ctL","ctL",this,_ctL),
+  phi("phi","phi",this,_phi),
+  m("m","m",this,_m),
+  Fl("Fl","Fl",this,_Fl),
+  P1("P1","P1",this,_P1),
+  P2("P2","P2",this,_P2),
+  P3("P3","P3",this,_P3),
+  P4p("P4p","P4p",this,_P4p),
+  P5p("P5p","P5p",this,_P5p),
+  P6p("P6p","P6p",this,_P6p),
+  P8p("P8p","P8p",this,_P8p),
+  mean_rt("mean_rt"  , "mean_rt"  ,this,_mean_rt  ),
+  sigma_rt1("sigma_rt1" , "sigma_rt1" ,this,_sigma_rt1 ),
+  alpha_rt1("alpha_rt1", "alpha_rt1",this,_alpha_rt1),
+  alpha_rt2("alpha_rt2", "alpha_rt2",this,_alpha_rt2),
+  n_rt1("n_rt1"    , "n_rt1"    ,this,_n_rt1    ),
+  n_rt2("n_rt2"    , "n_rt2"    ,this,_n_rt2    ),
+  mean_wt("mean_wt"  , "mean_wt"  ,this,_mean_wt  ),
+  sigma_wt1("sigma_wt1" , "sigma_wt1" ,this,_sigma_wt1 ),
+  alpha_wt1("alpha_wt1", "alpha_wt1",this,_alpha_wt1),
+  alpha_wt2("alpha_wt2", "alpha_wt2",this,_alpha_wt2),
+  n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
+  n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
   EffC("EffC","corr-tag efficiency",this,_EffC),
   EffW("EffW","wrong-tag efficiency",this,_EffW),
@@ -58,9 +149,6 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   intWPart(_intWPart),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
-//   setProxy("mSet", "Set of m parameter", this) {
-//   _setProxy.add(m);
-//   }
 {
 
   isPenalised = false;
@@ -80,8 +168,20 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
 		     RooAbsReal& _P5p,
 		     RooAbsReal& _P6p,
 		     RooAbsReal& _P8p,
-//                      RooAbsReal& _mean,
-//                      RooAbsReal& _sigma,
+         	     RooAbsReal& _mean_rt  ,
+         	     RooAbsReal& _sigma_rt1,
+         	     RooAbsReal& _sigma_rt2 ,
+         	     RooAbsReal& _alpha_rt1,
+         	     RooAbsReal& _alpha_rt2,
+         	     RooAbsReal& _n_rt1    ,
+         	     RooAbsReal& _n_rt2    ,
+         	     RooAbsReal& _f1rt  ,
+         	     RooAbsReal& _mean_wt  ,
+         	     RooAbsReal& _sigma_wt1,
+         	     RooAbsReal& _alpha_wt1,
+         	     RooAbsReal& _alpha_wt2,
+         	     RooAbsReal& _n_wt1    ,
+         	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
 		     RooAbsReal& _EffC,
 		     RooAbsReal& _EffW,
@@ -89,8 +189,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
 		     std::vector<double> _intWPart,
 		     RooAbsReal& _PenTerm,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm//,
-// 	             RooSetProxy& _setProxy
+		     RooAbsReal& _wtMassTerm
 		     ) :
   RooAbsPdf(name,title), 
   ctK("ctK","ctK",this,_ctK),
@@ -105,8 +204,20 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   P5p("P5p","P5p",this,_P5p),
   P6p("P6p","P6p",this,_P6p),
   P8p("P8p","P8p",this,_P8p),
-//   mean("mean","mean",this,_mean),
-//   sigma("sigma","sigma",this,_sigma),
+  mean_rt("mean_rt", "mean_rt"  ,this,_mean_rt),
+  sigma_rt1("sigma_rt1", "sigma_rt1" ,this,_sigma_rt1),
+  sigma_rt2("sigma_rt2", "sigma_rt2" ,this,_sigma_rt2),
+  alpha_rt1("alpha_rt1", "alpha_rt1",this,_alpha_rt1),
+  alpha_rt2("alpha_rt2", "alpha_rt2",this,_alpha_rt2),
+  n_rt1("n_rt1", "n_rt1",this,_n_rt1),
+  n_rt2("n_rt2", "n_rt2",this,_n_rt2),
+  f1rt("f1rt", "f1rt",this,_f1rt),
+  mean_wt("mean_wt"  , "mean_wt"  ,this,_mean_wt  ),
+  sigma_wt1("sigma_wt1" , "sigma_wt1" ,this,_sigma_wt1 ),
+  alpha_wt1("alpha_wt1", "alpha_wt1",this,_alpha_wt1),
+  alpha_wt2("alpha_wt2", "alpha_wt2",this,_alpha_wt2),
+  n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
+  n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
   EffC("EffC","corr-tag efficiency",this,_EffC),
   EffW("EffW","wrong-tag efficiency",this,_EffW),
@@ -115,12 +226,84 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   PenTerm("PenTerm","PenTerm",this,_PenTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
-//   setProxy("mSet", "Set of m parameter", this) {
-//  _setProxy.add(m);
-//  }
 {
 
   isPenalised = true;
+
+}
+
+PdfSigAngMass::PdfSigAngMass(const char *name, const char *title, 
+		     RooAbsReal& _ctK,
+		     RooAbsReal& _ctL,
+		     RooAbsReal& _phi,
+		     RooAbsReal& _m,
+		     RooAbsReal& _Fl,
+		     RooAbsReal& _P1,
+		     RooAbsReal& _P2,
+		     RooAbsReal& _P3,
+		     RooAbsReal& _P4p,
+		     RooAbsReal& _P5p,
+		     RooAbsReal& _P6p,
+		     RooAbsReal& _P8p,
+         	     RooAbsReal& _mean_rt  ,
+         	     RooAbsReal& _sigma_rt1,
+         	     RooAbsReal& _sigma_rt2 ,
+         	     RooAbsReal& _alpha_rt1,
+         	     RooAbsReal& _alpha_rt2,
+         	     RooAbsReal& _n_rt1    ,
+         	     RooAbsReal& _n_rt2    ,
+         	     RooAbsReal& _f1rt  ,
+         	     RooAbsReal& _mean_wt  ,
+         	     RooAbsReal& _sigma_wt1,
+         	     RooAbsReal& _alpha_wt1,
+         	     RooAbsReal& _alpha_wt2,
+         	     RooAbsReal& _n_wt1    ,
+         	     RooAbsReal& _n_wt2    ,
+		     RooAbsReal& _mFrac,
+		     RooAbsReal& _EffC,
+		     RooAbsReal& _EffW,
+		     std::vector<double> _intCPart,
+		     std::vector<double> _intWPart,
+		     RooAbsReal& _rtMassTerm,
+		     RooAbsReal& _wtMassTerm
+		     ) :
+  RooAbsPdf(name,title), 
+  ctK("ctK","ctK",this,_ctK),
+  ctL("ctL","ctL",this,_ctL),
+  phi("phi","phi",this,_phi),
+  m("m","m",this,_m),
+  Fl("Fl","Fl",this,_Fl),
+  P1("P1","P1",this,_P1),
+  P2("P2","P2",this,_P2),
+  P3("P3","P3",this,_P3),
+  P4p("P4p","P4p",this,_P4p),
+  P5p("P5p","P5p",this,_P5p),
+  P6p("P6p","P6p",this,_P6p),
+  P8p("P8p","P8p",this,_P8p),
+  mean_rt("mean_rt", "mean_rt"  ,this,_mean_rt),
+  sigma_rt1("sigma_rt1", "sigma_rt1" ,this,_sigma_rt1),
+  sigma_rt2("sigma_rt2", "sigma_rt2" ,this,_sigma_rt2),
+  alpha_rt1("alpha_rt1", "alpha_rt1",this,_alpha_rt1),
+  alpha_rt2("alpha_rt2", "alpha_rt2",this,_alpha_rt2),
+  n_rt1("n_rt1", "n_rt1",this,_n_rt1),
+  n_rt2("n_rt2", "n_rt2",this,_n_rt2),
+  f1rt("f1rt", "f1rt",this,_f1rt),
+  mean_wt("mean_wt"  , "mean_wt"  ,this,_mean_wt  ),
+  sigma_wt1("sigma_wt1" , "sigma_wt1" ,this,_sigma_wt1 ),
+  alpha_wt1("alpha_wt1", "alpha_wt1",this,_alpha_wt1),
+  alpha_wt2("alpha_wt2", "alpha_wt2",this,_alpha_wt2),
+  n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
+  n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
+  mFrac("mFrac","mFrac",this,_mFrac),
+  EffC("EffC","corr-tag efficiency",this,_EffC),
+  EffW("EffW","wrong-tag efficiency",this,_EffW),
+  intCPart(_intCPart),
+  intWPart(_intWPart),
+  rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
+  wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
+{
+
+  isPenalised = false;
 
 }
 
@@ -139,17 +322,27 @@ PdfSigAngMass::PdfSigAngMass(const PdfSigAngMass& other, const char* name) :
   P5p("P5p",this,other.P5p),
   P6p("P6p",this,other.P6p),
   P8p("P8p",this,other.P8p),
-//   mean("mean",this,other.mean),
-//   sigma("sigma",this,other.sigma),
+  mean_rt("mean_rt",this,other.mean_rt),
+  sigma_rt1("sigma_rt1",this,other.sigma_rt1),
+  sigma_rt2("sigma_rt2",this,other.sigma_rt2),
+  alpha_rt1("alpha_rt1",this,other.alpha_rt1),
+  alpha_rt2("alpha_rt2",this,other.alpha_rt2),
+  n_rt1("n_rt1",this,other.n_rt1),
+  n_rt2("n_rt2",this,other.n_rt2),
+  f1rt("f1rt",this,other.f1rt),
+  mean_wt("mean_wt",this,other.mean_wt),
+  sigma_wt1("sigma_wt1",this,other.sigma_wt1),
+  alpha_wt1("alpha_wt1",this,other.alpha_wt1),
+  alpha_wt2("alpha_wt2",this,other.alpha_wt2),
+  n_wt1("n_wt1",this,other.n_wt1),
+  n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
   EffC("EffC",this,other.EffC),
   EffW("EffW",this,other.EffW),
   intCPart(other.intCPart),
   intWPart(other.intWPart),
-  rtMassTerm(other.rtMassTerm),
-  wtMassTerm(other.wtMassTerm)//,
-//   setProxy(other.setProxy)
-//   }
+  rtMassTerm("rtMassTerm", this, other.rtMassTerm),
+  wtMassTerm("wtMassTerm", this, other.wtMassTerm)
 {
 
   if (other.isPenalised) {
@@ -164,6 +357,8 @@ PdfSigAngMass::PdfSigAngMass(const PdfSigAngMass& other, const char* name) :
 Double_t PdfSigAngMass::evaluate() const 
 {
 
+//   std::cout << Fl << " fl and p1 " << P1 << std::endl;
+//   std::cout << ((RooAbsPdf&)(rtMassTerm.arg())).getVal() << std::endl;
   double decCT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
 		   Fl * ctK*ctK +
 		   ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
@@ -193,19 +388,12 @@ Double_t PdfSigAngMass::evaluate() const
   double penalty = 1;
   if (isPenalised) penalty = penTermVal()->getVal();
 
-  double rtMassValue = rtMassTermVal()->getVal();
-  double wtMassValue = wtMassTermVal()->getVal();
-  
-//   RooAbsReal xarg = m.arg() ;
-//   RooArgSet massSet (xarg);
-//   RooSetProxy massSetProxy (m);
-//   RooArgSet massSet ((RooAbsReal*) m.absArg() );
-//   double sara = rtMassTermPdf()->createIntegral(massSet, RooFit::Range("rangename"));
-//   std::cout<<"mass value: " << m <<  ": " << rtMassValue << " : " << wtMassValue << " : " << sara << std::endl;
-  
-//   RooGaussian myg = RooGaussian("myg","myg", m, mean,sigma);
-
-  double ret = (9./(32 * 3.14159265) * (effCValue * decCT * rtMassValue + mFrac * effWValue * decWT * wtMassValue) * penalty);
+  double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
+  double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
+// //   double rtMassValue = rtMassTermVal()->getVal();
+// //   double wtMassValue = wtMassTermVal()->getVal();
+//   
+  double ret = (9./(32 * 3.14159265) * (effCValue * decCT * mCT + mFrac * effWValue * decWT * mWT) * penalty);
 
   return ret;
 
@@ -299,9 +487,10 @@ Double_t PdfSigAngMass::analyticalIntegral(Int_t code, const char* rangeName) co
         else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
         return 1e-55;
       }
-    //   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
-    //   double rtMass = rtMassTerm.analyticalIntegral();
-    //   RooAbsReal& marg = m.absArg() ; 
+
+//     double rtMassIntegral = 1;
+//     double wtMassIntegral = 1;
+
     RooAbsReal & marg = (RooAbsReal&)m.arg();
     
     RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
