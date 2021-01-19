@@ -141,11 +141,23 @@ Double_t PdfSigMass::evaluate() const
 
 }
 
+namespace {
+  Bool_t fullRangeMass(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for mass variables
+    return range == 0 || strlen(range) == 0
+      ? std::fabs(x.min() - 5.) < 1.e-5 && std::fabs(x.max() - 5.6) < 1.e-5
+      : std::fabs(x.min(range) - 5.) < 1.e-5 && std::fabs(x.max(range) - 5.6) < 1.e-5;
+  }
+}
+
 
 Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   if ( matchArgs(allVars,analVars,m) ){
+    if ( fullRangeMass(m,rangeName) ) {
       return 1 ;
+    }
   }
   return 0 ;
 }
