@@ -51,47 +51,6 @@ class PdfSigMass : public RooAbsPdf {
   RooRealProxy rtMassTerm;
   RooRealProxy wtMassTerm;
 
-//   RooRealProxy myrtMassTermPdf;
-  
-  
-//   const Double_t rtMassTermVal() const {
-//     // Return pointer to mass term function for RT
-//     return (Double_t) rtMassTerm.eval() ;
-//   }
-// //   const RooAbsReal* myrtMassTermPdfVal() const {
-// //     // Return pointer to penalty term function
-// //     return (RooAbsReal*) myrtMassTermPdf.absArg() ;
-// //   }
-// // 
-// //   PdfCBShape* rtMassTermPdf() const {
-// //     // Return pointer to mass term function for RT
-// //     RooAbsArg* absArg = rtMassTerm.absArg();
-// //     PdfCBShape* pdf = dynamic_cast<PdfCBShape*>(absArg);    
-// //     return pdf ;
-// //   }
-// //   const PdfCBShape* rtMassTermPdf() const {
-// //     // Return pointer to mass term function for RT
-// //     RooAbsArg* absArg = rtMassTerm.absArg();
-// //     PdfCBShape* pdf = dynamic_cast<PdfCBShape*>(absArg);    
-// //     return pdf ;
-// //   }
-//   const RooAbsReal* wtMassTermVal() const {
-//     // Return pointer to mass term function for RT
-//     return (RooAbsReal*) wtMassTerm.absArg() ;
-//   }
-// 
-//   PdfCBShape* myrtMassTermPdf() const  {
-//     PdfCBShape* rt =  new PdfCBShape("cbs", "Crystal Ball shape", 
-//                                    *(RooAbsReal*)m.absArg(), 
-//                                    *(RooAbsReal*)mean_rt_rt.absArg(), 
-//                                    *(RooAbsReal*)sigma_rt.absArg(), 
-//                                    *(RooAbsReal*)alpha_rt1.absArg(), 
-//                                    *(RooAbsReal*)n_rt1.absArg(), 
-//                                    *(RooAbsReal*)alpha_rt2.absArg(), 
-//                                    *(RooAbsReal*)n_rt2.absArg());
-//   
-//     return rt;
-//   }
   Double_t evaluate() const ;
 
  public:
