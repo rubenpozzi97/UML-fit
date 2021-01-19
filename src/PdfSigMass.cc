@@ -53,7 +53,6 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
-//   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm, kFALSE, kFALSE)
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
 }
@@ -129,15 +128,10 @@ PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :
 
 Double_t PdfSigMass::evaluate() const 
 {
-//   rtMassTerm.arg().getVariables()->Print("v");
-  
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
   
-//   std::cout <<  "mct: " << mCT <<  "   mwt: " << mWT << std::endl;
-//   double theIntegral = ((RooAbsPdf&)(rtMassTerm.arg())).analyticalIntegral(1, "null");
-//   std::cout <<  theIntegral << std::endl;
-   return mCT + (mFrac)*mWT;
+  return mCT + (mFrac)*mWT;
 
 }
 
@@ -165,33 +159,19 @@ Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
 Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code>0 && code<2) ;
-//   std::cout << "PdfSigMass:analyticalIntegral:rangeName "<< rangeName << std::endl;
   
- //  double theIntegralRT = ((RooAbsPdf&)(rtMassTerm.arg())).analyticalIntegral(1, "");
-//   double theIntegralWT = ((RooAbsPdf&)(wtMassTerm.arg())).analyticalIntegral(1, "");
-//   std::cout <<  "integral: " << theIntegralRT + (1-mFrac)*theIntegralWT << std::endl;
-//   double theIntegral = theIntegralRT + (1-mFrac)*theIntegralWT  ;
-
-  std::cout <<  "PdfSigMass:analyticalIntegral:before marg" << std::endl;
   RooAbsReal & marg = (RooAbsReal&)m.arg();
-  std::cout <<  "PdfSigMass:analyticalIntegral:marg" << std::endl;
   
   RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
-  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassTerm" << std::endl;
-  double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral" << std::endl;
+  double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg))->getVal();
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
   
   RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
-  double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral" << std::endl;
+  double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
+  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl;
 
   double theIntegral = rtMassIntegral + mFrac*wtMassIntegral  ;
   std::cout <<  "integral: " << theIntegral << std::endl;
-
- // //     //   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
- // //     //   double rtMass = rtMassTerm.analyticalIntegral();
- // //     //   RooAbsReal& marg = m.absArg() ; 
- // //     RooAbsReal & marg = (RooAbsReal&)m.arg();
 
   return theIntegral ;
 

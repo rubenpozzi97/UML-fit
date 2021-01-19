@@ -140,8 +140,8 @@ class PdfSigMass : public RooAbsPdf {
   virtual TObject* clone(const char* newname) const { return new PdfSigMass(*this,newname); }
   inline virtual ~PdfSigMass() { }
 
-//   Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
-//   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
 
   ClassDef(PdfSigMass,1) // PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events
     };
