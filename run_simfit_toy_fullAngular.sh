@@ -41,6 +41,9 @@ cd $WORKDIR
 if [ ! -d $HOME/toyFitResults_b${bin} ]; then
     mkdir $HOME/toyFitResults_b${bin}
 fi
+if [ ! -d $HOME/plotSimFit_b${bin} ]; then
+    mkdir $HOME/plotSimFit_b${bin}
+fi
 
 if [ ! -r $SAMPLEDIR/2016/lmnr/recoMCDataset_b${bin}_2016.root ]; then
     echo $SAMPLEDIR/2016/lmnr/recoMCDataset_b${bin}_2016.root not found
@@ -80,13 +83,16 @@ cp $SAMPLEDIR/2018/lmnr/KDEeff_b${bin}_od_2018.root .
 cp $HOME/simfit_toy_fullAngular .
 
 mkdir toyFitResults
+mkdir plotSimFit_d
 
 echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 
 cp toyFitResults/* $HOME/toyFitResults_b${bin}/
+cp plotSimFit_d/* $HOME/plotSimFit_b${bin}/
 
 rm -rf toyFitResults
+rm -rf plotSimFit_d
 
 rm simfit_toy_fullAngular
 rm recoMCDataset_b*
