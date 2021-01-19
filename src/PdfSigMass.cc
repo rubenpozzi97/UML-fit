@@ -129,85 +129,58 @@ PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :
 
 Double_t PdfSigMass::evaluate() const 
 {
-
-//   std::cout << m << "  " << sigma_rt2 << "  " << f1rt << std::endl;
 //   rtMassTerm.arg().getVariables()->Print("v");
   
-  //test sara
-//   RooAbsReal & marg = (RooAbsReal&)m.arg();
-//   RooArgSet massSet (marg);
-//   std::cout << ((RooAbsPdf&)(rtMassTerm.arg())).getVal() << std::endl;
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
   
+//   std::cout <<  "mct: " << mCT <<  "   mwt: " << mWT << std::endl;
 //   double theIntegral = ((RooAbsPdf&)(rtMassTerm.arg())).analyticalIntegral(1, "null");
 //   std::cout <<  theIntegral << std::endl;
-  
-//   RooDataHist* data = ((RooAbsPdf&)(rtMassTerm.arg())).generateBinned(RooArgSet(massSet),ExpectedData());
-//   RooFitResult* res = ((RooAbsPdf&)(rtMassTerm.arg())).fitTo(*data, Save(),PrintLevel(-1),Minos(kFALSE),SumW2Error(kFALSE));
-//   double ret = ((PdfCBShape&)(rtMassTerm.arg()))->getVal();
-//   double ret = ((RooAbsReal*) rtMassTerm.absArg())->getVal();
-  
-//   RooAbsReal xarg = m.arg() ;
-//   RooArgSet massSet (xarg);
-//   RooSetProxy massSetProxy (m);
-//   RooArgSet massSet ((RooAbsReal*) m.absArg() );
-//   double sara = rtMassTermPdf()->createIntegral(massSet, RooFit::Range("rangename"));
-//   std::cout<<"pdfSigMass: " << m <<  ": " << rtMassValue << " : " << wtMassValue  << std::endl;
-  
-//   double ret = (effCValue  * rtMassValue + mFrac * effWValue * wtMassValue) * penalty);
-//   return sara;
-
-
-//   PdfCBShape* rt = new PdfCBShape("cbs", "Crystal Ball shape", 
-//                                   *(RooAbsReal*)m.absArg(), 
-//                                    *(RooAbsReal*)mean_rt.absArg(), 
-//                                    *(RooAbsReal*)width.absArg(), 
-//                                    *(RooAbsReal*)alpha_rt1.absArg(), 
-//                                    *(RooAbsReal*)n_rt1.absArg(), 
-//                                    *(RooAbsReal*)alpha_rt2.absArg(), 
-//                                    *(RooAbsReal*)n_rt2.absArg());
-   
-//   std::cout<<"pdfSigMass: " << m <<  ": " << myrtMassTermPdf()->eval() << " : " << sara  << std::endl;
-
-//    return mCT ;
    return mCT + (mFrac)*mWT;
 
 }
 
 
-// Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
-// {
-//   if ( matchArgs(allVars,analVars,m) ){
-//       return 1 ;
-//   }
-//   return 0 ;
-// }
-// 
-// Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName) const
-// {
-//   assert(code>0 && code<2) ;
-//   double theIntegralRT = ((RooAbsPdf&)(rtMassTerm.arg())).analyticalIntegral(1, "");
-// 
+Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
+{
+  if ( matchArgs(allVars,analVars,m) ){
+      return 1 ;
+  }
+  return 0 ;
+}
+
+Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName) const
+{
+  assert(code>0 && code<2) ;
+//   std::cout << "PdfSigMass:analyticalIntegral:rangeName "<< rangeName << std::endl;
+  
+ //  double theIntegralRT = ((RooAbsPdf&)(rtMassTerm.arg())).analyticalIntegral(1, "");
 //   double theIntegralWT = ((RooAbsPdf&)(wtMassTerm.arg())).analyticalIntegral(1, "");
-// //   std::cout <<  theIntegralRT + (1-mFrac)*theIntegralWT << std::endl;
-// 
-// 
-// // // // //     //   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
-// // // // //     //   double rtMass = rtMassTerm.analyticalIntegral();
-// // // // //     //   RooAbsReal& marg = m.absArg() ; 
-// // // // //     RooAbsReal & marg = (RooAbsReal&)m.arg();
-// // // // //     
-// // // // //     RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
-// // // // //     double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-// // // // //     
-// // // // //     RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
-// // // // //     double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-// // // // //     theIntegral = rtMassIntegral + mFrac*wtMassIntegral  ;
-// // // // //   }
-// // // // //   
-// // // // //   
-// // // // //   
-// //   return theIntegralRT ;
-//   return theIntegralRT + (1-mFrac)*theIntegralWT;
-// }
+//   std::cout <<  "integral: " << theIntegralRT + (1-mFrac)*theIntegralWT << std::endl;
+//   double theIntegral = theIntegralRT + (1-mFrac)*theIntegralWT  ;
+
+  std::cout <<  "PdfSigMass:analyticalIntegral:before marg" << std::endl;
+  RooAbsReal & marg = (RooAbsReal&)m.arg();
+  std::cout <<  "PdfSigMass:analyticalIntegral:marg" << std::endl;
+  
+  RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassTerm" << std::endl;
+  double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral" << std::endl;
+  
+  RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
+  double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
+  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral" << std::endl;
+
+  double theIntegral = rtMassIntegral + mFrac*wtMassIntegral  ;
+  std::cout <<  "integral: " << theIntegral << std::endl;
+
+ // //     //   double sara = rtMassTermPdf()->createIntegral(m, rangeName);
+ // //     //   double rtMass = rtMassTerm.analyticalIntegral();
+ // //     //   RooAbsReal& marg = m.absArg() ; 
+ // //     RooAbsReal & marg = (RooAbsReal&)m.arg();
+
+  return theIntegral ;
+
+}
