@@ -5,15 +5,6 @@ nsam=10
 
 save=1
 
-f1=100
-f4=10
-
-b1=50
-b4=50
-
-m1=0
-m4=0
-
 bin=${2}
 gen1=${3}
 gen2=${4}
@@ -85,8 +76,8 @@ cp $HOME/simfit_toy_fullAngular .
 mkdir toyFitResults
 mkdir plotSimFit_d
 
-echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
-./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${seed} ${nsam} 1 ${save} 2016 2017 2018
+echo ./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${seed} ${nsam} 1 ${save} 2016 2017 2018
+./simfit_toy_fullAngular ${bin} ${gen1} ${gen2} ${gen3} ${gen4} ${gen5} ${gen6} ${gen7} ${gen8} ${seed} ${nsam} 1 ${save} 2016 2017 2018
 
 cp toyFitResults/* $HOME/toyFitResults_b${bin}/
 cp plotSimFit_d/* $HOME/plotSimFit_b${bin}/

@@ -8,15 +8,6 @@ nsam=${1}
 plot=0
 save=1
 
-f1=100
-f4=10
-
-b1=50
-b4=50
-
-m1=0
-m4=0
-
 ibin=${2}
 
 export HOME=/afs/cern.ch/work/a/aboletti/private/Kstmumu-Run2/UML-custMinos
@@ -82,8 +73,8 @@ cp $HOME/simfit_recoMC_fullAngular .
 mkdir simFitResults
 mkdir plotSimFit_d
 
-echo ./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
-./simfit_recoMC_fullAngular ${bin} ${par} ${f1} ${f4} ${b1} ${b4} ${m1} ${m4} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
+echo ./simfit_recoMC_fullAngular ${bin} ${par} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
+./simfit_recoMC_fullAngular ${bin} ${par} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
 
 cp plotSimFit_d/* $HOME/plotSimFit_d/
 

@@ -26,6 +26,7 @@
 #include "BoundCheck.h"
 #include "BoundDist.h"
 #include "Penalty.h"
+#include "Fitter.h"
 
 using namespace RooFit;
 using namespace std;
@@ -39,10 +40,6 @@ TCanvas* c [4*nBins];
 
 double power = 1.0;
 
-double maxCoeff = 1e8;
-
-double min_base = 1.05;
-
 // lower threshold to parameters' uncertainties
 // to build the randomisation models (too small leads to many useless points)
 double minParError = 0.01;
@@ -51,15 +48,7 @@ double minParError = 0.01;
 int nGenMINOS = 2e4;
 double widthScale = 0.1;
 
-// Variables to be used both in the main function and the fit subfunc
-double coeff1 = 0;
-double coeff4 = 0;
-double coeff5 = 0;
-bool usedPenalty = false;
-
-#include "fitUtils.h"
-
-void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uint nSample, bool localFiles, bool save, std::vector<int> years, std::map<int,float> scale_to_data, double fac1, double fac4, double base1, double base4, double max1, double max4)
+void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uint nSample, bool localFiles, bool save, std::vector<int> years, std::map<int,float> scale_to_data)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -284,8 +273,6 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
                             Index(sample), 
                             Import(map)); 
   RooDataSet* combData = 0;
-  RooAbsReal* nll = 0;
-  RooAbsReal* nll_penalty = 0;
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
@@ -341,6 +328,9 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
   int cnt[9];
   for (int iCnt=0; iCnt<9; ++iCnt) cnt[iCnt] = 0;
 
+  Fitter* fitter = 0;
+  vector<Fitter*> vFitter (0);
+
   for (uint is = 0; is < nSample; is++) {
 
     string the_cut = Form("sample==sample::data%d_subs%d", years[0], is);
@@ -357,11 +347,6 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     int combEntries = combData->numEntries();
     penTerm->setPower(power/combEntries);
 
-    double base1_corr = base1*sqrt(combEntries);
-    double base4_corr = base4*sqrt(combEntries);
-    if (base1_corr<min_base) base1_corr = min_base;
-    if (base4_corr<min_base) base4_corr = min_base;
-
     // to start the fit, parameters are restored to the center of the parameter space
     Fl ->setVal(0.5);
     P1 ->setVal(0);
@@ -373,8 +358,10 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     P8p->setVal(0);
 
     // run the fit
+    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),combData,simPdf,simPdf_penalty,boundary,penTerm);
+    vFitter.push_back(fitter);
     subTime.Start(true);
-    RooFitResult* fitResult = fit(combData,simPdf,simPdf_penalty,nll,nll_penalty,boundary,penTerm,fac1,fac4,base1_corr,base4_corr,max1,max4);
+    int status = fitter->fit();
     subTime.Stop();
 
     // include fit time in dataset with per-toy informations
@@ -390,20 +377,20 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     bool convCheck = false;
     bool boundCheck = false;
 
-    if (fitResult) {
+    if (status==0) {
       
       convCheck = true;
       boundCheck = boundary->getValV() == 0;
 
-      fitResult->SetName (Form("result_%s_subs%i",shortString.c_str(),is));
-      fitResult->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
-      fitResult->Print("v");
+      fitter->result()->SetName (Form("result_%s_subs%i",shortString.c_str(),is));
+      fitter->result()->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
+      fitter->result()->Print("v");
 
-      if (usedPenalty) {
+      if (fitter->usedPenalty) {
 	// include coefficient values in dataset with per-toy informations
-	co1->setVal(coeff1);
-	co4->setVal(coeff4);
-	co5->setVal(coeff5);
+	co1->setVal(fitter->coeff1);
+	co4->setVal(fitter->coeff4);
+	co5->setVal(fitter->coeff5);
 
 	// Compute distance from boundary, print it
 	// and save it in dataset with per-toy informations
@@ -419,7 +406,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	vector<double> vImprovPar(pars.getSize());
 	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
 	  vImprovPar[iPar] = ((RooRealVar*)pars.at(iPar))->getValV();
-	double NLL_before = nll->getValV();
+	double NLL_before = fitter->nll->getValV();
 	double improvNLL = NLL_before;
 	double testNLL = 0;
 	int iImprove = 0;
@@ -431,7 +418,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	    par->setVal(vTestPar[iPar]);
 	  }
 	  if (boundary->getValV()>0) continue;
-	  testNLL = nll->getValV();
+	  testNLL = fitter->nll->getValV();
 	  if (improvNLL>testNLL) {
 	    improvNLL = testNLL;
 	    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
@@ -451,7 +438,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       minosTime.Start(true);
 
       // NLL of the best-fit result
-      double NLL_min = nll->getValV();
+      double NLL_min = fitter->nll->getValV();
 
       TRandom3 randGenMinos (seed);
       double probedNLL;
@@ -537,7 +524,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	    // check if the point is physical
 	    if (boundary->getValV()>0) continue;
 	    // get and test the local likelihood
-	    probedNLL = nll->getValV();
+	    probedNLL = fitter->nll->getValV();
 	    if (probedNLL<=NLL_min+0.5) {
 	      p_in = p_test;
 	      if ( isErrHigh > 0 ) { if ( p_in > par->getMax()-parRandomPool->GetBinWidth(1) ) break; }
@@ -626,7 +613,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     int iCnt = 0;
     if (!convCheck) iCnt += 4;
     if (!boundCheck) iCnt += 2;
-    if (usedPenalty) iCnt += 1;
+    if (fitter->usedPenalty) iCnt += 1;
     ++cnt[iCnt];
 
     // print fit status and time
@@ -640,9 +627,9 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       }
     } else {
       if (convCheck) {
-	if (usedPenalty) {
+	if (fitter->usedPenalty) {
 	  subPosConv->add(savePars);
-	  cout<<"Converged with penalty term with coeff: "<<coeff1<<" "<<coeff4<<" "<<coeff5;
+	  cout<<"Converged with penalty term with coeff: "<<fitter->coeff1<<" "<<fitter->coeff4<<" "<<fitter->coeff5;
 	} else {
 	  subNoPen->add(savePars);
 	  cout<<"Converged without penalty";
@@ -708,40 +695,26 @@ int main(int argc, char** argv)
     if ( argc > 2+iPar ) genPars[iPar] = atof(argv[2+iPar]);
     else genPars[iPar] = 0;
 
-  double fac1 = 1;
-  double fac4 = 1;
-  double base1 = 3;
-  double base4 = 3;
-  double max1 = 0;
-  double max4 = 0;
-
-  if ( argc > 10 ) fac1  = atof(argv[10]) / 1000.0;
-  if ( argc > 11 ) fac4  = atof(argv[11]) / 1000.0;
-  if ( argc > 12 ) base1 = atof(argv[12]) / 1000.0;
-  if ( argc > 13 ) base4 = atof(argv[13]) / 1000.0;
-  if ( argc > 14 ) max1  = atof(argv[14]);
-  if ( argc > 15 ) max4  = atof(argv[15]);
-
   uint seed = 1;
   uint nSample = 1;
-  if ( argc > 16 ) seed = atoi(argv[16]);
-  if ( argc > 17 ) nSample = atoi(argv[17]);
+  if ( argc > 10 ) seed = atoi(argv[10]);
+  if ( argc > 11 ) nSample = atoi(argv[11]);
 
   bool localFiles = false;
-  if ( argc > 18 && atoi(argv[18]) > 0 ) localFiles = true;
+  if ( argc > 12 && atoi(argv[12]) > 0 ) localFiles = true;
 
   bool save = true;
 
-  if ( argc > 19 && atoi(argv[19]) == 0 ) save = false;
+  if ( argc > 13 && atoi(argv[13]) == 0 ) save = false;
 
   std::vector<int> years;
-  if ( argc > 20 && atoi(argv[20]) != 0 ) years.push_back(atoi(argv[20]));
+  if ( argc > 14 && atoi(argv[14]) != 0 ) years.push_back(atoi(argv[14]));
   else {
     cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc > 21 && atoi(argv[21]) != 0 ) years.push_back(atoi(argv[21]));
-  if ( argc > 22 && atoi(argv[22]) != 0 ) years.push_back(atoi(argv[22]));
+  if ( argc > 15 && atoi(argv[15]) != 0 ) years.push_back(atoi(argv[15]));
+  if ( argc > 16 && atoi(argv[16]) != 0 ) years.push_back(atoi(argv[16]));
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
 
@@ -755,9 +728,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+      simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data);
   else
-    simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data, fac1, fac4, base1, base4, max1, max4);
+    simfit_toy_fullAngularBin(q2Bin, genPars, seed, nSample, localFiles, save, years, scale_to_data);
 
   return 0;
 
