@@ -132,7 +132,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
   // Random generators
   RooRandom::randomGenerator()->SetSeed(1);
-  TRandom3 randGen (1);
 
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -374,7 +373,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     P8p->setVal(0);
 
     // run the fit
-    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),combData,simPdf,simPdf_penalty,boundary,penTerm);
+    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm);
     vFitter.push_back(fitter);
     subTime.Start(true);
     int status = fitter->fit();
@@ -417,36 +416,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
 	boundDist->setVal(boundDistVal);
 
-	// Improve global fit result
-	vector<double> vTestPar(pars.getSize());
-	vector<double> vImprovPar(pars.getSize());
-	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-	  vImprovPar[iPar] = ((RooRealVar*)pars.at(iPar))->getValV();
-	double NLL_before = fitter->nll->getValV();
-	double improvNLL = NLL_before;
-	double testNLL = 0;
-	int iImprove = 0;
-	do {
-	  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-	    RooRealVar* par = (RooRealVar*)pars.at(iPar);
-	    do vTestPar[iPar] = randGen.Gaus(vImprovPar[iPar],TMath::Max(boundDistVal,0.002));
-	    while (vTestPar[iPar]>par->getMax() || vTestPar[iPar]<par->getMin());
-	    par->setVal(vTestPar[iPar]);
-	  }
-	  if (boundary->getValV()>0) continue;
-	  testNLL = fitter->nll->getValV();
-	  if (improvNLL>testNLL) {
-	    improvNLL = testNLL;
-	    for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-	      vImprovPar[iPar] = vTestPar[iPar];
-	  }
-	  ++iImprove;
-	} while (iImprove<1e4);
-	for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-	  ((RooRealVar*)pars.at(iPar))->setVal(vImprovPar[iPar]);
-
-	double improvDistVal = bound_dist->getValV();
-	cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<boundDistVal<<" -> "<<improvDistVal<<endl;
+	fitter->improveAng();
       }
 
       if (nSample>0) {
