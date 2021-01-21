@@ -29,10 +29,12 @@ CLASS6     := Penalty
 CLASS7     := BoundDist
 CLASS8     := PdfSigAngMass
 CLASS9     := PdfSigMass
+CLASS10    := ShapeSigAng
 CLASSDICT  := AngDict
 CLASSDICT2 := RooDoubleCBDict
 CLASSDICT3 := AngMassDict
 CLASSDICT4 := MassDict
+CLASSDICT5 := ShapeSigAngDict
 
 #compiling options
 DEBUGFLAGS := -O3 -Wall -std=c++11
@@ -58,6 +60,10 @@ $(CLASSDICT4): $(INCLUDEDIR)/$(CLASS9).h
 	@echo "Generating dictionary $@ using rootcint ..."
 	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
 
+$(CLASSDICT5): $(INCLUDEDIR)/$(CLASS10).h
+	@echo "Generating dictionary $@ using rootcint ..."
+	$(ROOTCINT) -f $@.cc -c $^ -I./vdt
+
 $(EXECUTABLE0): $(EXECUTABLE0).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
@@ -81,7 +87,7 @@ $(EXECUTABLE6): $(EXECUTABLE6).cc
 
 $(EXECUTABLE7): $(EXECUTABLE7).cc 
 # 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS8).cc $(CLASSDICT2).cc $(CLASSDICT3).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS8).cc $(SOURCEDIR)/$(CLASS10).cc $(CLASSDICT2).cc $(CLASSDICT3).cc $(CLASSDICT5).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 $(EXECUTABLE8): $(EXECUTABLE8).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS9).cc $(CLASSDICT2).cc $(CLASSDICT4).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)

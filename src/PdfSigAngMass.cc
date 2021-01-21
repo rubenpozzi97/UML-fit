@@ -38,11 +38,9 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
-		     RooAbsReal& _EffC,
-		     RooAbsReal& _EffW,
-		     std::vector<double> _intCPart,
-		     std::vector<double> _intWPart,
 		     RooAbsReal& _PenTerm,
+                     RooAbsReal& _rtAngTerm,
+                     RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 ) :
@@ -72,11 +70,9 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  EffC("EffC","corr-tag efficiency",this,_EffC),
-  EffW("EffW","wrong-tag efficiency",this,_EffW),
-  intCPart(_intCPart),
-  intWPart(_intWPart),
   PenTerm("PenTerm","PenTerm",this,_PenTerm),
+  rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
+  wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -110,10 +106,8 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
-		     RooAbsReal& _EffC,
-		     RooAbsReal& _EffW,
-		     std::vector<double> _intCPart,
-		     std::vector<double> _intWPart,
+                     RooAbsReal& _rtAngTerm,
+                     RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 ) :
@@ -143,10 +137,8 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  EffC("EffC","corr-tag efficiency",this,_EffC),
-  EffW("EffW","wrong-tag efficiency",this,_EffW),
-  intCPart(_intCPart),
-  intWPart(_intWPart),
+  rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
+  wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -183,11 +175,9 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
-		     RooAbsReal& _EffC,
-		     RooAbsReal& _EffW,
-		     std::vector<double> _intCPart,
-		     std::vector<double> _intWPart,
 		     RooAbsReal& _PenTerm,
+                     RooAbsReal& _rtAngTerm,
+                     RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 		     ) :
@@ -219,11 +209,9 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  EffC("EffC","corr-tag efficiency",this,_EffC),
-  EffW("EffW","wrong-tag efficiency",this,_EffW),
-  intCPart(_intCPart),
-  intWPart(_intWPart),
   PenTerm("PenTerm","PenTerm",this,_PenTerm),
+  rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
+  wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -260,10 +248,8 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
-		     RooAbsReal& _EffC,
-		     RooAbsReal& _EffW,
-		     std::vector<double> _intCPart,
-		     std::vector<double> _intWPart,
+                     RooAbsReal& _rtAngTerm,
+                     RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 		     ) :
@@ -295,10 +281,8 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  EffC("EffC","corr-tag efficiency",this,_EffC),
-  EffW("EffW","wrong-tag efficiency",this,_EffW),
-  intCPart(_intCPart),
-  intWPart(_intWPart),
+  rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
+  wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -337,10 +321,8 @@ PdfSigAngMass::PdfSigAngMass(const PdfSigAngMass& other, const char* name) :
   n_wt1("n_wt1",this,other.n_wt1),
   n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
-  EffC("EffC",this,other.EffC),
-  EffW("EffW",this,other.EffW),
-  intCPart(other.intCPart),
-  intWPart(other.intWPart),
+  rtAngTerm("rtAngTerm", this, other.rtAngTerm),
+  wtAngTerm("wtAngTerm", this, other.wtAngTerm),
   rtMassTerm("rtMassTerm", this, other.rtMassTerm),
   wtMassTerm("wtMassTerm", this, other.wtMassTerm)
 {
@@ -357,44 +339,24 @@ PdfSigAngMass::PdfSigAngMass(const PdfSigAngMass& other, const char* name) :
 Double_t PdfSigAngMass::evaluate() const 
 {
 
-//   std::cout << Fl << " fl and p1 " << P1 << std::endl;
-//   std::cout << ((RooAbsPdf&)(rtMassTerm.arg())).getVal() << std::endl;
-  double decCT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
-		   Fl * ctK*ctK +
-		   ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-		   0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) +
-		   2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-		   2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
-		   2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
-		   P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-
-  double decWT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
-		   Fl * ctK*ctK +
-		   ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-		   0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
-		   2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-		   2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
-		   2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
-		   P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-
-  double effCValue = effCVal()->getVal();
-  if (effCValue<0)  std::cout<<"ERROR! NEGATIVE CT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
-  if (effCValue==0) std::cout<<"ERROR! ZERO CT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
-
-  double effWValue = effWVal()->getVal();
-  if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
-  if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
-
   double penalty = 1;
   if (isPenalised) penalty = penTermVal()->getVal();
 
+  double decCT_times_eff = ((RooAbsReal&)(rtAngTerm.arg())).getVal();
+  double decWT_times_eff = ((RooAbsReal&)(wtAngTerm.arg())).getVal();
+
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
-// //   double rtMassValue = rtMassTermVal()->getVal();
-// //   double wtMassValue = wtMassTermVal()->getVal();
-//   
-  double ret = (9./(32 * 3.14159265) * (effCValue * decCT * mCT + mFrac * effWValue * decWT * mWT) * penalty);
 
+//   double ret = (9./(32 * 3.14159265) * (decCT_times_eff + mFrac * decWT_times_eff ) * penalty);
+  double ret = (9./(32 * 3.14159265) * (decCT_times_eff * mCT + mFrac * decWT_times_eff * mWT) * penalty);
+
+//   std::cout << m << " --> " << mCT << "   " << mWT << "   " << decCT_times_eff << "   " << decWT_times_eff <<  std::endl;
+//   std::cout <<  "new:PdfSigAngMass:evaluate:rtMassVal  " << mCT     << std::endl;
+//   std::cout <<  "new:PdfSigAngMass:evaluate:rwMassVal  " << mWT     << std::endl;
+//   std::cout <<  "new:PdfSigAngMass:evaluate:rtAngIntegral   " << decCT_times_eff  << std::endl;
+//   std::cout <<  "new:PdfSigAngMass:evaluate:wtAngIntegral   " << decWT_times_eff  << std::endl;
+//   std::cout <<  "new:PdfSigAngMass:evaluate:wtAngIntegral   " << decWT_times_eff  << std::endl;
   return ret;
 
 }
@@ -414,25 +376,44 @@ namespace {
       ? std::fabs(x.min() + TMath::Pi()) < 1.e-3 && std::fabs(x.max() - TMath::Pi()) < 1.e-3
       : std::fabs(x.min(range) + TMath::Pi()) < 1.e-3 && std::fabs(x.max(range) - TMath::Pi()) < 1.e-3;
   }
+  Bool_t fullRangeMass(const RooRealProxy& x ,const char* range)
+  {
+    // set accepted integration range for mass variables
+    return range == 0 || strlen(range) == 0
+      ? std::fabs(x.min() - 5.) < 1.e-5 && std::fabs(x.max() - 5.6) < 1.e-5
+      : std::fabs(x.min(range) - 5.) < 1.e-5 && std::fabs(x.max(range) - 5.6) < 1.e-5;
+  }
 }
 
 Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
-// Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
-  // use pre-computed integrals for the integration over all the three variables
-  // after checking that integrals are in place
-  if ( intCPart.size()<1 || intCPart[0]==0 || intWPart.size()<1 || intWPart[0]==0 )
-    return 0 ;
   if ( matchArgs(allVars,analVars,ctK,ctL,phi,m) ){
-    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) )
+    std::cout << "code 1"<<  std::endl;
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) )
       return 1 ;
   }
   if ( matchArgs(allVars,analVars,ctK,ctL,phi) ){
+    std::cout << "code 2"<<  std::endl;
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "now code 2" << std::endl;
       return 2 ;
       }
   }
+  if ( matchArgs(allVars,analVars,ctL,phi,m) ){
+    if ( fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) )
+    std::cout << "code 3"<<  std::endl;
+      return 3 ;
+  }
+  if ( matchArgs(allVars,analVars,ctK,phi,m) ){
+    if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) )
+    std::cout << "code 4"<<  std::endl;
+      return 4 ;
+  }
+  if ( matchArgs(allVars,analVars,ctK,ctL,m) ){
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangeMass(m,rangeName) )
+    std::cout << "code 5"<<  std::endl;
+      return 5 ;
+  }
+  std::cout << "code 0"<<  std::endl;
   // the lack of analytical integral for the subsets of angular variables does not slow down the fit
   // since only the complete integration is used there
   // if one wants to speed up also the PDF projection for plotting, the other analytical integrals can be computed
@@ -443,107 +424,108 @@ Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 
 Double_t PdfSigAngMass::analyticalIntegral(Int_t code, const char* rangeName) const
 {
-  assert(code>0 && code<3) ;
+  assert(code>0 && code<6) ;
 
   double theIntegral;
-  if (code < 2){
-      // use the pre-computed integrals from histogram
-    Double_t retCT =  9./(32*3.14159265) * (
-  					  0.75*(1-Fl)              * intCPart[0]
-  					  + Fl                     * intCPart[1]
-  					  + 0.25*(1-Fl)            * intCPart[2]
-  					  - Fl                     * intCPart[3]
-  					  + 0.5*P1*(1-Fl)          * intCPart[4]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
-  					  + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
-  					  - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
-  					  + 2*(1-Fl)*P2            * intCPart[9]
-  					  - P3*(1-Fl)              * intCPart[10]
-  					  );
-    
-    Double_t retWT =  9./(32*3.14159265) * (
-  					  0.75*(1-Fl)              * intWPart[0]
-  					  + Fl                     * intWPart[1]
-  					  + 0.25*(1-Fl)            * intWPart[2]
-  					  - Fl                     * intWPart[3]
-  					  + 0.5*P1*(1-Fl)          * intWPart[4]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
-  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
-  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
-  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
-  					  - 2*(1-Fl)*P2            * intWPart[9]
-  					  + P3*(1-Fl)              * intWPart[10]
-  					  );
-  
-  
-    if (retCT<=0) {
-        if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
+  if (code == 1){
+
+    RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
+    RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
+    RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
+    RooAbsReal & marg = (RooAbsReal&)m.arg();
+
+    RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
+    RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
+    double rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+    double wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+
+    if (rtAngIntegral<=0) {
+        if (rtAngIntegral<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
         else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
         return 1e-55;
       }
-    if (retWT<=0) {
-        if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
+    if (wtAngIntegral<=0) {
+        if (wtAngIntegral<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
         else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
         return 1e-55;
       }
 
-//     double rtMassIntegral = 1;
-//     double wtMassIntegral = 1;
-
-    RooAbsReal & marg = (RooAbsReal&)m.arg();
-    
     RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
-    double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-    
     RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
-    double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
-    theIntegral = retCT*rtMassIntegral + mFrac*retWT*wtMassIntegral  ;
+    double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg))->getVal();
+    double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
+
+//     theIntegral = rtAngIntegral + mFrac*wtAngIntegral  ;
+    theIntegral = rtAngIntegral*rtMassIntegral + mFrac*wtAngIntegral*wtMassIntegral  ;
+
+//   double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg, RooFit::NormSet(marg)))->getVal();
+
+
+//     std::cout <<  "new:PdfSigAngMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral     << std::endl;
+//     std::cout <<  "new:PdfSigAngMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral     << std::endl;
+//     std::cout <<  "new:PdfSigAngMass:analyticalIntegral:rtAngIntegral   " << rtAngIntegral  << std::endl;
+//     std::cout <<  "new:PdfSigAngMass:analyticalIntegral:wtAngIntegral   " << wtAngIntegral << std::endl;
+
   }
   
-  
-  
-  else if (code ==2){
-    Double_t retCT =  9./(32*3.14159265) * (
-  					  0.75*(1-Fl)              * intCPart[0]
-  					  + Fl                     * intCPart[1]
-  					  + 0.25*(1-Fl)            * intCPart[2]
-  					  - Fl                     * intCPart[3]
-  					  + 0.5*P1*(1-Fl)          * intCPart[4]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
-  					  + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
-  					  - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
-  					  + 2*(1-Fl)*P2            * intCPart[9]
-  					  - P3*(1-Fl)              * intCPart[10]
-  					  );
-    
-    Double_t retWT =  9./(32*3.14159265) * (
-  					  0.75*(1-Fl)              * intWPart[0]
-  					  + Fl                     * intWPart[1]
-  					  + 0.25*(1-Fl)            * intWPart[2]
-  					  - Fl                     * intWPart[3]
-  					  + 0.5*P1*(1-Fl)          * intWPart[4]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
-  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
-  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
-  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
-  					  - 2*(1-Fl)*P2            * intWPart[9]
-  					  + P3*(1-Fl)              * intWPart[10]
-    					  );
-    
-    
-    if (retCT<=0) {
-      if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
-      else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
-      return 1e-55;
-    }
-    if (retWT<=0) {
-      if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
-      else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
-      return 1e-55;
-    }
-    theIntegral = retCT + mFrac*retWT ;
+  else if (code ==2 ){
+
+    RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
+    RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
+    RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
+
+    RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
+    RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
+    double rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+    double wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+
+    if (rtAngIntegral<=0) {
+        if (rtAngIntegral<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
+        else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
+        return 1e-55;
+      }
+    if (wtAngIntegral<=0) {
+        if (wtAngIntegral<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
+        else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
+        return 1e-55;
+      }
+    theIntegral = rtAngIntegral + mFrac * wtAngIntegral  ;
   }
+
+  else if (code >=2 && code <= 5){
+
+    RooAbsReal & marg   = (RooAbsReal&)m.arg();
+    RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
+    RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
+    RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
+
+    RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
+    RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
+    double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg))->getVal();
+    double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
+
+    RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
+    RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
+    double rtAngIntegral, wtAngIntegral;
+ 
+    if (code ==3){
+      //matchArgs(allVars,analVars,ctL,phi,m)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctLarg,phiarg), RooFit::NormSet(RooArgSet(marg,ctKarg)) ))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctLarg,phiarg), RooFit::NormSet(RooArgSet(marg,ctKarg)) ))->getVal();
+    }
+    else if (code ==4){
+      //matchArgs(allVars,analVars,ctK,phi,m)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,phiarg), RooFit::NormSet(RooArgSet(marg,ctLarg)) ))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,phiarg), RooFit::NormSet(RooArgSet(marg,ctLarg)) ))->getVal();
+    }
+    else if (code ==5){
+      //matchArgs(allVars,analVars,ctK,ctL,m)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg), RooFit::NormSet(RooArgSet(marg,phiarg))))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg), RooFit::NormSet(RooArgSet(marg,phiarg))))->getVal();
+    }
+    
+    theIntegral = rtAngIntegral*rtMassIntegral + mFrac*wtAngIntegral*wtMassIntegral  ;
+  }
+
   return theIntegral;
 }

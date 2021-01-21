@@ -32,6 +32,8 @@
 
 // #include "PdfSigAng.h"
 #include "PdfSigAngMass.h"
+#include "ShapeSigAng.h"
+
 #include "BoundCheck.h"
 #include "BoundDist.h"
 #include "Penalty.h"
@@ -217,8 +219,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                                    q2Bin,  parity,  years[iy], 
                                    reco_vars,  shortString  )); 
 
-    RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
-
+//     RooRealVar*  mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
+    RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",1, 0, 1);
+ 
     // Mass Component
     // import mass PDF from fits to the MC
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i.root",years[iy]);
@@ -248,7 +251,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     constr_rt_list.add(*dcb_rt);
     RooProdPdf * c_dcb_rt = new RooProdPdf(("c_dcb_rt_"+year).c_str(), ("c_dcb_rt_"+year).c_str(), constr_rt_list );
     c_vars.add(c_vars_rt);
-
+   
     /// create WT component
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_WT_%i",q2Bin));
 
@@ -267,6 +270,23 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     RooProdPdf * c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
     c_vars.add(c_vars_wt);
 
+    std::cout <<  "set all mass pars constant" << std::endl;
+    mean_rt  -> setConstant();
+    sigma_rt -> setConstant();
+    alpha_rt1-> setConstant();
+    alpha_rt2-> setConstant();
+    n_rt1    -> setConstant();
+    n_rt2    -> setConstant();
+
+    mean_wt  -> setConstant();
+    sigma_wt -> setConstant();
+    alpha_wt1-> setConstant();
+    alpha_wt2-> setConstant();
+    n_wt1    -> setConstant();
+    n_wt2    -> setConstant();
+
+    mFrac->setConstant();
+
  
     cout << "deltap built --> constraint not added yet (to be done)" << endl;
     //// creating constraints for the difference between the two peaks
@@ -277,28 +297,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 //                                                ) );
 //     c_vars.add(*deltaPeaks);       c_pdfs.add(*c_deltaPeaks[iy]);
 
-
-//     if (q2Bin < 5)  
-//         PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-//                                                ("PDF_sig_mass_"+year).c_str(),
-//                                                *mass,
-//                                                *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
-//                                                *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-//       		                               *mFrac,
-//       		                               *c_dcb_rt,
-//       		                               *c_dcb_wt  
-//       		                              ));
-//     else  
-//         PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-//                                                ("PDF_sig_mass_"+year).c_str(),
-//                                                *mass,
-//                                                *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
-//                                                *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-//       		                               *mFrac,
-//       		                               *c_dcb_rt ,
-//       		                               *c_dcb_wt
-//       		                               ));
- 
+  
     /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
     double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal(); 
     double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal(); 
@@ -316,52 +315,71 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
 //     cout << "prepdf rt: " << c_dcb_rt->createIntegral(RooArgSet(*mass), RooFit::NormSet(*mass))->getVal() << endl;
 //     cout << "prepdf wt: " << c_dcb_wt->createIntegral(RooArgSet(*mass), RooFit::NormSet(*mass))->getVal() << endl;
-    cout << "update to work differently if q2 > 5 !!!!!!!!!!!" << endl;
+
+    // Angular Component
+    RooAbsReal* ang_rt = new ShapeSigAng( ("PDF_sig_ang_rt_"+shortString+"_"+year).c_str(),
+                                         ("PDF_sig_ang_rt_"+year).c_str(),
+         		                 *ctK,*ctL,*phi,
+         		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
+         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 true
+         		                 );
+    
+    RooAbsReal* ang_wt = new ShapeSigAng( ("PDF_sig_ang_wt_"+shortString+"_"+year).c_str(),
+                                         ("PDF_sig_ang_wt_"+year).c_str(),
+         		                 *ctK,*ctL,*phi,
+         		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
+         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 false
+         		                 );
+    
+
+
 
     if (q2Bin < 5)  {
-        PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_unc_"+shortString+"_"+year).c_str(),
-                                                       ("PDF_sig_ang_mass_unc_"+year).c_str(),
+        PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
+                                                       ("PDF_sig_ang_mass_"+year).c_str(),
          		                                *ctK,*ctL,*phi,*mass,
          		                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                         *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
          		                                *mFrac,
-         		                                *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                                *ang_rt, *ang_wt,
          		                                *c_dcb_rt, *c_dcb_wt
          		                                ));
     
-        PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ( "PDF_sig_ang_mass_unc_penalty_"+shortString+"_"+year).c_str(),
-                                                              ( "PDF_sig_ang_mass_unc_penalty_"+year).c_str(),
-      		                                           *ctK,*ctL,*phi,*mass,
-      		                                           *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-                                                           *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
-                                                           *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
-      		                                           *mFrac,
-       		                                           *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
-                          		                   *penTerm,
-      		                                           *c_dcb_rt, *c_dcb_wt
-      		                                           ));
+        PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ( "PDF_sig_ang_mass_penalty_"+shortString+"_"+year).c_str(),
+                                                              ( "PDF_sig_ang_mass_penalty_"+year).c_str(),
+      		                                                *ctK,*ctL,*phi,*mass,
+      		                                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
+                                                                *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
+                                                                *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
+      		                                                *mFrac,
+            		                                        *ang_rt, *ang_wt,
+                          		                        *penTerm,
+      		                                                *c_dcb_rt, *c_dcb_wt
+      		                                                ));
     }      		                                           
     else {
-        PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_unc_"+shortString+"_"+year).c_str(),
-                                                       ("PDF_sig_ang_mass_unc_"+year).c_str(),
+        PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
+                                                       ("PDF_sig_ang_mass_"+year).c_str(),
          		                                *ctK,*ctL,*phi,*mass,
          		                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                         *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
          		                                *mFrac,
-         		                                *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                                *ang_rt, *ang_wt,
          		                                *c_dcb_rt, *c_dcb_wt
          		                                ));
     
-        PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ("PDF_sig_ang_mass_unc_penalty_"+shortString+"_"+year).c_str(),
-                                                              ("PDF_sig_ang_mass_unc_penalty_"+year).c_str(),
+        PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ("PDF_sig_ang_mass_penalty_"+shortString+"_"+year).c_str(),
+                                                              ("PDF_sig_ang_mass_penalty_"+year).c_str(),
       		                                              *ctK,*ctL,*phi,*mass,
       		                                              *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                               *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                               *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
       		                                              *mFrac,
-       		                                              *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+           		                                      *ang_rt, *ang_wt,
                           		                      *penTerm,
       		                                              *c_dcb_rt, *c_dcb_wt
       		                                              ));
@@ -447,7 +465,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
         the_cut = the_cut + Form("|| sample==sample::data%d_subs%d", years[iy], is);
       }
     }
-
+ 
     combData = (RooDataSet*)allcombData.reduce(Cut(the_cut.c_str()));
     if (nSample>0) cout<<"Fitting subsample "<<is+1<<" with "<<combData->numEntries()<<" entries"<<endl;
     else cout<<"Fitting full MC sample with "<<combData->numEntries()<<" entries"<<endl;
@@ -457,14 +475,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     // to start the fit, parameters are restored to the center of the parameter space
     ws_pars->loadSnapshot("initial_pars");
-//     Fl ->setVal(0.5);
-//     P1 ->setVal(0);
-//     P2 ->setVal(0);
-//     P3 ->setVal(0);
-//     P4p->setVal(0);
-//     P5p->setVal(0);
-//     P6p->setVal(0);
-//     P8p->setVal(0);  
 
     // set penalty term power parameter
     int combEntries = combData->numEntries();
@@ -492,115 +502,111 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                                             RooFit::Constrain(c_vars),
                                             RooFit::NumCPU(1)
                                             );
-    cout << "done nll" << endl;
     RooMinimizer m(*nll) ;
-    cout << "done minimiz" << endl;
 //     m.optimizeConst (kTRUE); // do not recalculate constant terms
-    cout << "done opt" << endl;
 //     m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
-    cout << "done offset" << endl;
     m.setPrintLevel(-1);
-    m.setPrintEvalErrors(-1);
-    cout << "done print" << endl;
+    m.setPrintEvalErrors(-1); 
     m.setMinimizerType("Minuit2");
-    cout << "start time" << endl;
 
     subTime.Start(true);
  
     m.setStrategy(0);
   //   m.setEvalErrorWall(false);
-    m.migrad() ;
+    m.migrad() ; 
     m.hesse() ;
 //     // std::cout << std::endl;
 //     // std::cout << "######################### now strategy 2 #########################"<< std::endl;
     m.setStrategy(2);
-    m.migrad() ;
+    m.migrad() ; 
     m.hesse() ;
 //     // m.minos() ;
     
     RooFitResult* fitResult = m.save(("result_" + shortString + Form("subs%d",is)).c_str()) ; 
     fitResult->Print("v");
+    
+//     return;
 
     RooFitResult* fitResult_penalty = 0;
     usedPenalty = false;
-// 
-//     if ( fitResult->status()!=0 || fitResult->covQual()!=3 || boundary->getValV() > 0 ) {
-//       usedPenalty = true;
-// 
-//       if ( !boundary->isInCTL4()  ) inCTL4  = false;
-//       if ( !boundary->isInCTL15() ) inCTL15 = false;
-// 
-//       for (totCoeff=0; fac1*pow(base1_corr,totCoeff)<=maxCoeff; ++totCoeff) {
-// 
-// 	for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
-// 	  coeff1 = fac1 * pow(base1_corr,iCoeff1);
-// 	  if (max1>0 && coeff1>max1) continue;
-// 	  // if ( inCTL15 ) {
-// 	  //   if ( iCoeff1>0 ) continue;
-// 	  //   coeff1 = 0;
-// 	  // }
+
+    if ( fitResult->status()!=0 || fitResult->covQual()!=3 || boundary->getValV() > 0 ) {
+      usedPenalty = true;
+
+      if ( !boundary->isInCTL4()  ) inCTL4  = false;
+      if ( !boundary->isInCTL15() ) inCTL15 = false;
+
+      for (totCoeff=0; fac1*pow(base1_corr,totCoeff)<=maxCoeff; ++totCoeff) {
+
+	for (iCoeff1=totCoeff; iCoeff1>=0; --iCoeff1) {
+	  coeff1 = fac1 * pow(base1_corr,iCoeff1);
+	  if (max1>0 && coeff1>max1) continue;
+	  // if ( inCTL15 ) {
+	  //   if ( iCoeff1>0 ) continue;
+	  //   coeff1 = 0;
+	  // }
 	  penTerm->setCoefficient(1,coeff1);
-// 
-// 	  // for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
-// 	  iCoeff4=totCoeff-iCoeff1; // new
-// 	  {                         // new
-// 
-// 	    coeff4 = fac4 * pow(base4_corr,iCoeff4);
-// 	    if (max4>0 && coeff4>max4) continue;
-// 	    // if ( inCTL4 ) {
-// 	    //   if ( iCoeff4>0 ) continue;
-// 	    //   coeff4 = 0;
-// 	    // }
-// 
-// 	    // coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
-// 	    coeff5 = pow(coeff1,1.5) / 316.2; // new
-// 
-// 	    if (max5>0 && coeff5>max5) continue;
-// 	    // if ( inCTL15 ) {
-// 	    //   if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
-// 	    //   coeff5 = 0;
-// 	    // }
-// 
-// 	    penTerm->setCoefficient(4,coeff4);
-// 	    penTerm->setCoefficient(5,coeff5);
-// 
-// 	    nll_penalty = simPdf_penalty->createNLL(*combData,
-// 						    RooFit::Extended(kFALSE),
-// 						    RooFit::NumCPU(1),
-//                                                     RooFit::Constrain(c_vars_rt)
-// 						    );
-// 
-// 	    RooMinimizer m_penalty (*nll_penalty) ;
-// 	    m_penalty.optimizeConst(kTRUE);
-// 	    m_penalty.setOffsetting(kTRUE);
-// 	    // m_penalty.setVerbose(kTRUE);
-// 	    m_penalty.setMinimizerType("Minuit2");
-// 	    // m_penalty.setProfile(kTRUE);
-// 	    m_penalty.setPrintLevel(-1);
-// 	    m_penalty.setPrintEvalErrors(-1);
-// 	    m_penalty.setStrategy(2);
-//     
-// 	    m_penalty.migrad() ;
-// 	    m_penalty.hesse() ;
-// 	    fitResult_penalty = m_penalty.save(Form("subRes_%s_%i",shortString.c_str(),is),Form("subRes_%s_%i",shortString.c_str(),is));
-// 	    
-// 	    // cout<<penTerm->getCoefficient(1)<<"\t"<<penTerm->getCoefficient(5)<<"\t"<<P5p->getValV()<<endl;
-// 	    // fitResult_penalty->Print("v");
-// 	    
-// 	    if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 ) {
-// 	      if ( boundary->getValV()==0 ) {
-// 		isPhysical = true;
-// 		cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-// 		break;
-// 	      } else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-// 	    } else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-// 	  }
-// 	  if (isPhysical) break;
-// 	}
-// 	if (isPhysical) break;
-//       }
-//     
-//     }
+
+	  // for (iCoeff4=totCoeff-iCoeff1; iCoeff4>=0; --iCoeff4) {
+	  iCoeff4=totCoeff-iCoeff1; // new
+	  {                         // new
+
+	    coeff4 = fac4 * pow(base4_corr,iCoeff4);
+	    if (max4>0 && coeff4>max4) continue;
+	    // if ( inCTL4 ) {
+	    //   if ( iCoeff4>0 ) continue;
+	    //   coeff4 = 0;
+	    // }
+
+	    // coeff5 = fac5 * pow(base5_corr,totCoeff-iCoeff1-iCoeff4);
+	    coeff5 = pow(coeff1,1.5) / 316.2; // new
+
+	    if (max5>0 && coeff5>max5) continue;
+	    // if ( inCTL15 ) {
+	    //   if ( totCoeff-iCoeff1-iCoeff4>0 ) continue;
+	    //   coeff5 = 0;
+	    // }
+
+	    penTerm->setCoefficient(4,coeff4);
+	    penTerm->setCoefficient(5,coeff5);
+
+            nll_penalty = ws_pars->pdf("simPdf")->createNLL(*combData,
+				   		             RooFit::Extended(kFALSE),
+				   		             RooFit::NumCPU(1),
+                                                             RooFit::Constrain(c_vars_rt)
+				   		           );
+
+	    RooMinimizer m_penalty (*nll_penalty) ;
+	    m_penalty.optimizeConst(kTRUE);
+	    m_penalty.setOffsetting(kTRUE);
+	    // m_penalty.setVerbose(kTRUE);
+	    m_penalty.setMinimizerType("Minuit2");
+	    // m_penalty.setProfile(kTRUE);
+	    m_penalty.setPrintLevel(-1);
+	    m_penalty.setPrintEvalErrors(-1);
+	    m_penalty.setStrategy(2);
+    
+	    m_penalty.migrad() ;
+	    m_penalty.hesse() ;
+	    fitResult_penalty = m_penalty.save(Form("subRes_%s_%i",shortString.c_str(),is),Form("subRes_%s_%i",shortString.c_str(),is));
+	    
+	    // cout<<penTerm->getCoefficient(1)<<"\t"<<penTerm->getCoefficient(5)<<"\t"<<P5p->getValV()<<endl;
+	    // fitResult_penalty->Print("v");
+	    
+	    if ( fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3 ) {
+	      if ( boundary->getValV()==0 ) {
+		isPhysical = true;
+		cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+		break;
+	      } else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	    } else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	  }
+	  if (isPhysical) break;
+	}
+	if (isPhysical) break;
+      }
+    
+    }
 
     subTime.Stop();
     fitTime->setVal(subTime.CpuTime());
@@ -620,18 +626,18 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
     double boundCheck = boundary->getValV();
     bool convCheck = false;
-//     if (usedPenalty && fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3) convCheck = true;
+    if (usedPenalty && fitResult_penalty->status()==0 && fitResult_penalty->covQual()==3) convCheck = true;
     if (!usedPenalty && fitResult->status()==0 && fitResult->covQual()==3) convCheck = true;
 
     TStopwatch distTime;
     distTime.Start(true);
-    double boundDistVal = bound_dist->getValV();
+//     double boundDistVal = bound_dist->getValV();
     distTime.Stop();
-    cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
-    boundDist->setVal(boundDistVal);
+//     cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
+//     boundDist->setVal(boundDistVal);
 
-    if (boundDistVal>0.02 && usedPenalty)
-      cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
+//     if (boundDistVal>0.02 && usedPenalty)
+//       cout<<"WARNING high distance: "<<boundDistVal<<" with coeff1 "<<coeff1<<" coeff4 "<<coeff4<<" coeff5 "<<coeff5<<endl;
 
     ++cnt[8];
     int iCnt = 0;
@@ -717,15 +723,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
   fout->Close();
 
-  if (multiSample) {
-    TCanvas* cDist = new TCanvas (("cDist_"+shortString).c_str(),("cDist_"+shortString).c_str(),1800,1800);
-    RooPlot* fDist = boundDist->frame(Name("fDist"),Title("Distribution of results' distance fram boundary"),Range(0,0.1));
-    subNoPen->plotOn(fDist,Binning(50,0,0.1),LineColor(kBlue),MarkerColor(kBlue),MarkerStyle(19),DrawOption("XL"));
-    subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
-    cDist->cd();
-    fDist->Draw();
-    cDist->SaveAs( ("plotSimFit4d_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
-  }
+//   if (multiSample) {
+//     TCanvas* cDist = new TCanvas (("cDist_"+shortString).c_str(),("cDist_"+shortString).c_str(),1800,1800);
+//     RooPlot* fDist = boundDist->frame(Name("fDist"),Title("Distribution of results' distance fram boundary"),Range(0,0.1));
+//     subNoPen->plotOn(fDist,Binning(50,0,0.1),LineColor(kBlue),MarkerColor(kBlue),MarkerStyle(19),DrawOption("XL"));
+//     subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
+//     cDist->cd();
+//     fDist->Draw();
+//     cDist->SaveAs( ("plotSimFit4d_d/recoBoundDist_" + shortString + "_" + all_years + Form("_f-%.3f-%.3f-%.3f_b-%.3f-%.3f-%.3f_m-%.0f-%.0f-%.0f.pdf",fac1,fac4,fac5,base1,base4,base5,max1,max4,max5)).c_str() );
+//   }
 
 //   if (!plot || multiSample) return;
 
@@ -835,20 +841,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);
 
     cout<<"canvas ready"<<endl;
-    for (unsigned int fr = 0; fr < frames.size(); fr++){
+    for (unsigned int fr = 1; fr < frames.size(); fr++){
         cout<<"fr " << fr<<endl;
-        combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+"_subs0").c_str()), Name(("plData"+year).c_str()));
+        combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()), Name(("plData"+year).c_str()));
         
-        ctK->setBins(20) ;
-        ctL->setBins(20) ;
-        phi->setBins(20) ;
-        mass->setBins(20) ;
-        RooDataHist* projData;
-        if (fr==0) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *ctL, *phi),*combData) ;
-        if (fr==1) projData = new RooDataHist ("projData","projData",RooArgSet(*ctL, *phi, *mass),*combData) ;
-        if (fr==2) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *phi, *mass),*combData) ;
-        if (fr==3) projData = new RooDataHist ("projData","projData",RooArgSet(*ctK, *ctL, *mass),*combData) ;
-        simPdf  ->plotOn(frames[fr], Slice(sample, ("data"+year+"_subs0").c_str()), 
+        ctK->setBins(10) ;
+        ctL->setBins(10) ;
+        phi->setBins(10) ;
+        mass->setBins(10) ;  
+        simPdf  ->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
                                      ProjWData(RooArgSet(sample), *combData), 
                                      LineWidth(1), 
                                      Name(("plPDF"+year).c_str()), 
@@ -861,10 +862,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
         gPad->SetLeftMargin(0.19); 
         frames[fr]->Draw();
         leg->Draw("same");
-        break;
+        if (fr==1) break;
+//         break;
     }
   }
-  c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  ".pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  "analytInt.pdf").c_str() );
 
 }
 

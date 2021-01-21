@@ -56,46 +56,18 @@ class PdfSigAngMass : public RooAbsPdf {
   
   RooRealProxy mFrac ;
 
-  RooRealProxy EffC ;
-  RooRealProxy EffW ;
-
-  std::vector<double> intCPart;
-  std::vector<double> intWPart;
-
   RooRealProxy PenTerm;
+  RooRealProxy rtAngTerm;
+  RooRealProxy wtAngTerm;
   RooRealProxy rtMassTerm;
   RooRealProxy wtMassTerm;
   
   bool isPenalised;
   
-  const RooAbsReal* effCVal() const { 
-    // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffC.absArg() ; 
-  }
-
-  const RooAbsReal* effWVal() const { 
-    // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffW.absArg() ; 
-  }
-
   const RooAbsReal* penTermVal() const {
     // Return pointer to penalty term function
     return (RooAbsReal*) PenTerm.absArg() ;
   }
-//   const RooAbsReal* rtMassTermVal() const {
-//     // Return pointer to mass term function for RT
-//     return (RooAbsReal*) rtMassTerm.absArg() ;
-//   }
-//   const RooAbsPdf* rtMassTermPdf() const {
-//     // Return pointer to mass term function for RT
-//     RooAbsArg* absArg = rtMassTerm.absArg();
-//     RooAbsPdf* pdf = dynamic_cast<RooAbsPdf*>(absArg);    
-//     return pdf ;
-//   }
-//   const RooAbsReal* wtMassTermVal() const {
-//     // Return pointer to mass term function for RT
-//     return (RooAbsReal*) wtMassTerm.absArg() ;
-//   }
 
   Double_t evaluate() const ;
 
@@ -128,11 +100,9 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
 	    RooAbsReal& _PenTerm,
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm,
 	    RooAbsReal& _wtMassTerm
 	    );
@@ -163,10 +133,8 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm,
 	    RooAbsReal& _wtMassTerm
 	    );
@@ -199,11 +167,9 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
 	    RooAbsReal& _PenTerm,
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm,
 	    RooAbsReal& _wtMassTerm
 	    );
@@ -237,10 +203,8 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm, 
 	    RooAbsReal& _wtMassTerm
 	    );
