@@ -36,25 +36,28 @@ class PdfSigAng : public RooAbsPdf {
   RooRealProxy P8p ;
   RooRealProxy mFrac ;
 
-  RooRealProxy EffC ;
-  RooRealProxy EffW ;
+  RooRealProxy rtAngTerm;
+  RooRealProxy wtAngTerm;
 
-  std::vector<double> intCPart;
-  std::vector<double> intWPart;
+//   RooRealProxy EffC ;
+//   RooRealProxy EffW ;
+// 
+//   std::vector<double> intCPart;
+//   std::vector<double> intWPart;
 
   RooRealProxy PenTerm;
 
   bool isPenalised;
   
-  const RooAbsReal* effCVal() const { 
-    // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffC.absArg() ; 
-  }
-
-  const RooAbsReal* effWVal() const { 
-    // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffW.absArg() ; 
-  }
+//   const RooAbsReal* effCVal() const { 
+//     // Return pointer to efficiency function in product
+//     return (RooAbsReal*) EffC.absArg() ; 
+//   }
+// 
+//   const RooAbsReal* effWVal() const { 
+//     // Return pointer to efficiency function in product
+//     return (RooAbsReal*) EffW.absArg() ; 
+//   }
 
   const RooAbsReal* penTermVal() const {
     // Return pointer to penalty term function
@@ -78,10 +81,12 @@ class PdfSigAng : public RooAbsPdf {
 	    RooAbsReal& _P6p,
 	    RooAbsReal& _P8p,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm,
+// 	    RooAbsReal& _EffC,
+// 	    RooAbsReal& _EffW,
+// 	    std::vector<double> _intCPart,
+// 	    std::vector<double> _intWPart,
 	    RooAbsReal& _PenTerm);
   PdfSigAng(const char *name, const char *title,
 	    RooAbsReal& _ctK,
@@ -96,10 +101,13 @@ class PdfSigAng : public RooAbsPdf {
 	    RooAbsReal& _P6p,
 	    RooAbsReal& _P8p,
 	    RooAbsReal& _mFrac,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart);
+	    RooAbsReal& _rtAngTerm,
+	    RooAbsReal& _wtAngTerm	    
+// 	    RooAbsReal& _EffC,
+// 	    RooAbsReal& _EffW,
+// 	    std::vector<double> _intCPart,
+// 	    std::vector<double> _intWPart
+	    );
   PdfSigAng(const PdfSigAng& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new PdfSigAng(*this,newname); }
   inline virtual ~PdfSigAng() { }
