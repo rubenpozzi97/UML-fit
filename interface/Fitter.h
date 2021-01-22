@@ -4,8 +4,9 @@
 #include <math.h>
 #include "Math/SpecFunc.h"
 #include "TMath.h"
-#include "TString.h"
 #include <TRandom3.h>
+#include <TH1D.h>
+#include <TString.h>
 
 #include <RooFitResult.h>
 #include <RooDataSet.h>
@@ -62,6 +63,18 @@ class Fitter {
 
   Double_t boundDist;
 
+  // lower threshold to parameters' uncertainties
+  // to build the randomisation models (too small leads to many useless points)
+  double minParError;
+
+  // MINOS parameters
+  double widthScale;
+
+  std::vector<Double_t> vFitResult;
+  std::vector<Double_t> vFitErrLow;
+  std::vector<Double_t> vFitErrHigh;
+  std::vector<Double_t> vConfInterLow;
+  std::vector<Double_t> vConfInterHigh;
 
   Fitter() {} ; 
   Fitter(const char *_name, const char *_title,
@@ -88,6 +101,8 @@ class Fitter {
   Int_t fit() ;
 
   Int_t improveAng(int seed = 1, int nGen = 10000) ;
+
+  Int_t MinosAng(int seed = 1, int nGenMINOS = 20000) ;
 
   RooFitResult* result () { if (usedPenalty) return result_penalty; return result_free; };
 
