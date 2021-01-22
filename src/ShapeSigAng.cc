@@ -29,7 +29,7 @@ ShapeSigAng::ShapeSigAng(const char *name, const char *title,
 		     std::vector<double> _intCPart,
 		     std::vector<double> _intWPart,
 		     bool _isC) :
-  RooAbsPdf(name,title), 
+  RooAbsReal(name,title), 
   ctK("ctK","ctK",this,_ctK),
   ctL("ctL","ctL",this,_ctL),
   phi("phi","phi",this,_phi),
@@ -50,7 +50,7 @@ ShapeSigAng::ShapeSigAng(const char *name, const char *title,
 }
 
 ShapeSigAng::ShapeSigAng(const ShapeSigAng& other, const char* name) :  
-  RooAbsPdf(other,name), 
+  RooAbsReal(other,name), 
   ctK("ctK",this,other.ctK),
   ctL("ctL",this,other.ctL),
   phi("phi",this,other.phi),

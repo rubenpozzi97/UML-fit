@@ -20,7 +20,7 @@
 #include "Riostream.h"
 #include "RooObjCacheManager.h"
  
-class ShapeSigAng : public RooAbsPdf {
+class ShapeSigAng : public RooAbsReal {
  protected:
 
   RooRealProxy ctK ;
