@@ -125,7 +125,7 @@ Double_t PdfSigAng::evaluate() const
   double decCT_times_eff = ((RooAbsReal&)(rtAngTerm.arg())).getVal();
   double decWT_times_eff = ((RooAbsReal&)(wtAngTerm.arg())).getVal();
 
-  double ret = (9./(32 * 3.14159265) * (decCT_times_eff + mFrac * decWT_times_eff ) * penalty);
+  double ret = (decCT_times_eff + mFrac * decWT_times_eff ) * penalty;
   return ret;
 }
 
@@ -189,7 +189,7 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code>0 && code<5) ;
 
-    double theIntegral, ssfInt;
+    double theIntegral;
 
     RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
     RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
@@ -198,63 +198,46 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
     RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
     RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
     
+    double rtAngIntegral, wtAngIntegral;
+
     if (code ==1){
   
-      double rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-      double wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
   
       if (rtAngIntegral<=0) {
           if (rtAngIntegral<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
           else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
           return 1e-55;
-        }
+      }
       if (wtAngIntegral<=0) {
           if (wtAngIntegral<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
           else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
           return 1e-55;
-       }
-       theIntegral =  (rtAngIntegral+mFrac*wtAngIntegral);   ///totAngIntegral;
-//        std::cout <<  "PdfSigAng:analyticalIntegral3D:rtAngIntegral   " << rtAngIntegral  << std::endl;
-//        std::cout <<  "PdfSigAng:analyticalIntegral3D:wtAngIntegral   " << wtAngIntegral  << std::endl;
-//        std::cout <<  "PdfSigAng:analyticalIntegral1:totIntegral   " << theIntegral  << std::endl;       
+      }
+      std::cout <<  "PdfSigAngMass:analyticalIntegral1:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }   
-    else if (code >=2 && code <=4){
-
-      double rtAngIntegral, wtAngIntegral;
-
-      if (code ==2){
-        //matchArgs(allVars,analVars,ctL,phi)
-        ssfInt = (ctK.max(rangeName)-ctK.min(rangeName)) ;
-        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
-        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
-  
-  //       double totRTAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-  //       double totWTAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-  //       theIntegral =  (rtAngIntegral/totRTAngIntegral + mFrac*wtAngIntegral/totWTAngIntegral);
- //        
-//         std::cout <<  "PdfSigAng:analyticalIntegral2D:rtFrac   " << rtAngIntegral  << std::endl;
-//         std::cout <<  "PdfSigAng:analyticalIntegral2D:wtFrac   " << wtAngIntegral  << std::endl;
-//         std::cout <<  "PdfSigAng:analyticalIntegral2D:ratio   "  << (rtAngIntegral) / (wtAngIntegral)  << std::endl;
-//   //       theIntegral =        rtAngIntegral / ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal() + \
-  //                      mFrac*wtAngIntegral / ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-      }
-      else if (code ==3){
-        //matchArgs(allVars,analVars,ctK,phi)
-        ssfInt = (ctL.max(rangeName)-ctL.min(rangeName)) ;
-  
-        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
-        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
-  
-      }
-      else if (code ==4){
-        //matchArgs(allVars,analVars,ctK,ctL)
-        ssfInt = (phi.max(rangeName)-phi.min(rangeName)) ;
-  
-        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
-        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
-      }
-      theIntegral =  (rtAngIntegral + mFrac*wtAngIntegral) * ssfInt;
+    else if (code ==2){
+      //matchArgs(allVars,analVars,ctL,phi)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
+      std::cout <<  "PdfSigAngMass:analyticalIntegral2:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+    }
+    else if (code ==3){
+      //matchArgs(allVars,analVars,ctK,phi)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
+      std::cout <<  "PdfSigAngMass:analyticalIntegral3\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+    }
+    else if (code ==4){
+      //matchArgs(allVars,analVars,ctK,ctL)
+      rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
+      wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
+      std::cout <<  "PdfSigAngMass:analyticalIntegral4\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }
 
+//       theIntegral =        rtAngIntegral / ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal() + \
+//                      mFrac*wtAngIntegral / ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+    theIntegral =  (rtAngIntegral + mFrac*wtAngIntegral);
     return theIntegral ;
 }

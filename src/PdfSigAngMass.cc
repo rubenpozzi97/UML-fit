@@ -349,7 +349,7 @@ Double_t PdfSigAngMass::evaluate() const
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal( RooArgSet(marg)) ;
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal( RooArgSet(marg)) ;
 
-  double ret = (9./(32 * 3.14159265) * (decCT_times_eff * mCT + mFrac * decWT_times_eff * mWT) * penalty);
+  double ret = (decCT_times_eff * mCT + mFrac * decWT_times_eff * mWT) * penalty;
   return ret;
 
 }

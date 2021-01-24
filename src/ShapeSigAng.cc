@@ -91,7 +91,7 @@ Double_t ShapeSigAng::evaluate() const
     if (effCValue<0)  std::cout<<"ERROR! NEGATIVE CT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
     if (effCValue==0) std::cout<<"ERROR! ZERO CT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
 
-    ret = effCValue * decCT;
+    ret = 9./(32 * 3.14159265) * effCValue * decCT;
   }
   else{
   
@@ -108,7 +108,7 @@ Double_t ShapeSigAng::evaluate() const
     if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
     if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
 
-    ret = effWValue * decWT;
+    ret = 9./(32 * 3.14159265) * effWValue * decWT;
   } 
   return ret;
 
@@ -156,19 +156,19 @@ Double_t ShapeSigAng::analyticalIntegral(Int_t code, const char* rangeName) cons
   if (isC){
 
     // use the pre-computed integrals from histogram
-    Double_t retCT =   9./4.  * (
-  				0.75*(1-Fl)              * intCPart[0]
-  				+ Fl                     * intCPart[1]
-  				+ 0.25*(1-Fl)            * intCPart[2]
-  				- Fl                     * intCPart[3]
-  				+ 0.5*P1*(1-Fl)          * intCPart[4]
-  				+ 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
-  				+ sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
-  				- sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
-  				+ 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
-  				+ 2*(1-Fl)*P2            * intCPart[9]
-  				- P3*(1-Fl)              * intCPart[10]
-  				);
+    Double_t retCT =  9./(32*3.14159265) * (
+  					    0.75*(1-Fl)              * intCPart[0]
+  					    + Fl                     * intCPart[1]
+  					    + 0.25*(1-Fl)            * intCPart[2]
+  					    - Fl                     * intCPart[3]
+  					    + 0.5*P1*(1-Fl)          * intCPart[4]
+  					    + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
+  					    + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
+  					    - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
+  					    + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
+  					    + 2*(1-Fl)*P2            * intCPart[9]
+  					    - P3*(1-Fl)              * intCPart[10]
+  					    );
     if (retCT<=0) {
       if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
       else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
@@ -178,19 +178,19 @@ Double_t ShapeSigAng::analyticalIntegral(Int_t code, const char* rangeName) cons
   }  
   
   else{
-    Double_t retWT = 9./4. * (
-  				0.75*(1-Fl)              * intWPart[0]
-  				+ Fl                     * intWPart[1]
-  				+ 0.25*(1-Fl)            * intWPart[2]
-  				- Fl                     * intWPart[3]
-  				+ 0.5*P1*(1-Fl)          * intWPart[4]
-  				+ 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
-  				- sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
-  				- sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
-  				- 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
-  				- 2*(1-Fl)*P2            * intWPart[9]
-  				+ P3*(1-Fl)              * intWPart[10]
-  				);
+    Double_t retWT =  9./(32*3.14159265) * (
+  					  0.75*(1-Fl)              * intWPart[0]
+  					  + Fl                     * intWPart[1]
+  					  + 0.25*(1-Fl)            * intWPart[2]
+  					  - Fl                     * intWPart[3]
+  					  + 0.5*P1*(1-Fl)          * intWPart[4]
+  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
+  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
+  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
+  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
+  					  - 2*(1-Fl)*P2            * intWPart[9]
+  					  + P3*(1-Fl)              * intWPart[10]
+  					  );
   
   
     if (retWT<=0) {
