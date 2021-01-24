@@ -91,7 +91,7 @@ Double_t ShapeSigAng::evaluate() const
     if (effCValue<0)  std::cout<<"ERROR! NEGATIVE CT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
     if (effCValue==0) std::cout<<"ERROR! ZERO CT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
 
-    ret = effCValue * decCT;
+    ret = 9./(32 * 3.14159265) * effCValue * decCT;
   }
   else{
   
@@ -108,7 +108,7 @@ Double_t ShapeSigAng::evaluate() const
     if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
     if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
 
-    ret = effWValue * decWT;
+    ret = 9./(32 * 3.14159265) * effWValue * decWT;
   } 
   return ret;
 
