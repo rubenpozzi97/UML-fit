@@ -119,8 +119,6 @@ PdfSigAng::PdfSigAng(const PdfSigAng& other, const char* name) :
 
 Double_t PdfSigAng::evaluate() const 
 {
-
-
   double penalty = 1;
   if (isPenalised) penalty = penTermVal()->getVal();
 
@@ -129,7 +127,6 @@ Double_t PdfSigAng::evaluate() const
 
   double ret = (9./(32 * 3.14159265) * (decCT_times_eff + mFrac * decWT_times_eff ) * penalty);
   return ret;
-
 }
 
 namespace {
@@ -167,6 +164,18 @@ Int_t PdfSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
       return 2 ;      
     }  
   }
+  if ( matchArgs(allVars,analVars,ctK,phi) ){
+    if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName) ){
+      std::cout << "code 3"<<  std::endl;
+      return 3 ;      
+    }  
+  }
+  if ( matchArgs(allVars,analVars,ctK,ctL) ){
+    if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) ){
+      std::cout << "code 4"<<  std::endl;
+      return 4 ;      
+    }  
+  }
 
   // the lack of analytical integral for the subsets of angular variables does not slow down the fit
   // since only the complete integration is used there
@@ -178,20 +187,21 @@ Int_t PdfSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
 
 Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
 {
-  assert(code>0 && code<3) ;
+  assert(code>0 && code<5) ;
 
-    double theIntegral;
+    double theIntegral, ssfInt;
 
+    RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
+    RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
+    RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
+
+    RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
+    RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
+    
     if (code ==1){
-      RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
-      RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
-      RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
   
-      RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
-      RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
       double rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
       double wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-//       double totAngIntegral = rtAngIntegral + mFrac*wtAngIntegral;
   
       if (rtAngIntegral<=0) {
           if (rtAngIntegral<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
@@ -203,34 +213,48 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
           else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
           return 1e-55;
        }
-       std::cout <<  "PdfSigAngMass:analyticalIntegral1:rtAngIntegral   " << rtAngIntegral  << std::endl;
-       std::cout <<  "PdfSigAngMass:analyticalIntegral1:wtAngIntegral   " << wtAngIntegral  << std::endl;
        theIntegral =  (rtAngIntegral+mFrac*wtAngIntegral);   ///totAngIntegral;
-//        std::cout <<  "PdfSigAngMass:analyticalIntegral1:totIntegral   " << theIntegral  << std::endl;
-       
-    }
-    
-    else if (code ==2){
-      //matchArgs(allVars,analVars,ctL,phi)
+//        std::cout <<  "PdfSigAng:analyticalIntegral3D:rtAngIntegral   " << rtAngIntegral  << std::endl;
+//        std::cout <<  "PdfSigAng:analyticalIntegral3D:wtAngIntegral   " << wtAngIntegral  << std::endl;
+//        std::cout <<  "PdfSigAng:analyticalIntegral1:totIntegral   " << theIntegral  << std::endl;       
+    }   
+    else if (code >=2 && code <=4){
 
-      RooAbsReal & ctKarg = (RooAbsReal&)ctK.arg();
-      RooAbsReal & ctLarg = (RooAbsReal&)ctL.arg();
-      RooAbsReal & phiarg = (RooAbsReal&)phi.arg();
+      double rtAngIntegral, wtAngIntegral;
+
+      if (code ==2){
+        //matchArgs(allVars,analVars,ctL,phi)
+        ssfInt = (ctK.max(rangeName)-ctK.min(rangeName)) ;
+        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
+        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
   
-      RooAbsReal & rtAng = (RooAbsReal&)rtAngTerm.arg();
-      RooAbsReal & wtAng = (RooAbsReal&)wtAngTerm.arg();
-
-      double rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
-      double wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
-      theIntegral =  (rtAngIntegral + mFrac*wtAngIntegral);
-      
-      std::cout <<  "PdfSigAngMass:analyticalIntegral2:rtFrac   " << rtAngIntegral  << std::endl;
-      std::cout <<  "PdfSigAngMass:analyticalIntegral2:wtFrac   " << wtAngIntegral  << std::endl;
-      std::cout <<  "PdfSigAngMass:analyticalIntegral2:ratio   "  << rtAngIntegral/ wtAngIntegral  << std::endl;
-//       theIntegral =        rtAngIntegral / ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal() + \
-//                      mFrac*wtAngIntegral / ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-
+  //       double totRTAngIntegral = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+  //       double totWTAngIntegral = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+  //       theIntegral =  (rtAngIntegral/totRTAngIntegral + mFrac*wtAngIntegral/totWTAngIntegral);
+ //        
+//         std::cout <<  "PdfSigAng:analyticalIntegral2D:rtFrac   " << rtAngIntegral  << std::endl;
+//         std::cout <<  "PdfSigAng:analyticalIntegral2D:wtFrac   " << wtAngIntegral  << std::endl;
+//         std::cout <<  "PdfSigAng:analyticalIntegral2D:ratio   "  << (rtAngIntegral) / (wtAngIntegral)  << std::endl;
+//   //       theIntegral =        rtAngIntegral / ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal() + \
+  //                      mFrac*wtAngIntegral / ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
+      }
+      else if (code ==3){
+        //matchArgs(allVars,analVars,ctK,phi)
+        ssfInt = (ctL.max(rangeName)-ctL.min(rangeName)) ;
+  
+        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
+        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
+  
+      }
+      else if (code ==4){
+        //matchArgs(allVars,analVars,ctK,ctL)
+        ssfInt = (phi.max(rangeName)-phi.min(rangeName)) ;
+  
+        rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
+        wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
+      }
+      theIntegral =  (rtAngIntegral + mFrac*wtAngIntegral) * ssfInt;
     }
-    return theIntegral ;
 
+    return theIntegral ;
 }
