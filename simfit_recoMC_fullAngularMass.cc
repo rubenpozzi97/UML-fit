@@ -270,21 +270,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     RooProdPdf * c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
     c_vars.add(c_vars_wt);
 
-    std::cout <<  "set all mass pars constant" << std::endl;
-    mean_rt  -> setConstant();
-    sigma_rt -> setConstant();
-    alpha_rt1-> setConstant();
-    alpha_rt2-> setConstant();
-    n_rt1    -> setConstant();
-    n_rt2    -> setConstant();
-
-    mean_wt  -> setConstant();
-    sigma_wt -> setConstant();
-    alpha_wt1-> setConstant();
-    alpha_wt2-> setConstant();
-    n_wt1    -> setConstant();
-    n_wt2    -> setConstant();
-
     mFrac->setConstant();
 
  
