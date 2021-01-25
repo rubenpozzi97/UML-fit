@@ -298,6 +298,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                             Index(sample), 
                             Import(map)); 
   RooDataSet* combData = 0;
+  RooArgSet *params      = (RooArgSet*) simPdf->getParameters(vars);
+  RooArgSet* savedParams = (RooArgSet*) params->snapshot() ;
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
@@ -376,14 +378,15 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 //       std::cout << "dataset: " << it->first << ", with n entries: " << it->second->sumEntries() << "\n";
 
     // to start the fit, parameters are restored to the center of the parameter space
-    Fl ->setVal(0.5);
-    P1 ->setVal(0);
-    P2 ->setVal(0);
-    P3 ->setVal(0);
-    P4p->setVal(0);
-    P5p->setVal(0);
-    P6p->setVal(0);
-    P8p->setVal(0);
+//     Fl ->setVal(0.5);
+//     P1 ->setVal(0);
+//     P2 ->setVal(0);
+//     P3 ->setVal(0);
+//     P4p->setVal(0);
+//     P5p->setVal(0);
+//     P6p->setVal(0);
+//     P8p->setVal(0);
+    *params = *savedParams ;
 
     // run the fit
     fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm);

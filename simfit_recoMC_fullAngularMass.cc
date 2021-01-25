@@ -109,6 +109,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
   RooArgSet reco_vars (*ctK, *ctL, *phi, *mass, *rand);
+  RooArgSet observables (*ctK, *ctL, *phi, *mass);
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
@@ -271,6 +272,19 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
     mFrac->setConstant();
 
+//     mean_wt  ->setConstant();
+//     sigma_wt ->setConstant();
+//     alpha_wt1->setConstant();
+//     alpha_wt2->setConstant();
+//     n_wt1    ->setConstant();
+//     n_wt2    ->setConstant();
+// 
+//     mean_rt  ->setConstant();
+//     sigma_rt ->setConstant();
+//     alpha_rt1->setConstant();
+//     alpha_rt2->setConstant();
+//     n_rt1    ->setConstant();
+//     n_rt2    ->setConstant();
  
     cout << "deltap built --> constraint not added yet (to be done)" << endl;
     //// creating constraints for the difference between the two peaks
@@ -394,15 +408,14 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
   TFile* fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullAngularMass" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
   
-  // save initial par values into a workspace 
-  ws_pars->import(*simPdf);
-  RooArgSet *params = (RooArgSet *)simPdf->getParameters(*mass);
-  // The kTRUE flag imports the values of the objects in (*params) into the workspace
-  // If not set, the present values of the workspace parameters objects are stored
-  ws_pars->saveSnapshot("initial_pars", *params, kTRUE);
-  cout << "FIXME: to be restored !!!!!!!!!!!!!!" << std::endl; 
+  // RooArgSet* params = pdf.getParameters(observables) ;
 
 
+
+  // save initial par values    
+  RooArgSet *params      = (RooArgSet *)simPdf->getParameters(observables);
+  RooArgSet* savedParams = (RooArgSet *)params->snapshot() ;
+  
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
                             reco_vars,
@@ -484,19 +497,12 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     penTerm->setPower(power/combEntries);
 
     // to start the fit, parameters are restored to the center of the parameter space
-    //ws_pars->loadSnapshot("initial_pars");
-    Fl ->setVal(0.5); // FIXME: to be updated
-    P1 ->setVal(0);
-    P2 ->setVal(0);
-    P3 ->setVal(0);
-    P4p->setVal(0);
-    P5p->setVal(0);
-    P6p->setVal(0);
-    P8p->setVal(0);
+    *params = *savedParams ;
 
     // run the fit
     fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm);
     vFitter.push_back(fitter);
+    params->Print("v");
     subTime.Start(true);
     int status = fitter->fit();
     subTime.Stop();
@@ -776,7 +782,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         cout<<"fr " << fr<<endl;
         combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()), Name(("plData"+year).c_str()));
         
-        ws_pars->pdf("simPdf")  ->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
+        simPdf->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
                                      ProjWData(RooArgSet(sample), *combData), 
                                      LineWidth(1), 
                                      Name(("plPDF"+year).c_str()), 
