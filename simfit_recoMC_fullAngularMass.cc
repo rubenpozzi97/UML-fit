@@ -85,16 +85,12 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   std::vector<TH1D*> intCHist, intWHist;
   std::vector< std::vector<double> > intCVec(years.size(), std::vector<double>(0));
   std::vector< std::vector<double> > intWVec(years.size(), std::vector<double>(0));
-  std::vector<RooAbsPdf*> PDF_sig_ang_fullAngular (0);
-  std::vector<RooAbsPdf*> PDF_sig_ang_fullAngular_penalty (0);
-  std::vector<RooAbsPdf*> PDF_sig_mass(0);
   std::vector<RooAbsPdf*> PDF_sig_ang_mass(0);
   std::vector<RooAbsPdf*> PDF_sig_ang_mass_penalty(0);
   std::vector<RooGaussian*> c_deltaPeaks, c_fm;
   RooArgSet c_vars_rt, c_pdfs_rt;
   RooArgSet c_vars_wt, c_pdfs_wt;
   RooArgSet c_vars; 
-  RooWorkspace * ws_pars = new RooWorkspace("ws_pars");
 
   //// from https://root-forum.cern.ch/t/combining-roodatasets-using-std-map-in-pyroot/16471/20
   gInterpreter->GenerateDictionary("std::pair<std::string, RooDataSet*>", "map;string;RooDataSet.h");
@@ -219,7 +215,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                    q2Bin,  parity,  years[iy], 
                                    reco_vars,  shortString  )); 
 
-//     RooRealVar*  mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
     RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",1, 0, 1);
  
     // Mass Component
@@ -271,20 +266,20 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     c_vars.add(c_vars_wt);
 
     mFrac->setConstant();
+    // temporary
+    mean_wt  ->setConstant();
+    sigma_wt ->setConstant();
+    alpha_wt1->setConstant();
+    alpha_wt2->setConstant();
+    n_wt1    ->setConstant();
+    n_wt2    ->setConstant();
 
-//     mean_wt  ->setConstant();
-//     sigma_wt ->setConstant();
-//     alpha_wt1->setConstant();
-//     alpha_wt2->setConstant();
-//     n_wt1    ->setConstant();
-//     n_wt2    ->setConstant();
-// 
-//     mean_rt  ->setConstant();
-//     sigma_rt ->setConstant();
-//     alpha_rt1->setConstant();
-//     alpha_rt2->setConstant();
-//     n_rt1    ->setConstant();
-//     n_rt2    ->setConstant();
+    mean_rt  ->setConstant();
+    sigma_rt ->setConstant();
+    alpha_rt1->setConstant();
+    alpha_rt2->setConstant();
+    n_rt1    ->setConstant();
+    n_rt2    ->setConstant();
  
     cout << "deltap built --> constraint not added yet (to be done)" << endl;
     //// creating constraints for the difference between the two peaks
@@ -306,13 +301,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                     ) );
     cout << fraction << "   " << fM_sigmas[years[iy]][q2Bin] << endl;                                    
     c_vars.add(*mFrac); 
-
-    /// create 4d pdf (angular x mass)
-//     RooProdPdf* mass_ang_pdf         = new RooProdPdf(("mass_ang_pdf_"+year).c_str(),         ("mass_ang_pdf_"+year).c_str(),         RooArgList(*PDF_sig_ang_fullAngular[iy],         *PDF_sig_mass[iy]));
-//     RooProdPdf* mass_ang_pdf_penalty = new RooProdPdf(("mass_ang_pdf_penalty_"+year).c_str(), ("mass_ang_pdf_penalty_"+year).c_str(), RooArgList(*PDF_sig_ang_fullAngular_penalty[iy], *PDF_sig_mass[iy]));
-
-//     cout << "prepdf rt: " << c_dcb_rt->createIntegral(RooArgSet(*mass), RooFit::NormSet(*mass))->getVal() << endl;
-//     cout << "prepdf wt: " << c_dcb_wt->createIntegral(RooArgSet(*mass), RooFit::NormSet(*mass))->getVal() << endl;
 
     // Angular Component
     RooAbsReal* ang_rt = new ShapeSigAng( ("PDF_sig_ang_rt_"+shortString+"_"+year).c_str(),
@@ -408,14 +396,10 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
   TFile* fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullAngularMass" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
   
-  // RooArgSet* params = pdf.getParameters(observables) ;
-
-
-
   // save initial par values    
   RooArgSet *params      = (RooArgSet *)simPdf->getParameters(observables);
   RooArgSet* savedParams = (RooArgSet *)params->snapshot() ;
-  
+  params->Print("v");
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
                             reco_vars,
