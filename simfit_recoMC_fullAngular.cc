@@ -730,8 +730,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     combData->plotOn(zframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()));
 
     simPdf->plotOn(xframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1),Name(("plPDF"+year).c_str()));
-//     simPdf->plotOn(yframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
-//     simPdf->plotOn(zframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
+    simPdf->plotOn(yframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
+    simPdf->plotOn(zframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
 
     c[confIndex]->cd(iy*3+1); 
     gPad->SetLeftMargin(0.19);        
