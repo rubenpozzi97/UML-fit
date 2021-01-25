@@ -841,15 +841,11 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);
 
     cout<<"canvas ready"<<endl;
-    for (unsigned int fr = 1; fr < frames.size(); fr++){
+    for (unsigned int fr = 0; fr < frames.size(); fr++){
         cout<<"fr " << fr<<endl;
         combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()), Name(("plData"+year).c_str()));
         
-        ctK->setBins(10) ;
-        ctL->setBins(10) ;
-        phi->setBins(10) ;
-        mass->setBins(10) ;  
-        simPdf  ->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
+        ws_pars->pdf("simPdf")  ->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
                                      ProjWData(RooArgSet(sample), *combData), 
                                      LineWidth(1), 
                                      Name(("plPDF"+year).c_str()), 
@@ -862,8 +858,6 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
         gPad->SetLeftMargin(0.19); 
         frames[fr]->Draw();
         leg->Draw("same");
-        if (fr==1) break;
-//         break;
     }
   }
   c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  "analytInt.pdf").c_str() );
