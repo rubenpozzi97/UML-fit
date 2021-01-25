@@ -154,25 +154,25 @@ Int_t PdfSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, 
 //     return 0 ;
   if ( matchArgs(allVars,analVars,ctK,ctL,phi) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "code 1"<<  std::endl;
+//       std::cout << "code 1"<<  std::endl;
       return 1 ;
     }  
   }      
   if ( matchArgs(allVars,analVars,ctL,phi) ){
     if ( fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "code 2"<<  std::endl;
+//       std::cout << "code 2"<<  std::endl;
       return 2 ;      
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,phi) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "code 3"<<  std::endl;
+//       std::cout << "code 3"<<  std::endl;
       return 3 ;      
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,ctL) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) ){
-      std::cout << "code 4"<<  std::endl;
+//       std::cout << "code 4"<<  std::endl;
       return 4 ;      
     }  
   }
@@ -215,25 +215,25 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
           else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
           return 1e-55;
       }
-      std::cout <<  "PdfSigAng:analyticalIntegral1:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+//       std::cout <<  "PdfSigAng:analyticalIntegral1:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }   
     else if (code ==2){
       //matchArgs(allVars,analVars,ctL,phi)
       rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
       wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
-      std::cout <<  "PdfSigAng:analyticalIntegral2:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+//       std::cout <<  "PdfSigAng:analyticalIntegral2:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }
     else if (code ==3){
       //matchArgs(allVars,analVars,ctK,phi)
       rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
       wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,phiarg) ))->getVal();
-      std::cout <<  "PdfSigAng:analyticalIntegral3\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+//       std::cout <<  "PdfSigAng:analyticalIntegral3\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }
     else if (code ==4){
       //matchArgs(allVars,analVars,ctK,ctL)
       rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
       wtAngIntegral = ((RooAbsReal* )wtAng.createIntegral( RooArgSet(ctKarg,ctLarg) ))->getVal();
-      std::cout <<  "PdfSigAng:analyticalIntegral4\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
+//       std::cout <<  "PdfSigAng:analyticalIntegral4\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }
 
 //       theIntegral =        rtAngIntegral / ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal() + \

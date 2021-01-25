@@ -382,35 +382,34 @@ Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 {
   if ( matchArgs(allVars,analVars,ctK,ctL,phi,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 1"<<  std::endl;
+//       std::cout << "code 1"<<  std::endl;
       return 1 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,ctL,phi) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "code 2"<<  std::endl;
+//       std::cout << "code 2"<<  std::endl;
       return 2 ;
     }
   }
   if ( matchArgs(allVars,analVars,ctL,phi,m) ){
     if ( fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 3"<<  std::endl;
+//       std::cout << "code 3"<<  std::endl;
       return 3 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,phi,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 4"<<  std::endl;
+//       std::cout << "code 4"<<  std::endl;
       return 4 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,ctL,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 5"<<  std::endl;
+//       std::cout << "code 5"<<  std::endl;
       return 5 ;
     }  
   }
-  std::cout << "code 0"<<  std::endl;
   // the lack of analytical integral for the subsets of angular variables does not slow down the fit
   // since only the complete integration is used there
   // if one wants to speed up also the PDF projection for plotting, the other analytical integrals can be computed
@@ -491,10 +490,6 @@ Double_t PdfSigAngMass::analyticalIntegral(Int_t code, const char* rangeName) co
     wtMassIntegral = 1; //((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
 //     std::cout <<  "PdfSigAngMass:analyticalIntegral345:mass  " << rtMassIntegral << " \t" << wtMassIntegral  << std::endl;
 
-    double rtAngInt3d = ((RooAbsReal* )rtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-    double wtAngInt3d = ((RooAbsReal* )wtAng.createIntegral(RooArgSet(ctKarg,ctLarg,phiarg)))->getVal();
-    double AngInt3d = rtAngInt3d + mFrac*wtAngInt3d;
-     
     if (code ==3){
       //matchArgs(allVars,analVars,ctL,phi,m)
       rtAngIntegral = ((RooAbsReal* )rtAng.createIntegral( RooArgSet(ctLarg,phiarg) ))->getVal();
