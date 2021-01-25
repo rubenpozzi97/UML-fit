@@ -22,7 +22,6 @@
 #include <RooAddition.h>
 
 #include "ShapeSigAng.h"
-
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
 #include "BoundDist.h"

@@ -30,21 +30,25 @@ CLASS7     := BoundDist
 CLASS8     := PdfSigAngMass
 CLASS9     := PdfSigMass
 CLASS10    := ShapeSigAng
-CLASSDICT  := AngDict
+CLASSDICT  := AngMassDict
 CLASSDICT2 := RooDoubleCBDict
-CLASSDICT3 := AngMassDict
-CLASSDICT4 := MassDict
-CLASSDICT5 := ShapeSigAngDict
+# CLASSDICT3 := AngMassDict
+# CLASSDICT4 := MassDict
+# CLASSDICT5 := ShapeSigAngDict
 
 #compiling options
 DEBUGFLAGS := -O3 -Wall -std=c++11
 CXXFLAGS := $(DEBUGFLAGS) 
 
 #compile class
-LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(SOURCEDIR)/$(CLASS5).cc $(SOURCEDIR)/$(CLASS6).cc $(SOURCEDIR)/$(CLASS7).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
+LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc \
+        $(SOURCEDIR)/$(CLASS5).cc $(SOURCEDIR)/$(CLASS6).cc $(SOURCEDIR)/$(CLASS7).cc $(SOURCEDIR)/$(CLASS8).cc \
+        $(SOURCEDIR)/$(CLASS9).cc $(SOURCEDIR)/$(CLASS10).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
 # LIBS := $(SOURCEDIR)/$(CLASS0).cc $(SOURCEDIR)/$(CLASS1).cc $(SOURCEDIR)/$(CLASS2).cc $(SOURCEDIR)/$(CLASS3).cc $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS5).cc $(CLASSDICT).cc $(SOURCEDIR)/$(EXTRACLASS)
 
-$(CLASSDICT): $(INCLUDEDIR)/$(CLASS0).h $(INCLUDEDIR)/$(CLASS1).h $(INCLUDEDIR)/$(CLASS2).h $(INCLUDEDIR)/$(CLASS3).h $(INCLUDEDIR)/$(CLASS5).h $(INCLUDEDIR)/$(CLASS6).h $(INCLUDEDIR)/$(CLASS7).h
+$(CLASSDICT): $(INCLUDEDIR)/$(CLASS0).h $(INCLUDEDIR)/$(CLASS1).h $(INCLUDEDIR)/$(CLASS2).h $(INCLUDEDIR)/$(CLASS3).h \
+              $(INCLUDEDIR)/$(CLASS5).h $(INCLUDEDIR)/$(CLASS6).h $(INCLUDEDIR)/$(CLASS7).h $(INCLUDEDIR)/$(CLASS8).h \
+              $(INCLUDEDIR)/$(CLASS9).h $(INCLUDEDIR)/$(CLASS10).h
 	@echo "Generating dictionary $@ using rootcint ..."
 	$(ROOTCINT) -f $@.cc -c $^
 
@@ -52,17 +56,17 @@ $(CLASSDICT2): $(INCLUDEDIR)/$(CLASS4).h
 	@echo "Generating dictionary $@ using rootcint ..."
 	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
 
-$(CLASSDICT3): $(INCLUDEDIR)/$(CLASS8).h
-	@echo "Generating dictionary $@ using rootcint ..."
-	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
-
-$(CLASSDICT4): $(INCLUDEDIR)/$(CLASS9).h
-	@echo "Generating dictionary $@ using rootcint ..."
-	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
-
-$(CLASSDICT5): $(INCLUDEDIR)/$(CLASS10).h
-	@echo "Generating dictionary $@ using rootcint ..."
-	$(ROOTCINT) -f $@.cc -c $^
+# $(CLASSDICT3): $(INCLUDEDIR)/$(CLASS8).h
+# 	@echo "Generating dictionary $@ using rootcint ..."
+# 	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
+# 
+# $(CLASSDICT4): $(INCLUDEDIR)/$(CLASS9).h
+# 	@echo "Generating dictionary $@ using rootcint ..."
+# 	$(ROOTCINT) -f $@.cc -c $^ -I./vdt	
+# 
+# $(CLASSDICT5): $(INCLUDEDIR)/$(CLASS10).h
+# 	@echo "Generating dictionary $@ using rootcint ..."
+# 	$(ROOTCINT) -f $@.cc -c $^
 
 $(EXECUTABLE0): $(EXECUTABLE0).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
@@ -71,8 +75,7 @@ $(EXECUTABLE1): $(EXECUTABLE1).cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 $(EXECUTABLE2): $(EXECUTABLE2).cc 
-# 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(CLASSDICT5).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) $(SOURCEDIR)/$(CLASS10).cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) 
 
 $(EXECUTABLE3): $(EXECUTABLE3).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
@@ -87,15 +90,14 @@ $(EXECUTABLE6): $(EXECUTABLE6).cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
 
 $(EXECUTABLE7): $(EXECUTABLE7).cc 
-# 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS8).cc $(SOURCEDIR)/$(CLASS10).cc $(CLASSDICT2).cc $(CLASSDICT3).cc $(CLASSDICT5).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) 
 
 $(EXECUTABLE8): $(EXECUTABLE8).cc 
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)  $(SOURCEDIR)/$(CLASS4).cc $(SOURCEDIR)/$(CLASS9).cc $(CLASSDICT2).cc $(CLASSDICT4).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) 
 
 
 
 #cleaning options
 .PHONY: clean
 clean:
-	rm -f $(EXECUTABLE0) $(EXECUTABLE1) 
+	rm -f $(EXECUTABLE0) $(EXECUTABLE1)
