@@ -352,6 +352,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     subTime.Start(true);
     int status = fitter->fit();
     subTime.Stop();
+    cout<<"Fit+boundDist time: "<<subTime.CpuTime()<<endl;
 
     // include fit time in dataset with per-toy informations
     fitTime->setVal(subTime.CpuTime());
@@ -389,8 +390,13 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	distTime.Stop();
 	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
 	boundDist->setVal(boundDistVal);
-
+	
+	TStopwatch improvTime;
+	improvTime.Start(true);
 	fitter->improveAng(seed);
+	improvTime.Stop();
+	cout<<"Improv time: "<<improvTime.CpuTime()<<" s"<<endl;
+
       }
 
       // run MINOS error

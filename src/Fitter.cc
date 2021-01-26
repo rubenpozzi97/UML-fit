@@ -160,7 +160,11 @@ Int_t Fitter::fit()
 
     // if free fit is good return its result
     if ( result_free->status()==0 && result_free->covQual()==3 && boundary->getValV() == 0 ) {
+      TStopwatch distTime;
+      distTime.Start(true);
       boundDist = bound_dist->getValV();
+      distTime.Stop();
+      std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
       return 0;
     }
 
@@ -230,7 +234,11 @@ Int_t Fitter::fit()
 	if ( result_penalty->status()==0 && result_penalty->covQual()==3 ) {
 	  if ( boundary->getValV()==0 ) {
 	    // cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
+	    TStopwatch distTime;
+	    distTime.Start(true);
 	    boundDist = bound_dist->getValV();
+	    distTime.Stop();
+	    std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
 	    return 0;
 	  } // else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
 	} // else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
@@ -287,7 +295,12 @@ Int_t Fitter::improveAng(int seed, int nGen)
   for (int iPar = 0; iPar < angPars.getSize(); ++iPar)
     ((RooRealVar*)angPars.at(iPar))->setVal(vImprovPar[iPar]);
   
+  TStopwatch distTime;
+  distTime.Start(true);
   boundDist = bound_dist->getValV();
+  distTime.Stop();
+  std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
+  
   std::cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<preBoundDist<<" -> "<<boundDist<<std::endl;
 
   return 0;
