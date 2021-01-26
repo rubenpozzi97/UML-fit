@@ -241,6 +241,8 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
     else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
     return 1e-55;
   }
+
+  std::cout<<"3D int: "<<retCT<<"\t"<<retWT<<std::endl;
  
   return (retCT+mFrac*retWT) ;
 
