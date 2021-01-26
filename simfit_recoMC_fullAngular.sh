@@ -10,7 +10,7 @@ save=1
 
 # Create directories for fit logs, results and plots
 if [ ! -d logs_simFit ]; then mkdir logs_simFit; fi
-if [ ! -d simFitResults ]; then mkdir simFitResults; fi
+if [ ! -d simFitResults/newphi ]; then mkdir -p simFitResults/newphi; fi
 if [ ! -d plotSimFit_d ]; then mkdir plotSimFit_d; fi
 
 # Compile dictionary and macro

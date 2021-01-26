@@ -21,7 +21,6 @@
 #include "RooFit.h"
 #include "Riostream.h"
 #include "RooObjCacheManager.h"
-#include "PdfCBShape.h"
 
  
 class PdfSigMass : public RooAbsPdf {
