@@ -429,7 +429,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
 	boundDist->setVal(boundDistVal);
 
-	fitter->improveAng();
+	// fitter->improveAng();
       }
 
       if (nSample>0) {
@@ -437,7 +437,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	fitter->MinosAng();
+	// fitter->MinosAng();
 
 	minosTime.Stop();
 	minTime->setVal(minosTime.CpuTime());
