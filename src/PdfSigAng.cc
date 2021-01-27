@@ -126,6 +126,7 @@ Double_t PdfSigAng::evaluate() const
   double decWT_times_eff = ((RooAbsReal&)(wtAngTerm.arg())).getVal();
 
   double ret = (decCT_times_eff + mFrac * decWT_times_eff ) * penalty;
+  std::cout<<"eval: "<<decCT_times_eff<<"\t"<<mFrac<<"\t"<<decWT_times_eff<<"\t"<<penalty<<std::endl;
   return ret;
 }
 
@@ -215,6 +216,8 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
           else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
           return 1e-55;
       }
+
+      std::cout<<"3D int: "<<rtAngIntegral<<"\t"<<wtAngIntegral<<std::endl;
       // std::cout <<  "PdfSigAng:analyticalIntegral1:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }   
     else if (code ==2){
