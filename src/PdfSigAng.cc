@@ -242,7 +242,7 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
     return 1e-55;
   }
 
-  std::cout<<"3D int: "<<retCT<<"\t"<<retWT<<std::endl;
+  // std::cout<<"3D int: "<<retCT<<"\t"<<retWT<<std::endl;
  
   return (retCT+mFrac*retWT) ;
 
