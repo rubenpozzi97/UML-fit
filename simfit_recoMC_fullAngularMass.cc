@@ -430,7 +430,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooDataSet* subNegNotc = new RooDataSet("subNegNotc","subNegNotc",savePars);
 
   // TTree with the MINOS output
-  vector<double> vFitResult  (pars.getSize());
+  vector<double> vResult  (pars.getSize());
   vector<double> vConfInterLow  (pars.getSize());
   vector<double> vConfInterHigh (pars.getSize());
   fout->cd();
@@ -441,14 +441,14 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
       MINOS_output->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
       MINOS_output->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-      MINOS_output->Branch(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+      MINOS_output->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
     }
   } else {
     for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
       MINOS_output->SetBranchAddress(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
       MINOS_output->SetBranchAddress(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-      MINOS_output->SetBranchAddress(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+      MINOS_output->SetBranchAddress(Form("%s_best",par->GetName()),&vResult[iPar]);
     }
   }
 
@@ -551,12 +551,12 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
 	// cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
 	// for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-	// 	cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
-	// 	    <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
+	// 	cout<<vResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
+	// 	    <<vConfInterHigh[iPar]-vResult[iPar]-vFitErrHigh[iPar]<<endl;
 
 	// save MINOS errors
 	for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-	  vFitResult[iPar] = fitter->vFitResult[iPar];
+	  vResult[iPar] = fitter->vResult[iPar];
 	  vConfInterLow[iPar] = fitter->vConfInterLow[iPar];
 	  vConfInterHigh[iPar] = fitter->vConfInterHigh[iPar];
 	}

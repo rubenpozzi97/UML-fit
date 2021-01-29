@@ -113,6 +113,9 @@ void Fitter::SetDefConf()
   vFitResult = std::vector<Double_t>(angPars.getSize(),0);
   vFitErrLow  = std::vector<Double_t>(angPars.getSize(),0);
   vFitErrHigh = std::vector<Double_t>(angPars.getSize(),0);
+  vImprovResult = std::vector<Double_t>(angPars.getSize(),0);
+
+  vResult = std::vector<Double_t>(angPars.getSize(),0);
   vConfInterLow  = std::vector<Double_t>(angPars.getSize(),0);
   vConfInterHigh = std::vector<Double_t>(angPars.getSize(),0);
 
@@ -165,6 +168,7 @@ Int_t Fitter::fit()
       boundDist = bound_dist->getValV();
       distTime.Stop();
       std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
+      fillResultContainers();
       return 0;
     }
 
@@ -239,6 +243,7 @@ Int_t Fitter::fit()
 	    boundDist = bound_dist->getValV();
 	    distTime.Stop();
 	    std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
+	    fillResultContainers();
 	    return 0;
 	  } // else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
 	} // else cout<<"N "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
@@ -303,6 +308,8 @@ Int_t Fitter::improveAng(int seed, int nGen)
   
   std::cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<preBoundDist<<" -> "<<boundDist<<std::endl;
 
+  fillResultContainers(true);
+
   return 0;
 
 }
@@ -317,23 +324,13 @@ Int_t Fitter::MinosAng(int seed, int nGenMINOS)
   TRandom3 randGenMinos (seed);
   double probedNLL;
 
-  // get best-fit results and errors from the fit
-  for (int iPar = 0; iPar < angPars.getSize(); ++iPar) {
-
-    RooRealVar* par = (RooRealVar*)angPars.at(iPar);
-    vFitResult [iPar] = par->getValV();
-    vFitErrLow [iPar] = par->getErrorLo();
-    vFitErrHigh[iPar] = par->getErrorHi();
-
-  }
-
   // Loop over the parameters
   for (int iPar = 0; iPar < angPars.getSize(); ++iPar) {
 
     RooRealVar* par = (RooRealVar*)angPars.at(iPar);
 
     // get and print the best-fit result
-    double p_best = vFitResult[iPar];
+    double p_best = vResult[iPar];
     std::cout<<par->GetName()<<" best: "<<p_best<<std::endl;
 
     // vectors for TGraph plots
@@ -349,7 +346,7 @@ Int_t Fitter::MinosAng(int seed, int nGenMINOS)
 
       std::vector<double> vLastHit(0);
       for (int iPar1 = 0; iPar1 < angPars.getSize(); ++iPar1)
-	vLastHit.push_back(vFitResult[iPar1]);
+	vLastHit.push_back(vResult[iPar1]);
 
       TH1D* parRandomPool = 0;
       int nHistBins = 0;
@@ -469,5 +466,26 @@ Int_t Fitter::MinosAng(int seed, int nGenMINOS)
   }
 
   return 0;
+
+}
+
+
+void Fitter::fillResultContainers(bool fromImprov)
+{
+
+  // fill results' containers
+
+  for (int iPar = 0; iPar < angPars.getSize(); ++iPar) {
+
+    RooRealVar* par = (RooRealVar*)angPars.at(iPar);
+    vResult[iPar] = par->getValV();
+
+    if (!fromImprov) {
+      vFitResult[iPar] = vResult[iPar];
+      vFitErrLow[iPar] = par->getErrorLo();
+      vFitErrHigh[iPar] = par->getErrorHi();
+    } else vImprovResult[iPar] = vResult[iPar];
+
+  }
 
 }
