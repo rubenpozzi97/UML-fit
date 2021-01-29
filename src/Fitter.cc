@@ -106,6 +106,7 @@ void Fitter::SetDefConf()
   coeff5 = 0;
 
   boundDist = -1.;
+  boundDistTime = 0.;
 
   minParError = 0.01;
   widthScale = 0.1;
@@ -163,11 +164,7 @@ Int_t Fitter::fit()
 
     // if free fit is good return its result
     if ( result_free->status()==0 && result_free->covQual()==3 && boundary->getValV() == 0 ) {
-      TStopwatch distTime;
-      distTime.Start(true);
-      boundDist = bound_dist->getValV();
-      distTime.Stop();
-      std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
+      computeBoundaryDistance();
       fillResultContainers();
       return 0;
     }
@@ -238,11 +235,7 @@ Int_t Fitter::fit()
 	if ( result_penalty->status()==0 && result_penalty->covQual()==3 ) {
 	  if ( boundary->getValV()==0 ) {
 	    // cout<<"P "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
-	    TStopwatch distTime;
-	    distTime.Start(true);
-	    boundDist = bound_dist->getValV();
-	    distTime.Stop();
-	    std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
+	    computeBoundaryDistance();
 	    fillResultContainers();
 	    return 0;
 	  } // else cout<<"O "<<coeff1<<"\t"<<coeff4<<"\t"<<coeff5<<endl;
@@ -300,12 +293,7 @@ Int_t Fitter::improveAng(int seed, int nGen)
   for (int iPar = 0; iPar < angPars.getSize(); ++iPar)
     ((RooRealVar*)angPars.at(iPar))->setVal(vImprovPar[iPar]);
   
-  TStopwatch distTime;
-  distTime.Start(true);
-  boundDist = bound_dist->getValV();
-  distTime.Stop();
-  std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<distTime.CpuTime()<<" s)"<<std::endl;
-  
+  computeBoundaryDistance();
   std::cout<<"Improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<preBoundDist<<" -> "<<boundDist<<std::endl;
 
   fillResultContainers(true);
@@ -487,5 +475,26 @@ void Fitter::fillResultContainers(bool fromImprov)
     } else vImprovResult[iPar] = vResult[iPar];
 
   }
+
+}
+
+
+Double_t Fitter::computeBoundaryDistance()
+{
+
+  TStopwatch distTime;
+  distTime.Start(true);
+
+  // Compute distance from boundary
+  boundDist = bound_dist->getValV();
+
+  distTime.Stop();
+  // if the result was not cached (producing time=~0) update the time
+  if (distTime.CpuTime()>0.01)
+    boundDistTime = distTime.CpuTime();
+
+  std::cout<<"Distance from boundary: "<<boundDist<<" (computed in "<<boundDistTime<<" s)"<<std::endl;
+  
+  return boundDist;
 
 }

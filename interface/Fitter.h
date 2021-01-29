@@ -50,6 +50,7 @@ class Fitter {
 
   void fillResultContainers(bool fromImprov = false) ;
 
+  Double_t computeBoundaryDistance() ;
 
  public:
 
@@ -66,6 +67,7 @@ class Fitter {
   RooAbsReal* nll_penalty;
 
   Double_t boundDist;
+  Double_t boundDistTime;
 
   // lower threshold to parameters' uncertainties
   // to build the randomisation models (too small leads to many useless points)

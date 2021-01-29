@@ -399,21 +399,14 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       fitter->result()->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
       fitter->result()->Print("v");
 
+      boundDist->setVal(fitter->boundDist);
+	
       if (fitter->usedPenalty) {
 	// include coefficient values in dataset with per-toy informations
 	co1->setVal(fitter->coeff1);
 	co4->setVal(fitter->coeff4);
 	co5->setVal(fitter->coeff5);
 
-	// Compute distance from boundary, print it
-	// and save it in dataset with per-toy informations
-	TStopwatch distTime;
-	distTime.Start(true);
-	double boundDistVal = bound_dist->getValV();
-	distTime.Stop();
-	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
-	boundDist->setVal(boundDistVal);
-	
 	TStopwatch improvTime;
 	improvTime.Start(true);
 	fitter->improveAng(seed);
