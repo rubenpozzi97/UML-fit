@@ -69,6 +69,16 @@ class PdfSigAngMass : public RooAbsPdf {
     return (RooAbsReal*) PenTerm.absArg() ;
   }
 
+  const RooAbsReal* rtAngTermVal() const {
+    // Return pointer to penalty term function
+    return (RooAbsReal*) rtAngTerm.absArg() ;
+  }
+
+  const RooAbsReal* wtAngTermVal() const {
+    // Return pointer to penalty term function
+    return (RooAbsReal*) wtAngTerm.absArg() ;
+  }
+
   Double_t evaluate() const ;
 
  public:
