@@ -305,7 +305,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                          ("PDF_sig_ang_rt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effC[iy], intCVec[iy],
          		                 true
          		                 );
     
@@ -313,7 +313,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                          ("PDF_sig_ang_wt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effW[iy], intWVec[iy],
          		                 false
          		                 );
     

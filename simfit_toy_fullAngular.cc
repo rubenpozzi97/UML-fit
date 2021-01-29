@@ -220,7 +220,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
                                          ("PDF_sig_ang_rt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effC[iy], intCVec[iy],
          		                 true
          		                 );
     
@@ -228,20 +228,20 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
                                          ("PDF_sig_ang_wt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effW[iy], intWVec[iy],
          		                 false
          		                 );
 
 
     PDF_sig_ang_fullAngular.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_"+shortString+"_"+year).c_str(),
                                                      ("PDF_sig_ang_fullAngular_"+year).c_str(),
-      		                                     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
+      		                                     *ctK,*ctL,*phi,*mFrac,
          		                             *ang_rt, *ang_wt
       		                                     ) );
     // define PDF with penalty term
     PDF_sig_ang_fullAngular_penalty.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_penalty_"+shortString+"_"+year).c_str(),
 							     ("PDF_sig_ang_fullAngular_penalty_"+year).c_str(),
-							     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
+							     *ctK,*ctL,*phi,*mFrac,
          		                                     *ang_rt, *ang_wt,
 							     *penTerm));
 

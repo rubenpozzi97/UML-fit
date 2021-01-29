@@ -24,10 +24,8 @@ ShapeSigAng::ShapeSigAng(const char *name, const char *title,
 		     RooAbsReal& _P5p,
 		     RooAbsReal& _P6p,
 		     RooAbsReal& _P8p,
-		     RooAbsReal& _EffC,
-		     RooAbsReal& _EffW,
-		     std::vector<double> _intCPart,
-		     std::vector<double> _intWPart,
+		     RooAbsReal& _Eff,
+		     std::vector<double> _intPart,
 		     bool _isC) :
   RooAbsReal(name,title), 
   ctK("ctK","ctK",this,_ctK),
@@ -41,10 +39,8 @@ ShapeSigAng::ShapeSigAng(const char *name, const char *title,
   P5p("P5p","P5p",this,_P5p),
   P6p("P6p","P6p",this,_P6p),
   P8p("P8p","P8p",this,_P8p),
-  EffC("EffC","corr-tag efficiency",this,_EffC),
-  EffW("EffW","wrong-tag efficiency",this,_EffW),
-  intCPart(_intCPart),
-  intWPart(_intWPart),
+  Eff("Eff","efficiency",this,_Eff),
+  intPart(_intPart),
   isC(_isC)
 {
 }
@@ -62,10 +58,8 @@ ShapeSigAng::ShapeSigAng(const ShapeSigAng& other, const char* name) :
   P5p("P5p",this,other.P5p),
   P6p("P6p",this,other.P6p),
   P8p("P8p",this,other.P8p),
-  EffC("EffC",this,other.EffC),
-  EffW("EffW",this,other.EffW),
-  intCPart(other.intCPart),
-  intWPart(other.intWPart),
+  Eff("Eff",this,other.Eff),
+  intPart(other.intPart),
   isC(other.isC)
 {
 }
@@ -75,41 +69,35 @@ ShapeSigAng::ShapeSigAng(const ShapeSigAng& other, const char* name) :
 Double_t ShapeSigAng::evaluate() const 
 {
 
-  double ret; 
+  double dec;
   
   if (isC){
-    double decCT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
-  		     Fl * ctK*ctK +
-  		     ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-  		     0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) +
-  		     2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-  		     2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
-  		     2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
-  		     P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
+    dec = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
+	    Fl * ctK*ctK +
+	    ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
+	    0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) +
+	    2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
+	    2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) +
+	    2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL -
+	    P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
   
-    double effCValue = effCVal()->getVal();
-    if (effCValue<0)  std::cout<<"ERROR! NEGATIVE CT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
-    if (effCValue==0) std::cout<<"ERROR! ZERO CT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effCValue<<std::endl;
-
-    ret = 9./(32 * 3.14159265) * effCValue * decCT;
   }
   else{
-  
-    double decWT = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
-  		     Fl * ctK*ctK +
-  		     ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
-  		     0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
-  		     2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
-  		     2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
-  		     2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
-  		     P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
-  
-    double effWValue = effWVal()->getVal();
-    if (effWValue<0)  std::cout<<"ERROR! NEGATIVE WT EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
-    if (effWValue==0) std::cout<<"ERROR! ZERO WT EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effWValue<<std::endl;
+    dec = ( 0.75 * (1-Fl) * (1-ctK*ctK) +
+	    Fl * ctK*ctK +
+	    ( 0.25 * (1-Fl) * (1-ctK*ctK) - Fl * ctK*ctK ) * ( 2 * ctL*ctL -1 ) +
+	    0.5 * P1 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * cos(2*phi) -
+	    2 * cos(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P4p * ctL * sqrt(1-ctL*ctL) + P5p * sqrt(1-ctL*ctL) ) +
+	    2 * sin(phi) * ctK * sqrt(Fl * (1-Fl) * (1-ctK*ctK)) * ( -1. * P8p * ctL * sqrt(1-ctL*ctL) - P6p * sqrt(1-ctL*ctL) ) -
+	    2 * P2 * (1-Fl) * (1-ctK*ctK) * ctL +
+	    P3 * (1-Fl) * (1-ctK*ctK) * (1-ctL*ctL) * sin(2*phi) );
+  }
 
-    ret = 9./(32 * 3.14159265) * effWValue * decWT;
-  } 
+  double effValue = effVal()->getVal();
+  if (effValue<0)  std::cout<<"ERROR! NEGATIVE "<<(isC?"CT":"WT")<<" EFFICIENCY SPOTTED AT ("<<ctK<<","<<ctL<<","<<phi<<"): "<<effValue<<std::endl;
+  if (effValue==0) std::cout<<"ERROR! ZERO "<<(isC?"CT":"WT")<<" EFFICIENCY SPOTTED AT ("    <<ctK<<","<<ctL<<","<<phi<<"): "<<effValue<<std::endl;
+
+  double ret = 9./(32 * 3.14159265) * effValue * dec;
   return ret;
 
 }
@@ -135,7 +123,7 @@ Int_t ShapeSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars
 {
   // use pre-computed integrals for the integration over all the three variables
   // after checking that integrals are in place
-  if ( intCPart.size()<1 || intCPart[0]==0 || intWPart.size()<1 || intWPart[0]==0 )
+  if ( intPart.size()<1 || intPart[0]==0 )
     return 0 ;
   if ( matchArgs(allVars,analVars,ctK,ctL,phi) )
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) )
@@ -152,54 +140,47 @@ Int_t ShapeSigAng::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars
 Double_t ShapeSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
 {
   assert(code>0 && code<2) ;
-  
+
+  Double_t ret;
+
   if (isC){
 
     // use the pre-computed integrals from histogram
-    Double_t retCT =  9./(32*3.14159265) * (
-  					    0.75*(1-Fl)              * intCPart[0]
-  					    + Fl                     * intCPart[1]
-  					    + 0.25*(1-Fl)            * intCPart[2]
-  					    - Fl                     * intCPart[3]
-  					    + 0.5*P1*(1-Fl)          * intCPart[4]
-  					    + 0.5*sqrt(Fl-Fl*Fl)*P4p * intCPart[5]
-  					    + sqrt(Fl-Fl*Fl)*P5p     * intCPart[6]
-  					    - sqrt(Fl-Fl*Fl)*P6p     * intCPart[7]
-  					    + 0.5*sqrt(Fl-Fl*Fl)*P8p * intCPart[8]
-  					    + 2*(1-Fl)*P2            * intCPart[9]
-  					    - P3*(1-Fl)              * intCPart[10]
-  					    );
-    if (retCT<=0) {
-      if (retCT<0) std::cout<<"ERROR! Negative ct pdf integral, fake value returned"<<std::endl;
-      else std::cout<<"ERROR! Null ct pdf integral, fake value returned"<<std::endl;
-      return 1e-55;
-    }
-    return retCT;
-  }  
-  
-  else{
-    Double_t retWT =  9./(32*3.14159265) * (
-  					  0.75*(1-Fl)              * intWPart[0]
-  					  + Fl                     * intWPart[1]
-  					  + 0.25*(1-Fl)            * intWPart[2]
-  					  - Fl                     * intWPart[3]
-  					  + 0.5*P1*(1-Fl)          * intWPart[4]
-  					  + 0.5*sqrt(Fl-Fl*Fl)*P4p * intWPart[5]
-  					  - sqrt(Fl-Fl*Fl)*P5p     * intWPart[6]
-  					  - sqrt(Fl-Fl*Fl)*P6p     * intWPart[7]
-  					  - 0.5*sqrt(Fl-Fl*Fl)*P8p * intWPart[8]
-  					  - 2*(1-Fl)*P2            * intWPart[9]
-  					  + P3*(1-Fl)              * intWPart[10]
-  					  );
-  
-  
-    if (retWT<=0) {
-      if (retWT<0) std::cout<<"ERROR! Negative wt pdf integral, fake value returned"<<std::endl;
-      else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
-      return 1e-55;
-    }
-    return retWT;
+    ret =  9./(32*3.14159265) * (
+				 0.75*(1-Fl)              * intPart[0]
+				 + Fl                     * intPart[1]
+				 + 0.25*(1-Fl)            * intPart[2]
+				 - Fl                     * intPart[3]
+				 + 0.5*P1*(1-Fl)          * intPart[4]
+				 + 0.5*sqrt(Fl-Fl*Fl)*P4p * intPart[5]
+				 + sqrt(Fl-Fl*Fl)*P5p     * intPart[6]
+				 - sqrt(Fl-Fl*Fl)*P6p     * intPart[7]
+				 + 0.5*sqrt(Fl-Fl*Fl)*P8p * intPart[8]
+				 + 2*(1-Fl)*P2            * intPart[9]
+				 - P3*(1-Fl)              * intPart[10]
+				 );
   }
-  return 1e-55 ;
+  else{
+    ret =  9./(32*3.14159265) * (
+				 0.75*(1-Fl)              * intPart[0]
+				 + Fl                     * intPart[1]
+				 + 0.25*(1-Fl)            * intPart[2]
+				 - Fl                     * intPart[3]
+				 + 0.5*P1*(1-Fl)          * intPart[4]
+				 + 0.5*sqrt(Fl-Fl*Fl)*P4p * intPart[5]
+				 - sqrt(Fl-Fl*Fl)*P5p     * intPart[6]
+				 - sqrt(Fl-Fl*Fl)*P6p     * intPart[7]
+				 - 0.5*sqrt(Fl-Fl*Fl)*P8p * intPart[8]
+				 - 2*(1-Fl)*P2            * intPart[9]
+				 + P3*(1-Fl)              * intPart[10]
+				 );
+  }
 
-}
+  if (ret<=0) {
+    if (ret<0) std::cout<<"ERROR! Negative "<<(isC?"CT":"WT")<<" pdf integral, fake value returned"<<std::endl;
+    else std::cout<<"ERROR! Null "<<(isC?"CT":"WT")<<" pdf integral, fake value returned"<<std::endl;
+    return 1e-55;
+  }
+  
+  return ret;
+}  
