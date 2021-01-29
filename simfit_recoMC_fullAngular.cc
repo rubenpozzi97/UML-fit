@@ -241,7 +241,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                                          ("PDF_sig_ang_rt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effC[iy], intCVec[iy],
          		                 true
          		                 );
     
@@ -249,20 +249,20 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                                          ("PDF_sig_ang_wt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effW[iy], intWVec[iy],
          		                 false
          		                 );
 
 
     PDF_sig_ang_fullAngular.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_"+shortString+"_"+year).c_str(),
                                                      ("PDF_sig_ang_fullAngular_"+year).c_str(),
-      		                                     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
+      		                                     *ctK,*ctL,*phi,*mFrac,
          		                             *ang_rt, *ang_wt
       		                                     ) );
     // define PDF with penalty term
     PDF_sig_ang_fullAngular_penalty.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_penalty_"+shortString+"_"+year).c_str(),
 							     ("PDF_sig_ang_fullAngular_penalty_"+year).c_str(),
-							     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
+							     *ctK,*ctL,*phi,*mFrac,
          		                                     *ang_rt, *ang_wt,
 							     *penTerm));
 
@@ -391,6 +391,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     subTime.Start(true);
     int status = fitter->fit();
     subTime.Stop();
+    cout<<"Fit+boundDist time: "<<subTime.CpuTime()<<endl;
 
     // include fit time in dataset with per-toy informations
     fitTime->setVal(subTime.CpuTime());
@@ -429,7 +430,12 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
 	boundDist->setVal(boundDistVal);
 
+	TStopwatch improvTime;
+	improvTime.Start(true);
 	fitter->improveAng();
+	improvTime.Stop();
+	cout<<"Improv time: "<<improvTime.CpuTime()<<" s"<<endl;
+
       }
 
       if (nSample>0) {
@@ -437,7 +443,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	fitter->MinosAng();
+	// fitter->MinosAng();
 
 	minosTime.Stop();
 	minTime->setVal(minosTime.CpuTime());

@@ -22,6 +22,7 @@
 #include <RooNumIntConfig.h>
 #include <RooRandom.h>
 
+#include "ShapeSigAng.h"
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
 #include "BoundDist.h"
@@ -81,7 +82,9 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
   RooRealVar* phi = new RooRealVar("phi", "phi", -3.14159, 3.14159  );
   RooArgList vars (* ctK,* ctL,* phi);
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
-  RooArgSet reco_vars (*ctK, *ctL, *phi, *rand);
+  RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
+  RooArgSet reco_vars (*ctK, *ctL, *phi, *rand, *mass);
+  // RooArgSet reco_vars (*ctK, *ctL, *phi, *rand);
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
@@ -212,15 +215,35 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
     // define angular PDF for signal, using the custom class
     // efficiency function and integral values are passed as arguments
+
+    RooAbsReal* ang_rt = new ShapeSigAng( ("PDF_sig_ang_rt_"+shortString+"_"+year).c_str(),
+                                         ("PDF_sig_ang_rt_"+year).c_str(),
+         		                 *ctK,*ctL,*phi,
+         		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
+         		                 *effC[iy], intCVec[iy],
+         		                 true
+         		                 );
+    
+    RooAbsReal* ang_wt = new ShapeSigAng( ("PDF_sig_ang_wt_"+shortString+"_"+year).c_str(),
+                                         ("PDF_sig_ang_wt_"+year).c_str(),
+         		                 *ctK,*ctL,*phi,
+         		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
+         		                 *effW[iy], intWVec[iy],
+         		                 false
+         		                 );
+
+
     PDF_sig_ang_fullAngular.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_"+shortString+"_"+year).c_str(),
                                                      ("PDF_sig_ang_fullAngular_"+year).c_str(),
-      		                                     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
-      		                                     *effC[iy], *effW[iy], intCVec[iy],intWVec[iy]));
+      		                                     *ctK,*ctL,*phi,*mFrac,
+         		                             *ang_rt, *ang_wt
+      		                                     ) );
     // define PDF with penalty term
     PDF_sig_ang_fullAngular_penalty.push_back( new PdfSigAng(("PDF_sig_ang_fullAngular_penalty_"+shortString+"_"+year).c_str(),
 							     ("PDF_sig_ang_fullAngular_penalty_"+year).c_str(),
-							     *ctK,*ctL,*phi,*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,*mFrac,
-							     *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],*penTerm));
+							     *ctK,*ctL,*phi,*mFrac,
+         		                                     *ang_rt, *ang_wt,
+							     *penTerm));
 
     // create roodataset (in case data-like option is selected, only import the correct % of data)
     std::vector<RooDataSet*> data_isample;
@@ -352,6 +375,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
     subTime.Start(true);
     int status = fitter->fit();
     subTime.Stop();
+    cout<<"Fit+boundDist time: "<<subTime.CpuTime()<<endl;
 
     // include fit time in dataset with per-toy informations
     fitTime->setVal(subTime.CpuTime());
@@ -389,15 +413,20 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 	distTime.Stop();
 	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
 	boundDist->setVal(boundDistVal);
-
+	
+	TStopwatch improvTime;
+	improvTime.Start(true);
 	fitter->improveAng(seed);
+	improvTime.Stop();
+	cout<<"Improv time: "<<improvTime.CpuTime()<<" s"<<endl;
+
       }
 
       // run MINOS error
       TStopwatch minosTime;
       minosTime.Start(true);
 
-      fitter->MinosAng();
+      // fitter->MinosAng();
 
       minosTime.Stop();
       minTime->setVal(minosTime.CpuTime());

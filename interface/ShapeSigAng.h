@@ -35,24 +35,15 @@ class ShapeSigAng : public RooAbsReal {
   RooRealProxy P6p ;
   RooRealProxy P8p ;
 
-  RooRealProxy EffC ;
-  RooRealProxy EffW ;
+  RooRealProxy Eff ;
 
-  std::vector<double> intCPart;
-  std::vector<double> intWPart;
-
-//   RooRealProxy isC;
+  std::vector<double> intPart;
 
   bool isC;
   
-  const RooAbsReal* effCVal() const { 
+  const RooAbsReal* effVal() const { 
     // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffC.absArg() ; 
-  }
-
-  const RooAbsReal* effWVal() const { 
-    // Return pointer to efficiency function in product
-    return (RooAbsReal*) EffW.absArg() ; 
+    return (RooAbsReal*) Eff.absArg() ; 
   }
 
   Double_t evaluate() const ;
@@ -60,22 +51,20 @@ class ShapeSigAng : public RooAbsReal {
  public:
   ShapeSigAng() {} ; 
   ShapeSigAng(const char *name, const char *title,
-	    RooAbsReal& _ctK,
-	    RooAbsReal& _ctL,
-	    RooAbsReal& _phi,
-	    RooAbsReal& _Fl,
-	    RooAbsReal& _P1,
-	    RooAbsReal& _P2,
-	    RooAbsReal& _P3,
-	    RooAbsReal& _P4p,
-	    RooAbsReal& _P5p,
-	    RooAbsReal& _P6p,
-	    RooAbsReal& _P8p,
-	    RooAbsReal& _EffC,
-	    RooAbsReal& _EffW,
-	    std::vector<double> _intCPart,
-	    std::vector<double> _intWPart,
-	    bool _isC);
+	      RooAbsReal& _ctK,
+	      RooAbsReal& _ctL,
+	      RooAbsReal& _phi,
+	      RooAbsReal& _Fl,
+	      RooAbsReal& _P1,
+	      RooAbsReal& _P2,
+	      RooAbsReal& _P3,
+	      RooAbsReal& _P4p,
+	      RooAbsReal& _P5p,
+	      RooAbsReal& _P6p,
+	      RooAbsReal& _P8p,
+	      RooAbsReal& _Eff,
+	      std::vector<double> _intPart,
+	      bool _isC);
   ShapeSigAng(const ShapeSigAng& other, const char* name=0) ;
   virtual TObject* clone(const char* newname) const { return new ShapeSigAng(*this,newname); }
   inline virtual ~ShapeSigAng() { }
