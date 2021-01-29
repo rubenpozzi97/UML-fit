@@ -29,14 +29,6 @@ class PdfSigAngMass : public RooAbsPdf {
   RooRealProxy ctL ;
   RooRealProxy phi ;
   RooRealProxy m ;
-  RooRealProxy Fl ;
-  RooRealProxy P1 ;
-  RooRealProxy P2 ;
-  RooRealProxy P3 ;
-  RooRealProxy P4p ;
-  RooRealProxy P5p ;
-  RooRealProxy P6p ;
-  RooRealProxy P8p ;
 
   RooRealProxy mean_rt     ;
   RooRealProxy sigma_rt1   ;
@@ -89,14 +81,6 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _ctL,
 	    RooAbsReal& _phi,
 	    RooAbsReal& _m,
-	    RooAbsReal& _Fl,
-	    RooAbsReal& _P1,
-	    RooAbsReal& _P2,
-	    RooAbsReal& _P3,
-	    RooAbsReal& _P4p,
-	    RooAbsReal& _P5p,
-	    RooAbsReal& _P6p,
-	    RooAbsReal& _P8p,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
 	    RooAbsReal& _alpha_rt1,
@@ -122,14 +106,6 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _ctL,
 	    RooAbsReal& _phi,
 	    RooAbsReal& _m,
-	    RooAbsReal& _Fl,
-	    RooAbsReal& _P1,
-	    RooAbsReal& _P2,
-	    RooAbsReal& _P3,
-	    RooAbsReal& _P4p,
-	    RooAbsReal& _P5p,
-	    RooAbsReal& _P6p,
-	    RooAbsReal& _P8p,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
 	    RooAbsReal& _alpha_rt1,
@@ -154,14 +130,6 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _ctL,
 	    RooAbsReal& _phi,
 	    RooAbsReal& _m,
-	    RooAbsReal& _Fl,
-	    RooAbsReal& _P1,
-	    RooAbsReal& _P2,
-	    RooAbsReal& _P3,
-	    RooAbsReal& _P4p,
-	    RooAbsReal& _P5p,
-	    RooAbsReal& _P6p,
-	    RooAbsReal& _P8p,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
 	    RooAbsReal& _sigma_rt2,
@@ -190,14 +158,6 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _ctL,
 	    RooAbsReal& _phi,
 	    RooAbsReal& _m,
-	    RooAbsReal& _Fl,
-	    RooAbsReal& _P1,
-	    RooAbsReal& _P2,
-	    RooAbsReal& _P3,
-	    RooAbsReal& _P4p,
-	    RooAbsReal& _P5p,
-	    RooAbsReal& _P6p,
-	    RooAbsReal& _P8p,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
 	    RooAbsReal& _sigma_rt2,
