@@ -26,7 +26,6 @@
 // #include <RooGaussian.h>
 #include <RooAddPdf.h>
 #include <RooProdPdf.h>
-#include <RooConstVar.h>
 #include <RooCBShape.h>
 #include "RooDoubleCBFast.h"
 
