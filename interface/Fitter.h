@@ -7,6 +7,7 @@
 #include <TRandom3.h>
 #include <TH1D.h>
 #include <TString.h>
+#include <TStopwatch.h>
 
 #include <RooFitResult.h>
 #include <RooDataSet.h>

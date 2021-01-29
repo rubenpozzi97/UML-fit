@@ -309,7 +309,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                          ("PDF_sig_ang_rt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effC[iy], intCVec[iy],
          		                 true
          		                 );
     
@@ -317,7 +317,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                          ("PDF_sig_ang_wt_"+year).c_str(),
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
-         		                 *effC[iy], *effW[iy], intCVec[iy],intWVec[iy],
+         		                 *effW[iy], intWVec[iy],
          		                 false
          		                 );
     
@@ -328,7 +328,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
                                                        ("PDF_sig_ang_mass_"+year).c_str(),
          		                                *ctK,*ctL,*phi,*mass,
-         		                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                         *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
          		                                *mFrac,
@@ -339,7 +338,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ( "PDF_sig_ang_mass_penalty_"+shortString+"_"+year).c_str(),
                                                               ( "PDF_sig_ang_mass_penalty_"+year).c_str(),
       		                                                *ctK,*ctL,*phi,*mass,
-      		                                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                                 *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                                 *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
       		                                                *mFrac,
@@ -352,7 +350,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
                                                        ("PDF_sig_ang_mass_"+year).c_str(),
          		                                *ctK,*ctL,*phi,*mass,
-         		                                *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                         *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
          		                                *mFrac,
@@ -363,7 +360,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         PDF_sig_ang_mass_penalty.push_back(new PdfSigAngMass( ("PDF_sig_ang_mass_penalty_"+shortString+"_"+year).c_str(),
                                                               ("PDF_sig_ang_mass_penalty_"+year).c_str(),
       		                                              *ctK,*ctL,*phi,*mass,
-      		                                              *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
                                                               *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                               *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
       		                                              *mFrac,
