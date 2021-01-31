@@ -38,6 +38,8 @@ class Fitter {
   BoundDist* bound_dist;
   Penalty* penTerm;
 
+  RooArgSet* constrVars;
+
   Double_t fac1;
   Double_t fac4;
   Double_t base1;
@@ -85,14 +87,18 @@ class Fitter {
 	 RooAbsPdf* _simPdf_penalty,
 	 BoundCheck* _boundary,
 	 BoundDist* _bound_dist,
-	 Penalty* _penTerm);
+	 Penalty* _penTerm,
+	 RooArgSet* _constrVars = nullptr
+	 );
   Fitter(const char *_name, const char *_title,
 	 RooArgList _angPars,
 	 RooDataSet* _combData,
 	 RooAbsPdf* _simPdf,
 	 RooAbsPdf* _simPdf_penalty,
 	 BoundCheck* _boundary,
-	 BoundDist* _bound_dist);
+	 BoundDist* _bound_dist,
+	 RooArgSet* _constrVars = nullptr
+	 );
   Fitter(const Fitter& other, const char* name=0) ;
   virtual Fitter* clone(const char* newname) const { return new Fitter(*this,newname); }
   inline virtual ~Fitter() { }
