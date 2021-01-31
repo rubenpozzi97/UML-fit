@@ -216,7 +216,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
     // Mass Component
     // import mass PDF from fits to the MC
-    string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_2018_fM_newbdt.root",years[iy]);
+    string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
     if (!retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w"))  return;
 
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
