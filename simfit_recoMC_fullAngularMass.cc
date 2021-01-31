@@ -214,11 +214,9 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                    q2Bin,  parity,  years[iy], 
                                    reco_vars,  shortString  )); 
 
-    RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",1, 0, 1);
- 
     // Mass Component
     // import mass PDF from fits to the MC
-    string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i.root",years[iy]);
+    string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_2018_fM_newbdt.root",years[iy]);
     if (!retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w"))  return;
 
     wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
@@ -266,22 +264,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     RooProdPdf * c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
     c_vars.add(c_vars_wt);
 
-    mFrac->setConstant();
-    // temporary
-    mean_wt  ->setConstant();
-    sigma_wt ->setConstant();
-    alpha_wt1->setConstant();
-    alpha_wt2->setConstant();
-    n_wt1    ->setConstant();
-    n_wt2    ->setConstant();
-
-    mean_rt  ->setConstant();
-    sigma_rt ->setConstant();
-    alpha_rt1->setConstant();
-    alpha_rt2->setConstant();
-    n_rt1    ->setConstant();
-    n_rt2    ->setConstant();
- 
     cout << "deltap built --> constraint not added yet (to be done)" << endl;
     //// creating constraints for the difference between the two peaks
 //     RooFormulaVar* deltaPeaks = new RooFormulaVar(Form("deltaPeaks^{%i}", years[iy]), "@0 - @1", RooArgList(*mean_rt, *mean_wt))  ;
@@ -291,16 +273,17 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 //                                                ) );
 //     c_vars.add(*deltaPeaks);       c_pdfs.add(*c_deltaPeaks[iy]);
 
-  
-    /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
+    RooRealVar* mFrac = new RooRealVar(Form("f_{M}^{%i}",years[iy]),"mistag fraction",1, 0.5, 1.5);
+    /// create constraint on mFrac (mFrac = 1, constraint derived from stat scaling)
     double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal(); 
     double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal(); 
     double fraction = nwt_mc / (nrt_mc + nwt_mc);
-    c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,  
-                                    RooConst(fraction) , 
-                                    RooConst(fM_sigmas[years[iy]][q2Bin])
-                                    ) );
-    cout << fraction << "   " << fM_sigmas[years[iy]][q2Bin] << endl;                                    
+    double frac_sigma = fM_sigmas[years[iy]][q2Bin]/fraction;
+    RooGaussian* c_fm = new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,  
+                                        RooConst(1.) , 
+                                        RooConst(frac_sigma)
+                                        );
+//     cout << fraction << " +/- " << fM_sigmas[years[iy]][q2Bin] << " ---> << "1 +/- " << frac_sigma << endl;                                    
     c_vars.add(*mFrac); 
 
     // Angular Component
@@ -317,11 +300,9 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
          		                 *ctK,*ctL,*phi,
          		                 *Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,
          		                 *effW[iy], intWVec[iy],
-         		                 false
+         		                 false 
          		                 );
     
-
-
 
     if (q2Bin < 5)  {
         PDF_sig_ang_mass.push_back( new PdfSigAngMass( ("PDF_sig_ang_mass_"+shortString+"_"+year).c_str(),
@@ -329,7 +310,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
          		                                *ctK,*ctL,*phi,*mass,
                                                         *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
-         		                                *mFrac,
+         		                                *mFrac, *c_fm,
          		                                *ang_rt, *ang_wt,
          		                                *c_dcb_rt, *c_dcb_wt
          		                                ));
@@ -339,7 +320,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       		                                                *ctK,*ctL,*phi,*mass,
                                                                 *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                                 *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
-      		                                                *mFrac,
+      		                                                *mFrac, *c_fm,
             		                                        *ang_rt, *ang_wt,
                           		                        *penTerm,
       		                                                *c_dcb_rt, *c_dcb_wt
@@ -351,7 +332,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
          		                                *ctK,*ctL,*phi,*mass,
                                                         *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                         *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
-         		                                *mFrac,
+         		                                *mFrac, *c_fm,
          		                                *ang_rt, *ang_wt,
          		                                *c_dcb_rt, *c_dcb_wt
          		                                ));
@@ -361,7 +342,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       		                                              *ctK,*ctL,*phi,*mass,
                                                               *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                               *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,                        
-      		                                              *mFrac,
+      		                                              *mFrac, *c_fm,
            		                                      *ang_rt, *ang_wt,
                           		                      *penTerm,
       		                                              *c_dcb_rt, *c_dcb_wt
@@ -396,7 +377,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   // save initial par values    
   RooArgSet *params      = (RooArgSet *)simPdf->getParameters(observables);
   RooArgSet* savedParams = (RooArgSet *)params->snapshot() ;
-  params->Print("v");
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
                             reco_vars,
@@ -481,7 +461,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     *params = *savedParams ;
 
     // run the fit
-    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm);
+    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm,&c_vars);
     vFitter.push_back(fitter);
 
     subTime.Start(true);
@@ -737,8 +717,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
   cPen->Update();
   cPen->SaveAs( ("plotSimFit4d_d/recoPenTerm_" + plotString + ".pdf").c_str() );
-  return;
 
+   
   int confIndex = 2*nBins*parity  + q2Bin;
   string longString  = "Fit to reconstructed events";
   longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);
@@ -778,7 +758,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         leg->Draw("same");
     }
   }
-  c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  "analytInt.pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullAngularMass_" + plotString +  ".pdf").c_str() );
 
 }
 
