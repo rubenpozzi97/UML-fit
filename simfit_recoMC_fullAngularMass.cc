@@ -816,6 +816,7 @@ int main(int argc, char** argv)
   cout <<  "parity      " << parity       << endl;
   cout <<  "multiSample " << multiSample  << endl;
   cout <<  "nSample     " << nSample      << endl;
+  cout <<  "local files " << localFiles   << endl;
   cout <<  "plot        " << plot         << endl;
   cout <<  "save        " << save         << endl;
   cout <<  "years[0]    " << years[0]     << endl;
