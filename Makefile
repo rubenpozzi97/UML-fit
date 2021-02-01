@@ -17,6 +17,7 @@ EXECUTABLE5 := plotMultiResults
 EXECUTABLE6 := simfit_toy_fullAngular
 EXECUTABLE7 := simfit_recoMC_fullAngularMass
 EXECUTABLE8 := simfit_recoMC_fullMass
+EXECUTABLE9 := simfit_recoMC_fullAngular_toybkg
 
 EXTRACLASS := RooDataHist.cxx
 CLASS0     := PdfRT
@@ -81,6 +82,8 @@ $(EXECUTABLE7): $(EXECUTABLE7).cc
 $(EXECUTABLE8): $(EXECUTABLE8).cc 
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(SOURCEDIR)/$(CLASS4).cc $(CLASSDICT2).cc $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) 
 
+$(EXECUTABLE9): $(EXECUTABLE9).cc 
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(ROOTLIBS) $(ROOTFLAGS) -I$(INCLUDEDIR) 
 
 
 #cleaning options
