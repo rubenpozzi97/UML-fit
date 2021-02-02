@@ -135,14 +135,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
     string filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
-    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/", years[iy]) + filename_data;
+    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
 
     // import data (or MC as data proxy)
     retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ));
 
     // import KDE efficiency histograms and partial integral histograms
     string filename = Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
-    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]) + filename;
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/",years[iy]) + filename;
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -259,7 +259,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
 
-  TFile* fout = new TFile(("simFitResults/newphi/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i_newShape.root", q2Bin)).c_str(),"UPDATE");
+  TFile* fout = new TFile(("simFitResults/newphi/simFitResult_recoMC_fullAngular" + all_years + stat + Form("_b%i_newPhi.root", q2Bin)).c_str(),"UPDATE");
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
@@ -342,7 +342,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     // set penalty term power parameter
     int combEntries = combData->numEntries();
     penTerm->setPower(power/combEntries);
-
+ 
 //     for(auto it = map.cbegin(); it != map.cend(); ++it)
 //       std::cout << "dataset: " << it->first << ", with n entries: " << it->second->sumEntries() << "\n";
 
@@ -407,7 +407,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	// fitter->MinosAng();
+	fitter->MinosAng();
 
 	minosTime.Stop();
 	minTime->setVal(minosTime.CpuTime());
@@ -650,7 +650,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
   
-  c[confIndex]->SaveAs( ("plotSimFit_d/newphi/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + "_checkProj_newShapeAnInt.pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimFit_d/newphi/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + "_newphi.pdf").c_str() );
 
 }
 
