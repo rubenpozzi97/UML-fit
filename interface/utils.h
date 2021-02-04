@@ -109,7 +109,7 @@ bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::str
 
 std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastSample, RooWorkspace *ws, 
                                        int q2Bin, int parity, int year, //std::map<int,float> scale_to_data,
-                                       RooArgSet reco_vars, std::string shortString  ){
+                                       RooArgSet reco_vars, RooArgSet vars, std::string shortString  ){
 
     RooDataSet* dataCT, *dataWT;
     std::vector<RooDataSet*> datasample;
@@ -122,9 +122,9 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 					     RooArgSet(reco_vars));
 
         dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          ->reduce( RooArgSet(vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
         dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          ->reduce( RooArgSet(vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
 
         isample->append(*dataCT);
         isample->append(*dataWT);
@@ -134,7 +134,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
     else{
       RooDataSet* isample = new RooDataSet(("data_"+shortString + "_subs0").c_str(), 
 					   ("data_"+shortString + "_subs0").c_str(), 
-					   RooArgSet(reco_vars));
+					   RooArgSet(vars));
       dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
       dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
       isample->append(*dataCT);
