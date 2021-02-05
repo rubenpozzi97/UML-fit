@@ -234,28 +234,35 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     retrieveWorkspace( filename_sb, wsp_sb, "wsb");
 
     RooBernsteinSideband* bkg_ang_pdf = (RooBernsteinSideband*) wsp_sb[iy]->pdf("BernSideBand");
+    bkg_ang_pdf -> SetName(Form("bkg_ang_pdf_%i", years[iy]));
 
-    RooRealVar* slope         = new RooRealVar    (Form("slope^{%i}",years[iy]),   "slope"           ,    -4.3, -10., 0.);
-    RooExponential* bkg_exp   = new RooExponential(Form("bkg_exp^{%i}",years[iy]) , "exponential"     ,  *slope,   *mass  );
+    RooRealVar* slope         = new RooRealVar    (Form("slope^{%i}",years[iy]),    Form("slope^{%i}",years[iy])       ,    -4.3, -10., 0.);
+    RooExponential* bkg_exp   = new RooExponential(Form("bkg_exp_%i",years[iy]) , Form("bkg_exp_%i",years[iy])     ,  *slope,   *mass  );
  
-    RooProdPdf* bkg_pdf = new RooProdPdf("final", "final", RooArgList(*bkg_ang_pdf,*bkg_exp)); 
-    RooArgSet*  bkg_params = (RooArgSet*) bkg_pdf->getParameters(observables);
+    RooProdPdf* bkg_pdf = new RooProdPdf(Form("bkg_pdf_%i",years[iy]), Form("bkg_pdf_%i",years[iy]), RooArgList(*bkg_ang_pdf,*bkg_exp)); 
+    RooArgSet*  bkg_params     = (RooArgSet*) bkg_pdf->    getParameters(observables);
     RooArgSet*  bkg_ang_params = (RooArgSet*) bkg_ang_pdf->getParameters(observables);
+    RooArgSet*  saved_bkg_params = (RooArgSet*)bkg_params->snapshot() ;
     
+    wksp->defineSet("bkg_params", *bkg_params, true);
+    wksp->defineSet("observables", observables, true);
+    wksp->saveSnapshot(Form("gen_bkg_pdf_%i",years[iy]), *bkg_params, true) ;
+
     // set constant those parameters that are at 0 
     auto iter = bkg_params->createIterator();
     RooRealVar* ivar =  (RooRealVar*)iter->Next();
     while (ivar){
-//         cout << ivar->GetName() << " \t " << ivar->getVal() << endl;
-        if (ivar->getVal()==0){
+        if (ivar->getVal()==0 || ivar->getVal()==1.){
           ivar->setConstant(true);
         }
+        else {
+          ivar->setConstant(false);
+          ivar->Print();
+        }  
         ivar = (RooRealVar*) iter->Next();
     }
-    wksp->saveSnapshot(Form("gen_bkg_pdf_%i",iy), *bkg_params, kTRUE) ;
 
     
-
     RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(nbkg_togen));//, Extended(true)) ;
     for (uint itoy = 0; itoy < lastSample+1-firstSample; itoy++){
       RooDataSet *toy_bkg = bkg_pdf->generate(*genSpec) ;
@@ -265,12 +272,15 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       cout << "total events " << year << ": " << data[iy][itoy]->sumEntries() << endl;
       
       // now fit toy bkg sample to update bkg pdf parameters which are not zero
+      // start from gen pars for each toy
+      *bkg_params = *saved_bkg_params ;
       bkg_pdf->fitTo(*toy_bkg);
-      wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",iy, itoy), *bkg_params, kTRUE) ;
+      wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], itoy), *bkg_params, kTRUE) ;
     }      
 
-    wksp->loadSnapshot(Form("fit_bkg_pdf_%i_%i",iy, 0));///to be updated!!!
-//     wksp->loadSnapshot(Form("fit_bkg_pdf_%s_%s",iy, itoy));
+    ///// fix for many toys!!!!!!!!
+//     wksp->loadSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], 0));///to be updated!!!
+
     // now set bkg angular parameters to their value as from the fit, and keep them constant
     iter = bkg_ang_params->createIterator();
     ivar =  (RooRealVar*)iter->Next();
@@ -279,7 +289,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         ivar = (RooRealVar*) iter->Next();
     }
 
- 
     // Mass Component
     // import mass PDF from fits to the MC
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
