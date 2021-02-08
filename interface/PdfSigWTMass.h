@@ -25,6 +25,7 @@ RooDoubleCBFast* createWTMassShape(int q2Bin,
                                                    );
 
     if (constrainVars){
+        constrainVar2(mean_wt  , Form("mean_{WT}^{%i}",q2Bin)   , w, year, true, c_vars, c_pdfs);
         constrainVar2(sigma_wt , Form("#sigma_{WT1}^{%i}",q2Bin) , w, year, true, c_vars, c_pdfs);
         constrainVar2(alpha_wt1, Form("#alpha_{WT1}^{%i}",q2Bin) , w, year, true, c_vars, c_pdfs);
         constrainVar2(alpha_wt2, Form("#alpha_{WT2}^{%i}",q2Bin) , w, year, true, c_vars, c_pdfs);

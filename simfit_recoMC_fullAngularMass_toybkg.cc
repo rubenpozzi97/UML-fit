@@ -229,7 +229,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     int nbkg_togen = nbkg_years[years[iy]][q2Bin];
     int nbkg_gen;
     // Read pdf for sidebands from external file 
-    string filename_sb = Form("savesb608_2018_b%i.root", q2Bin );
+    string filename_sb = Form("savesb608_%i_b%i.root", years[iy], q2Bin );
     if (!localFiles) filename_sb = "/eos/cms/store/user/fiorendi/p5prime/sidebands/" + filename_sb;
     retrieveWorkspace( filename_sb, wsp_sb, "wsb");
 
@@ -264,17 +264,21 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
     
     RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(nbkg_togen));//, Extended(true)) ;
+    RooFitResult* bkg_fit_res;
     for (uint itoy = 0; itoy < lastSample+1-firstSample; itoy++){
       RooDataSet *toy_bkg = bkg_pdf->generate(*genSpec) ;
-      nbkg_gen = toy_bkg->sumEntries();
-      cout << "bkg events: " << nbkg_gen << " (" << nbkg_togen << " requested)"  << endl;
       data[iy][itoy]->append(*toy_bkg);
-      cout << "total events " << year << ": " << data[iy][itoy]->sumEntries() << endl;
+      
+      // reduce to events in the mass sidebands
+      RooDataSet* toy_bkg_sb = (RooDataSet*)toy_bkg->reduce(observables, "(mass > 5 && mass < 5.1) || (mass > 5.4 && mass < 5.6)");
+//       nbkg_gen = toy_bkg->sumEntries();
+//       cout << "bkg events: " << nbkg_gen << " (" << nbkg_togen << " requested)"  << endl;
+//       cout << "total events " << year << ": " << data[iy][itoy]->sumEntries() << endl;
       
       // now fit toy bkg sample to update bkg pdf parameters which are not zero
       // start from gen pars for each toy
       *bkg_params = *saved_bkg_params ;
-      bkg_pdf->fitTo(*toy_bkg);
+      bkg_pdf->fitTo(*toy_bkg_sb);
       wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], itoy), *bkg_params, kTRUE) ;
     }      
 
@@ -309,7 +313,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       sigma_rt2-> setVal(wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() );
       f1rt     -> setVal(wsp_mcmass[iy]->var(Form("f^{RT%i}", q2Bin))->getVal() );
       dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt );
-    } 
+    }   
     else{
         alpha_rt2->setRange(0,10);
         dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2 , wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt  );
