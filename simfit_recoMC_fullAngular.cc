@@ -67,7 +67,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   uint firstSample = ( multiSample || nSample==0 ) ? 0 : nSample-1;
   uint lastSample = nSample > 0 ? nSample-1 : 0;
   
-  std::vector<TFile*> fin_data, fin_eff;
+  std::vector<TFile*> fin_eff;
   std::vector<RooWorkspace*> wsp;
   std::vector<std::vector<RooDataSet*>> data;
   std::vector<RooAbsReal*> effC, effW;
@@ -135,14 +135,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
     string filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
-    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/", years[iy]) + filename_data;
+    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
 
     // import data (or MC as data proxy)
     retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ));
 
     // import KDE efficiency histograms and partial integral histograms
     string filename = Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
-    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]) + filename;
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/",years[iy]) + filename;
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -407,7 +407,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	// fitter->MinosAng();
+	fitter->MinosAng();
 
 	minosTime.Stop();
 	minTime->setVal(minosTime.CpuTime());
