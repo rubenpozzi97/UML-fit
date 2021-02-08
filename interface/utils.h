@@ -2,6 +2,7 @@
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
+#include <RooConstVar.h>
 #include <map>
 
 using namespace std;

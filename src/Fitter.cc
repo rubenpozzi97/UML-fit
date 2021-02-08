@@ -11,7 +11,9 @@ Fitter::Fitter(const char *_name, const char *_title,
 	       RooAbsPdf* _simPdf_penalty,
 	       BoundCheck* _boundary,
 	       BoundDist* _bound_dist,
-	       Penalty* _penTerm) :
+	       Penalty* _penTerm,
+               RooArgSet* _constrVars
+	       ) :
   name(_name),
   title(_title),
   angPars(_angPars),
@@ -20,7 +22,8 @@ Fitter::Fitter(const char *_name, const char *_title,
   simPdf_penalty(_simPdf_penalty),
   boundary(_boundary),
   bound_dist(_bound_dist),
-  penTerm(_penTerm)
+  penTerm(_penTerm),
+  constrVars(_constrVars)
 {
 
   SetDefConf();
@@ -34,7 +37,9 @@ Fitter::Fitter(const char *_name, const char *_title,
 	       RooAbsPdf* _simPdf,
 	       RooAbsPdf* _simPdf_penalty,
 	       BoundCheck* _boundary,
-	       BoundDist* _bound_dist) :
+	       BoundDist* _bound_dist,
+      	       RooArgSet* _constrVars 	       
+	       ) :
   name(_name),
   title(_title),
   angPars(_angPars),
@@ -42,7 +47,8 @@ Fitter::Fitter(const char *_name, const char *_title,
   simPdf(_simPdf),
   simPdf_penalty(_simPdf_penalty),
   boundary(_boundary),
-  bound_dist(_bound_dist)
+  bound_dist(_bound_dist),
+  constrVars(_constrVars)
 {
 
   penTerm = 0;
@@ -61,7 +67,8 @@ Fitter::Fitter(const Fitter& other, const char* name) :
   simPdf_penalty(other.simPdf_penalty),
   boundary(other.boundary),
   bound_dist(other.bound_dist),
-  penTerm(other.penTerm)
+  penTerm(other.penTerm),
+  constrVars(other.constrVars)
 {
 
 
@@ -131,6 +138,13 @@ Int_t Fitter::fit()
                             RooFit::Extended(kFALSE),
                             RooFit::NumCPU(1)
                             );
+    if ( constrVars != nullptr && constrVars->getSize() > 0  ){
+      nll = simPdf->createNLL(*combData,
+                              RooFit::Extended(kFALSE),
+                              RooFit::NumCPU(1),
+                              RooFit::Constrain(*constrVars)
+                              );
+    }                              
          
     RooMinimizer m(*nll) ;
     m.optimizeConst (kTRUE); // do not recalculate constant terms

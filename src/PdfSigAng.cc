@@ -170,7 +170,6 @@ Double_t PdfSigAng::analyticalIntegral(Int_t code, const char* rangeName) const
           else std::cout<<"ERROR! Null wt pdf integral, fake value returned"<<std::endl;
           return 1e-55;
       }
-
       // std::cout<<"3D int: "<<rtAngIntegral<<"\t"<<wtAngIntegral<<std::endl;
       // std::cout <<  "PdfSigAng:analyticalIntegral1:\t" << rtAngIntegral  << "\t" << wtAngIntegral << std::endl;
     }   

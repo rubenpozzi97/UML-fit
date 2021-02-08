@@ -47,6 +47,7 @@ class PdfSigAngMass : public RooAbsPdf {
   RooRealProxy n_wt2       ;
   
   RooRealProxy mFrac ;
+  RooRealProxy constrTerm;
 
   RooRealProxy PenTerm;
   RooRealProxy rtAngTerm;
@@ -71,6 +72,11 @@ class PdfSigAngMass : public RooAbsPdf {
     return (RooAbsReal*) wtAngTerm.absArg() ;
   }
 
+  const RooAbsReal* constrTermVal() const {
+    // Return pointer to penalty term function
+    return (RooAbsReal*) constrTerm.absArg() ;
+  }
+  
   Double_t evaluate() const ;
 
  public:
@@ -94,6 +100,7 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
+	    RooAbsReal& _constrTerm,
 	    RooAbsReal& _PenTerm,
 	    RooAbsReal& _rtAngTerm,
 	    RooAbsReal& _wtAngTerm,
@@ -119,6 +126,7 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
+	    RooAbsReal& _constrTerm,
 	    RooAbsReal& _rtAngTerm,
 	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm,
@@ -145,6 +153,7 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
+	    RooAbsReal& _constrTerm,
 	    RooAbsReal& _PenTerm,
 	    RooAbsReal& _rtAngTerm,
 	    RooAbsReal& _wtAngTerm,
@@ -173,6 +182,7 @@ class PdfSigAngMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt1    ,
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac,
+	    RooAbsReal& _constrTerm,
 	    RooAbsReal& _rtAngTerm,
 	    RooAbsReal& _wtAngTerm,
 	    RooAbsReal& _rtMassTerm, 

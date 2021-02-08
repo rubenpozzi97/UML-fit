@@ -30,6 +30,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
+           	     RooAbsReal& _constrTerm,
 		     RooAbsReal& _PenTerm,
                      RooAbsReal& _rtAngTerm,
                      RooAbsReal& _wtAngTerm,
@@ -54,6 +55,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
+  constrTerm("constrTerm","constrTerm",this,_constrTerm),
   PenTerm("PenTerm","PenTerm",this,_PenTerm),
   rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
   wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
@@ -82,6 +84,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
+           	     RooAbsReal& _constrTerm,
                      RooAbsReal& _rtAngTerm,
                      RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
@@ -105,6 +108,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
+  constrTerm("constrTerm","constrTerm",this,_constrTerm),
   rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
   wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
@@ -135,6 +139,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
+           	     RooAbsReal& _constrTerm,
 		     RooAbsReal& _PenTerm,
                      RooAbsReal& _rtAngTerm,
                      RooAbsReal& _wtAngTerm,
@@ -161,6 +166,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
+  constrTerm("constrTerm","constrTerm",this,_constrTerm),
   PenTerm("PenTerm","PenTerm",this,_PenTerm),
   rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
   wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
@@ -192,6 +198,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
+           	     RooAbsReal& _constrTerm,
                      RooAbsReal& _rtAngTerm,
                      RooAbsReal& _wtAngTerm,
 		     RooAbsReal& _rtMassTerm,
@@ -217,6 +224,7 @@ PdfSigAngMass::PdfSigAngMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
+  constrTerm("constrTerm","constrTerm",this,_constrTerm),
   rtAngTerm("rtAngTerm","rtAngTerm",this,_rtAngTerm),
   wtAngTerm("wtAngTerm","wtAngTerm",this,_wtAngTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
@@ -249,6 +257,7 @@ PdfSigAngMass::PdfSigAngMass(const PdfSigAngMass& other, const char* name) :
   n_wt1("n_wt1",this,other.n_wt1),
   n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
+  constrTerm("constrTerm", this, other.constrTerm),
   rtAngTerm("rtAngTerm", this, other.rtAngTerm),
   wtAngTerm("wtAngTerm", this, other.wtAngTerm),
   rtMassTerm("rtMassTerm", this, other.rtMassTerm),
@@ -277,7 +286,9 @@ Double_t PdfSigAngMass::evaluate() const
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal( RooArgSet(marg)) ;
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal( RooArgSet(marg)) ;
 
-  double ret = (decCT_times_eff * mCT + mFrac * decWT_times_eff * mWT) * penalty;
+  double c_mFrac = constrTermVal()->getVal();
+  
+  double ret = (decCT_times_eff * mCT + (mFrac * c_mFrac) * decWT_times_eff * mWT) * penalty;
   return ret;
 
 }
@@ -310,35 +321,34 @@ Int_t PdfSigAngMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVa
 {
   if ( matchArgs(allVars,analVars,ctK,ctL,phi,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 1"<<  std::endl;
+//       std::cout << "code 1"<<  std::endl;
       return 1 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,ctL,phi) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) ){
-      std::cout << "code 2"<<  std::endl;
+//       std::cout << "code 2"<<  std::endl;
       return 2 ;
     }
   }
   if ( matchArgs(allVars,analVars,ctL,phi,m) ){
     if ( fullRangeCosT(ctL,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 3"<<  std::endl;
+//       std::cout << "code 3"<<  std::endl;
       return 3 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,phi,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangePhi(phi,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 4"<<  std::endl;
+//       std::cout << "code 4"<<  std::endl;
       return 4 ;
     }  
   }
   if ( matchArgs(allVars,analVars,ctK,ctL,m) ){
     if ( fullRangeCosT(ctK,rangeName) && fullRangeCosT(ctL,rangeName) && fullRangeMass(m,rangeName) ){
-      std::cout << "code 5"<<  std::endl;
+//       std::cout << "code 5"<<  std::endl;
       return 5 ;
     }  
   }
-  std::cout << "code 0"<<  std::endl;
   // the lack of analytical integral for the subsets of angular variables does not slow down the fit
   // since only the complete integration is used there
   // if one wants to speed up also the PDF projection for plotting, the other analytical integrals can be computed

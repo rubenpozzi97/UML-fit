@@ -24,6 +24,7 @@
 #include <RooAddition.h>  /// check if needed
 #include <RooRandom.h>
 
+#include "utils.h"
 #include "ShapeSigAng.h"
 #include "PdfSigAng.h"
 #include "BoundCheck.h"
@@ -35,6 +36,7 @@ using namespace RooFit;
 using namespace std;
 
 static const int nBins = 9;
+std::map<int,float> scale_to_data;
 
 TCanvas* cnll;
 TCanvas* cZoom;
@@ -43,7 +45,7 @@ TCanvas* c [4*nBins];
 
 double power = 1.0;
 
-void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data)
+void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -65,7 +67,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   uint firstSample = ( multiSample || nSample==0 ) ? 0 : nSample-1;
   uint lastSample = nSample > 0 ? nSample-1 : 0;
   
-  std::vector<TFile*> fin_data, fin_eff;
+  std::vector<TFile*> fin_eff;
   std::vector<RooWorkspace*> wsp;
   std::vector<std::vector<RooDataSet*>> data;
   std::vector<RooAbsReal*> effC, effW;
@@ -133,24 +135,14 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
     string filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
-    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/", years[iy]) + filename_data;
+    if (!localFiles) filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
 
     // import data (or MC as data proxy)
-    fin_data.push_back( TFile::Open( filename_data.c_str() ) );
-    if ( !fin_data[iy] || !fin_data[iy]->IsOpen() ) {
-      cout << "File not found: " << filename_data << endl;
-      return;
-    }
-    wsp.push_back( (RooWorkspace*)fin_data[iy]->Get(Form("ws_b%ip%i", q2Bin, 1-parity ) ) );
-    if ( !wsp[iy] || wsp[iy]->IsZombie() ) {
-      cout<<"Workspace not found in file: "<<filename_data<<endl;
-      return;
-    }
-  
+    retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ));
 
     // import KDE efficiency histograms and partial integral histograms
     string filename = Form((parity==0 ? "KDEeff_b%i_ev_%i.root" : "KDEeff_b%i_od_%i.root"),q2Bin,years[iy]);
-    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/",years[iy]) + filename;
+    if (!localFiles) filename = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/",years[iy]) + filename;
     fin_eff.push_back( new TFile( filename.c_str(), "READ" ));
     if ( !fin_eff[iy] || !fin_eff[iy]->IsOpen() ) {
       cout<<"File not found: "<<filename<<endl;
@@ -207,32 +199,9 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
 
     // create roodataset (in case data-like option is selected, only import the correct % of data)
-    RooDataSet* dataCT, *dataWT;
-    std::vector<RooDataSet*> data_isample;
-
-    if (nSample>0){
-      for (uint is = firstSample; is <= lastSample; is++) {
-        dataCT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[years[iy]], (is+1)*scale_to_data[years[iy]] )) ;
-        dataWT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[years[iy]], (is+1)*scale_to_data[years[iy]] )) ;
-
-        RooDataSet* datatmp = new RooDataSet(*dataCT,("data_"+shortString + Form("_subs%i", is)).c_str());
-        datatmp->append(*dataWT);
-        datatmp->Print();
-        data_isample.push_back (datatmp);
-      }
-    }
-    else{
-      dataCT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
-      dataWT = (RooDataSet*)wsp[iy]->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
-    
-      RooDataSet* datatmp = new RooDataSet(*dataCT,("data_"+shortString + "_subs0").c_str());
-      datatmp->append(*dataWT);
-      data_isample.push_back (datatmp);
-    }
-
-    data.push_back(data_isample) ;
+    data.push_back( createDataset( nSample,  firstSample,  lastSample, wsp[iy],  
+                                   q2Bin,  parity,  years[iy], 
+                                   reco_vars,  shortString  )); 
 
     // define angular PDF for signal, using the custom class
     // efficiency function and integral values are passed as arguments
@@ -298,6 +267,8 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
                             Index(sample), 
                             Import(map)); 
   RooDataSet* combData = 0;
+  RooArgSet *params      = (RooArgSet*) simPdf->getParameters(vars);
+  RooArgSet* savedParams = (RooArgSet*) params->snapshot() ;
 
   // Results' containers
   RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
@@ -376,14 +347,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 //       std::cout << "dataset: " << it->first << ", with n entries: " << it->second->sumEntries() << "\n";
 
     // to start the fit, parameters are restored to the center of the parameter space
-    Fl ->setVal(0.5);
-    P1 ->setVal(0);
-    P2 ->setVal(0);
-    P3 ->setVal(0);
-    P4p->setVal(0);
-    P5p->setVal(0);
-    P6p->setVal(0);
-    P8p->setVal(0);
+    *params = *savedParams ;
 
     // run the fit
     fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm);
@@ -443,7 +407,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	// fitter->MinosAng();
+	fitter->MinosAng();
 
 	minosTime.Stop();
 	minTime->setVal(minosTime.CpuTime());
@@ -660,43 +624,29 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
   
-    RooPlot* xframe = ctK->frame(Title((longString+year).c_str()));
-    RooPlot* yframe = ctL->frame(Title((longString+year).c_str()));
-    RooPlot* zframe = phi->frame(Title((longString+year).c_str()));
-    xframe->GetYaxis()->SetTitleOffset(1.8);
-    yframe->GetYaxis()->SetTitleOffset(1.8);
-    zframe->GetYaxis()->SetTitleOffset(1.8);
-    xframe->SetMaximum(xframe->GetMaximum()*1.15);
-    yframe->SetMaximum(yframe->GetMaximum()*1.15);
-    zframe->SetMaximum(zframe->GetMaximum()*1.15);
-    xframe->SetMinimum(0);
-    yframe->SetMinimum(0);
-    zframe->SetMinimum(0);
+    std::vector<RooPlot*> frames;
+    frames.push_back( prepareFrame( ctK ->frame(Title((longString+year).c_str())) ));
+    frames.push_back( prepareFrame( ctL ->frame(Title((longString+year).c_str())) ));
+    frames.push_back( prepareFrame( phi ->frame(Title((longString+year).c_str())) ));
     TLegend* leg = new TLegend (0.25,0.8,0.9,0.9);
 
-    combData->plotOn(xframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()), Name(("plData"+year).c_str()));
-    combData->plotOn(yframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()));
-    combData->plotOn(zframe,MarkerColor(kRed+1),LineColor(kRed+1),Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()));
-
-    simPdf->plotOn(xframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1),Name(("plPDF"+year).c_str()));
-    simPdf->plotOn(yframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
-    simPdf->plotOn(zframe,Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), ProjWData(RooArgSet(sample), *combData), LineWidth(1));
-
-    c[confIndex]->cd(iy*3+1); 
-    gPad->SetLeftMargin(0.19);        
-    xframe->Draw(); 
-    leg->Draw("same");
-    c[confIndex]->cd(iy*3+2);   
-    gPad->SetLeftMargin(0.19); 
-    yframe->Draw(); 
-    leg->Draw("same");
-    c[confIndex]->cd(iy*3+3);    
-    gPad->SetLeftMargin(0.19); 
-    zframe->Draw(); 
-    leg->SetTextSize(0.03);
-    leg->AddEntry(xframe->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
-    leg->AddEntry(xframe->findObject(("plPDF"+year ).c_str()),("Decay rate x efficiency "+year).c_str(),"l");
-    leg->Draw("same");
+    for (unsigned int fr = 0; fr < frames.size(); fr++){
+        combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40), Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()), Name(("plData"+year).c_str()));
+        
+        simPdf->plotOn(frames[fr], Slice(sample, ("data"+year+Form("_subs%d",firstSample)).c_str()), 
+                                     ProjWData(RooArgSet(sample), *combData), 
+                                     LineWidth(1), 
+                                     Name(("plPDF"+year).c_str()), 
+                                     NumCPU(4));
+        if (fr == 0) { 
+          leg->AddEntry(frames[fr]->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
+          leg->AddEntry(frames[fr]->findObject(("plPDF"+year ).c_str()),("Decay rate x efficiency "+year).c_str(),"l");
+        }
+        c[confIndex]->cd(iy*3+fr+1);
+        gPad->SetLeftMargin(0.19); 
+        frames[fr]->Draw();
+        leg->Draw("same");
+    }
   }
 
   
@@ -705,13 +655,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 }
 
 
-void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years, std::map<int,float> scale_to_data)
+void simfit_recoMC_fullAngularBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool localFiles, bool plot, bool save, std::vector<int> years)
 {
   if ( parity==-1 )
     for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data);
+      simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years);
   else
-    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data);
+    simfit_recoMC_fullAngularBin(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years);
 }
 
 int main(int argc, char** argv)
@@ -759,7 +709,6 @@ int main(int argc, char** argv)
   if ( q2Bin==-1 )   cout << "Running all the q2 bins" << endl;
   if ( parity==-1 )  cout << "Running both the parity datasets" << endl;
 
-  std::map<int,float> scale_to_data;
   // https://docs.google.com/spreadsheets/d/1gG-qowySO9WJpMmr_bAWmOAu05J8zr95yJXGIYCY9-A/edit?usp=sharing
   scale_to_data.insert(std::make_pair(2016, 0.006*2 /2.5  )); // *2 since we are using only odd/even events, second factor is "data-driven"
   scale_to_data.insert(std::make_pair(2017, 0.005*2 /2.05 ));
@@ -767,9 +716,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data);
+      simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years);
   else
-    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years, scale_to_data);
+    simfit_recoMC_fullAngularBin1(q2Bin, parity, multiSample, nSample, localFiles, plot, save, years);
 
   return 0;
 
