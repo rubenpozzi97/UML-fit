@@ -317,6 +317,73 @@ Int_t Fitter::improveAng(int seed, int nGen)
 }
 
 
+Int_t Fitter::improve(int seed, int nGen)
+{
+
+  Double_t preBoundDist = boundDist;
+  
+  // Improve global fit result
+  TRandom3 randGen (seed);
+
+  std::vector<double> vTestPar(angPars.getSize());
+  std::vector<double> vImprovPar(angPars.getSize());
+  for (int iPar = 0; iPar < angPars.getSize(); ++iPar)
+    vImprovPar[iPar] = ((RooRealVar*)angPars.at(iPar))->getValV();
+
+  auto nllVars = nll->getVariables();
+
+  double NLL_before = nll->getValV();
+  double improvNLL = NLL_before;
+  double testNLL = 0;
+  int iImprove = 0;
+
+  do {
+
+    for (int iPar = 0; iPar < angPars.getSize(); ++iPar) {
+      RooRealVar* par = (RooRealVar*)angPars.at(iPar);
+      do vTestPar[iPar] = randGen.Gaus(vImprovPar[iPar],TMath::Max(boundDist,0.002));
+      while (vTestPar[iPar]>par->getMax() || vTestPar[iPar]<par->getMin());
+      par->setVal(vTestPar[iPar]);
+    }
+
+    if (boundary->getValV()>0) continue;
+
+    auto floatPars = result_penalty->randomizePars();
+    for (int iPar = 0; iPar < floatPars.getSize(); ++iPar) {
+      RooRealVar* par = (RooRealVar*)floatPars.at(iPar);
+      if (angPars.contains(*par)) continue; // angular parameters already set
+      auto nllPar = (RooRealVar*)nllVars->find(*par);
+      if (nllPar) nllPar->setVal(par->getValV());
+    }
+
+    testNLL = nll->getValV();
+    if (improvNLL>testNLL) {
+      improvNLL = testNLL;
+      for (int iPar = 0; iPar < angPars.getSize(); ++iPar)
+	vImprovPar[iPar] = vTestPar[iPar];
+      for (int iPar = 0; iPar < floatPars.getSize(); ++iPar) {
+	RooRealVar* par = (RooRealVar*)floatPars.at(iPar);
+	improvVars[par->GetName()] = par->getValV();
+      }
+    }
+
+    ++iImprove;
+
+  } while (iImprove<nGen);
+
+  for (int iPar = 0; iPar < angPars.getSize(); ++iPar)
+    ((RooRealVar*)angPars.at(iPar))->setVal(vImprovPar[iPar]);
+  
+  computeBoundaryDistance();
+  std::cout<<"Fully improved fit result: deltaNLL = "<<NLL_before-improvNLL<<" bound dist: "<<preBoundDist<<" -> "<<boundDist<<std::endl;
+
+  fillResultContainers(true);
+
+  return 0;
+
+}
+
+
 Int_t Fitter::MinosAng(int seed, int nGenMINOS)
 {
 

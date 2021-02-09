@@ -87,6 +87,8 @@ class Fitter {
   std::vector<Double_t> vConfInterLow; /* Custom MINOS error */
   std::vector<Double_t> vConfInterHigh; /* Custom MINOS error */
 
+  std::map<TString,double> improvVars; /* full set of post-improvement parameters */
+
   Fitter() {} ; 
   Fitter(const char *_name, const char *_title,
 	 RooArgList _angPars,
@@ -115,8 +117,10 @@ class Fitter {
 
   Int_t fit() ;
 
+  Int_t improve(int seed = 1, int nGen = 10000) ;
   Int_t improveAng(int seed = 1, int nGen = 10000) ;
 
+  /* Int_t Minos(int seed = 1, int nGenMINOS = 20000) ; */
   Int_t MinosAng(int seed = 1, int nGenMINOS = 20000) ;
 
   RooFitResult* result () { if (usedPenalty) return result_penalty; return result_free; };
