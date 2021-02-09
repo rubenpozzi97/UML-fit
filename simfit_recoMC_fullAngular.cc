@@ -306,64 +306,32 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   double boundDistFit, boundDist;
   bool boundCheck, convCheck, usedPenalty;
 
-  // RooRealVar* fitTime = new RooRealVar("fitTime","fit time",0,"s");
-  // RooRealVar* minTime = new RooRealVar("minTime","MINOS time",0,"s");
-  // RooRealVar* co1 = new RooRealVar("co1","Coefficient 1",0);
-  // RooRealVar* co4 = new RooRealVar("co4","Coefficient 4",0);
-  // RooRealVar* co5 = new RooRealVar("co5","Coefficient 5",0);
-  // RooRealVar* boundDist = new RooRealVar("boundDist","Distance from boundary",0);
   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  // RooArgSet savePars (*co1,*co4,*co5,*fitTime,*minTime,*boundDist);
-  // savePars.add(pars);
-  // RooCategory resStatus ("resStatus","Status of the fit result");
-  // resStatus.defineType("convergent-positive-noPenalty",0);
-  // resStatus.defineType("convergent-positive",1);
-  // resStatus.defineType("convergent-negative",2);
-  // resStatus.defineType("notconvergent-positive",3);
-  // resStatus.defineType("notconvergent-negative",4);
-  // RooDataSet* subResults = 0;
-  // RooDataSet* subNoPen = new RooDataSet("subNoPen","subNoPen",savePars);
-  // RooDataSet* subPosConv = new RooDataSet("subPosConv","subPosConv",savePars);
-  // RooDataSet* subPosNotc = new RooDataSet("subPosNotc","subPosNotc",savePars);
-  // RooDataSet* subNegConv = new RooDataSet("subNegConv","subNegConv",savePars);
-  // RooDataSet* subNegNotc = new RooDataSet("subNegNotc","subNegNotc",savePars);
 
   // TTree with fit output
   vector<double> vResult (pars.getSize());
   vector<double> vConfInterLow  (pars.getSize());
   vector<double> vConfInterHigh (pars.getSize());
   fout->cd();
-  // TTree* fitResultsTree = (TTree*)fout->Get("fitResultsTree");
-  // if (!fitResultsTree || fitResultsTree->IsZombie()) {
-  //   fitResultsTree = new TTree("fitResultsTree","fitResultsTree");
   TTree* fitResultsTree = new TTree("fitResultsTree","fitResultsTree");
-    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-      RooRealVar* par = (RooRealVar*)pars.at(iPar);
-      fitResultsTree->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
-      fitResultsTree->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-      fitResultsTree->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
-    }
-    fitResultsTree->Branch("fitTime",&fitTime);
-    fitResultsTree->Branch("imprTime",&imprTime);
-    fitResultsTree->Branch("minTime",&minTime);
-    fitResultsTree->Branch("co1",&co1);
-    fitResultsTree->Branch("co4",&co4);
-    fitResultsTree->Branch("co5",&co5);
-    fitResultsTree->Branch("boundDist",&boundDist);
-    fitResultsTree->Branch("boundDistFit",&boundDistFit);
-    fitResultsTree->Branch("boundCheck",&boundCheck);
-    fitResultsTree->Branch("convCheck",&convCheck);
-    fitResultsTree->Branch("usedPenalty",&usedPenalty);
+  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+    RooRealVar* par = (RooRealVar*)pars.at(iPar);
+    fitResultsTree->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
+    fitResultsTree->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
+    fitResultsTree->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
+  }
+  fitResultsTree->Branch("fitTime",&fitTime);
+  fitResultsTree->Branch("imprTime",&imprTime);
+  fitResultsTree->Branch("minTime",&minTime);
+  fitResultsTree->Branch("co1",&co1);
+  fitResultsTree->Branch("co4",&co4);
+  fitResultsTree->Branch("co5",&co5);
+  fitResultsTree->Branch("boundDist",&boundDist);
+  fitResultsTree->Branch("boundDistFit",&boundDistFit);
+  fitResultsTree->Branch("boundCheck",&boundCheck);
+  fitResultsTree->Branch("convCheck",&convCheck);
+  fitResultsTree->Branch("usedPenalty",&usedPenalty);
     
-  // } else {
-  //   for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-  //     RooRealVar* par = (RooRealVar*)pars.at(iPar);
-  //     fitResultsTree->SetBranchAddress(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
-  //     fitResultsTree->SetBranchAddress(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-  //     fitResultsTree->SetBranchAddress(Form("%s_best",par->GetName()),&vResult[iPar]);
-  //   }
-  // }
-
   // Timer for fitting time
   TStopwatch subTime;
 
@@ -431,15 +399,13 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
       convCheck = true;
       boundCheck = boundary->getValV() == 0;
 
-      // fitter->result()->SetName (Form("result_%s_subs%i",shortString.c_str(),is));
-      // fitter->result()->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
       fitter->result()->Print("v");
 
       boundDistFit = boundDist = fitter->boundDist;
       usedPenalty = fitter->usedPenalty;
 	
       if (usedPenalty) {
-	// include coefficient values in dataset with per-toy informations
+	// save coefficient values
 	co1 = fitter->coeff1;
 	co4 = fitter->coeff4;
 	co5 = fitter->coeff5;
@@ -497,100 +463,29 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     ++cnt[iCnt];
 
     // print fit status and time
-    if (!boundCheck) {
-      if (convCheck) {
-	// subNegConv->add(savePars);
-	cout<<"Converged in unphysical region";
-      } else {
-	// subNegNotc->add(savePars);
-	cout<<"Not converged";
-      }
-    } else {
-      if (convCheck) {
-	if (fitter->usedPenalty) {
-	  // subPosConv->add(savePars);
-	  cout<<"Converged with penalty term with coeff: "<<fitter->coeff1<<" "<<fitter->coeff4<<" "<<fitter->coeff5;
-	} else {
-	  // subNoPen->add(savePars);
-	  cout<<"Converged without penalty";
-	}
-      } else {
-	// subPosNotc->add(savePars);
-	cout<<"This should never be printed";
-      }
-    }
+    if (!boundCheck)
+      if (convCheck) cout<<"Converged in unphysical region";
+      else cout<<"Not converged";
+    else
+      if (convCheck)
+	if (fitter->usedPenalty) cout<<"Converged with penalty term with coeff: "<<fitter->coeff1<<" "<<fitter->coeff4<<" "<<fitter->coeff5;
+	else cout<<"Converged without penalty";
+      else cout<<"This should never be printed";
     cout<<" ("<<fitTime<<"s)"<<endl;
-
-    // Save fit results in file
-    // if (save && convCheck) {
-    //   fout->cd();
-    //   fitter->result()->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
-    // }
 
   }  
 
   if (multiSample) {
-    // subResults = new RooDataSet("subResults",
-    // 				"Results of RECO sub-sample fitting",
-    // 				savePars,Index(resStatus),
-    // 				Import("convergent-positive-noPenalty",*subNoPen),
-    // 				Import("convergent-positive",*subPosConv),
-    // 				Import("convergent-negative",*subNegConv),
-    // 				Import("notconvergent-positive",*subPosNotc),
-    // 				Import("notconvergent-negative",*subNegNotc));
-
-    // double time90quant = 0;
-    // double quant = 0;
-    // double totEntries = subResults->sumEntries();
-    // for (time90quant = 0; quant<0.9; time90quant += 0.1)
-    //   quant = subResults->sumEntries(Form("fitTime<%.2f",time90quant))/totEntries;
-    // cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec)"<<endl;
-
     cout<<"Fitted subsamples: "<<cnt[8]<<" of which good: "<<cnt[0]+cnt[1]<<" ("<<cnt[1]<<" with the use of the penalty term)"<<endl;
     cout<<"Bad fits: "<<cnt[3]<<" converging outside physical region, "<<cnt[5]+cnt[7]<<" not converged ("<<cnt[5]<<" in ph region)"<<endl;
   }
 
   if (save) {
-    // RooWorkspace* wksp = new RooWorkspace(((multiSample?"wsMulti_":"ws_")+shortString+Form("_s%i_pow%.1f",nSample,power)).c_str(),
-    // 					  (multiSample?"Workspace with set of RECO subsample fit results":
-    // 					   (nSample>0?"Workspace with RECO subsample fit result":
-    // 					    "Workspace with full RECO fit result")));
-
     fout->cd();
-
-    // for (auto iFit = vFitter.begin(); iFit != vFitter.end(); ++iFit)
-    // for (uint iFit = 0; iFit<vFitter.size(); ++iFit) {
-    //   wksp->import(*(vFitter[iFit]->GetData()));
-    //   wksp->Write();
-    // }
-
-    // if (multiSample) {
-    //   // wksp->import(*subResults);
-    // } else {
-    //   wksp->import(*combData,Rename("data"));
-    //   wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
-    //   if (fitter->usedPenalty) {
-    // 	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence(),RecycleConflictNodes());
-    // 	wksp->import(*penTerm,Silence(),RecycleConflictNodes());
-    //   }
-
-    // }
-
     fitResultsTree->Write();
-
   }
 
   fout->Close();
-
-  // if (multiSample) {
-  //   TCanvas* cDist = new TCanvas (("cDist_"+shortString).c_str(),("cDist_"+shortString).c_str(),1800,1800);
-  //   RooPlot* fDist = boundDist->frame(Name("fDist"),Title("Distribution of results' distance fram boundary"),Range(0,0.1));
-  //   subNoPen->plotOn(fDist,Binning(50,0,0.1),LineColor(kBlue),MarkerColor(kBlue),MarkerStyle(19),DrawOption("XL"));
-  //   subPosConv->plotOn(fDist,Binning(50,0,0.1),LineColor(kRed),MarkerColor(kRed),MarkerStyle(19),DrawOption("XL"));
-  //   cDist->cd();
-  //   fDist->Draw();
-  //   cDist->SaveAs( ("plotSimFit_d/recoBoundDist_" + shortString + "_" + all_years + ".pdf").c_str() );
-  // }
 
   if (!plot || multiSample) return;
 
