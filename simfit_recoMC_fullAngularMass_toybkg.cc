@@ -8,9 +8,7 @@
 #include <list>
 #include <map>
 
-// #include <RooRealVar.h>
 #include <RooAbsPdf.h>
-// #include <RooWorkspace.h>
 #include <RooCategory.h>
 #include <RooSuperCategory.h>
 #include <RooDataSet.h>
@@ -23,7 +21,6 @@
 #include <RooNumIntConfig.h>
 #include <RooAddition.h>
 #include <RooRandom.h>
-// #include <RooGaussian.h>
 #include <RooAddPdf.h>
 #include <RooProdPdf.h>
 #include <RooCBShape.h>
@@ -41,6 +38,9 @@
 #include "Penalty.h"
 #include "Fitter.h"
 #include "RooBernsteinSideband.h"
+
+//tmp
+#include "RooMCStudy.h"
 
 
 using namespace RooFit;
@@ -100,7 +100,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 					  "Workspace with full RECO fit result")));
 
 
-   
   //// from https://root-forum.cern.ch/t/combining-roodatasets-using-std-map-in-pyroot/16471/20
   gInterpreter->GenerateDictionary("std::pair<std::string, RooDataSet*>", "map;string;RooDataSet.h");
   gInterpreter->GenerateDictionary("std::map<std::string, RooDataSet*>",  "map;string;RooDataSet.h");
@@ -115,6 +114,9 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
   RooArgSet reco_vars (*ctK, *ctL, *phi, *mass, *rand);
   RooArgSet observables (*ctK, *ctL, *phi, *mass);
+  wksp->defineSet("observables", observables, true);
+  mass->setRange("sbleft",5,5.1) ;
+  mass->setRange("sbright",5.4,5.6) ;
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
@@ -227,73 +229,68 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
  
      // now generate bkg events
     int nbkg_togen = nbkg_years[years[iy]][q2Bin];
-    int nbkg_gen;
-    // Read pdf for sidebands from external file 
-    string filename_sb = Form("savesb608_%i_b%i.root", years[iy], q2Bin );
+
+    // Read angular pdf for sidebands from external file 
+    string filename_sb = Form("savesb608_%i_b%i_renamed.root", years[iy], q2Bin );
     if (!localFiles) filename_sb = "/eos/cms/store/user/fiorendi/p5prime/sidebands/" + filename_sb;
     retrieveWorkspace( filename_sb, wsp_sb, "wsb");
 
-    RooBernsteinSideband* bkg_ang_pdf = (RooBernsteinSideband*) wsp_sb[iy]->pdf("BernSideBand");
-    bkg_ang_pdf -> SetName(Form("bkg_ang_pdf_%i", years[iy]));
-
-    RooRealVar* slope         = new RooRealVar    (Form("slope^{%i}",years[iy]),    Form("slope^{%i}",years[iy])       ,    -4.3, -10., 0.);
-    RooExponential* bkg_exp   = new RooExponential(Form("bkg_exp_%i",years[iy]) , Form("bkg_exp_%i",years[iy])     ,  *slope,   *mass  );
- 
-    RooProdPdf* bkg_pdf = new RooProdPdf(Form("bkg_pdf_%i",years[iy]), Form("bkg_pdf_%i",years[iy]), RooArgList(*bkg_ang_pdf,*bkg_exp)); 
-    RooArgSet*  bkg_params     = (RooArgSet*) bkg_pdf->    getParameters(observables);
+    RooBernsteinSideband* bkg_ang_pdf = (RooBernsteinSideband*) wsp_sb[iy]->pdf(Form("BernSideBand_%i", years[iy]));
     RooArgSet*  bkg_ang_params = (RooArgSet*) bkg_ang_pdf->getParameters(observables);
-    RooArgSet*  saved_bkg_params = (RooArgSet*)bkg_params->snapshot() ;
+
+    // read mass pdf for background (for now, simply use exponential with fixed shape)
+    RooRealVar* slope         = new RooRealVar    (Form("slope^{%i}",years[iy]),  Form("slope^{%i}",years[iy]) ,    -4.3, -10., 0.);
+    RooExponential* bkg_exp   = new RooExponential(Form("bkg_exp_%i",years[iy]),  Form("bkg_exp_%i",years[iy]) ,  *slope,   *mass  );
+ 
+    // create 4D pdf  for background and import to workspace
+    RooProdPdf* bkg_pdf = new RooProdPdf(Form("bkg_pdf_%i",years[iy]), Form("bkg_pdf_%i",years[iy]), RooArgList(*bkg_ang_pdf,*bkg_exp)); 
+    wksp->import(*bkg_pdf);
     
-    wksp->defineSet("bkg_params", *bkg_params, true);
-    wksp->defineSet("observables", observables, true);
+    RooArgSet*  bkg_params       = (RooArgSet*)bkg_pdf->getParameters(observables);
+    RooArgSet*  saved_bkg_params = (RooArgSet*)bkg_params->snapshot() ;
     wksp->saveSnapshot(Form("gen_bkg_pdf_%i",years[iy]), *bkg_params, true) ;
 
-    // set constant those parameters that are at 0 
-    auto iter = bkg_params->createIterator();
-    RooRealVar* ivar =  (RooRealVar*)iter->Next();
-    while (ivar){
-        if (ivar->getVal()==0 || ivar->getVal()==1.){
-          ivar->setConstant(true);
-        }
-        else {
-          ivar->setConstant(false);
-          ivar->Print();
-        }  
-        ivar = (RooRealVar*) iter->Next();
-    }
-
+    // define set for later checks
+    // does not work properly if number of parameters is > XX 
+    // (e.g. problems when we have > 100 pars from SB, bin 1 2018, bin2 2018)
+    wksp->defineSet(Form("bkg_params_%i",years[iy]),     *bkg_params, true);
     
     RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(nbkg_togen));//, Extended(true)) ;
-    RooFitResult* bkg_fit_res;
+    
+    // now generate toy bkg sample
     for (uint itoy = 0; itoy < lastSample+1-firstSample; itoy++){
       RooDataSet *toy_bkg = bkg_pdf->generate(*genSpec) ;
       data[iy][itoy]->append(*toy_bkg);
-      
+            
       // reduce to events in the mass sidebands
-      RooDataSet* toy_bkg_sb = (RooDataSet*)toy_bkg->reduce(observables, "(mass > 5 && mass < 5.1) || (mass > 5.4 && mass < 5.6)");
-//       nbkg_gen = toy_bkg->sumEntries();
-//       cout << "bkg events: " << nbkg_gen << " (" << nbkg_togen << " requested)"  << endl;
-//       cout << "total events " << year << ": " << data[iy][itoy]->sumEntries() << endl;
+      int n_sb = ((RooDataSet*)toy_bkg->reduce(vars, "(mass > 5 && mass < 5.1) || (mass > 5.4 && mass < 5.6)"))->sumEntries();
+      cout << "bkg events: " << nbkg_togen << " (" << n_sb << " in sideband)"  << endl;
       
-      // now fit toy bkg sample to update bkg pdf parameters which are not zero
+      // fit toy bkg sample to update bkg pdf parameters which are not zero
       // start from gen pars for each toy
       *bkg_params = *saved_bkg_params ;
-      bkg_pdf->fitTo(*toy_bkg_sb);
+
+      // fix pars == 0 or 1
+      auto iter = bkg_ang_params->createIterator();
+      RooRealVar* ivar =  (RooRealVar*)iter->Next();
+      while (ivar){
+          if (ivar->getVal()==0 || ivar->getVal()==1.) ivar->setConstant(true);
+          else ivar->setConstant(false);
+          ivar = (RooRealVar*) iter->Next();
+      }
+      // fit pars that are not 0 or 1
+      bkg_pdf->fitTo(*toy_bkg, Range("sbleft,sbright"));
+      //save into workspace (as constant) 
+      iter = bkg_ang_params->createIterator();
+      ivar = (RooRealVar*)iter->Next();
+      while (ivar){
+        ivar->setConstant(true);
+        ivar = (RooRealVar*) iter->Next();
+      }
       wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], itoy), *bkg_params, kTRUE) ;
     }      
 
-    ///// fix for many toys!!!!!!!!
-//     wksp->loadSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], 0));///to be updated!!!
-
-    // now set bkg angular parameters to their value as from the fit, and keep them constant
-    iter = bkg_ang_params->createIterator();
-    ivar =  (RooRealVar*)iter->Next();
-    while (ivar){
-        ivar->setConstant(true);
-        ivar = (RooRealVar*) iter->Next();
-    }
-
-    // Mass Component
+    // Signal Mass Component
     // import mass PDF from fits to the MC
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
     if (!retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w"))  return;
@@ -303,8 +300,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     RooRealVar* sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , wsp_mcmass[iy]->var(Form("#sigma_{RT1}^{%i}",q2Bin))->getVal()  ,      0,    1, "GeV");
     RooRealVar* alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , wsp_mcmass[iy]->var(Form("#alpha_{RT1}^{%i}", q2Bin))->getVal() ,      0,   10 );
     RooRealVar* alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , wsp_mcmass[iy]->var(Form("#alpha_{RT2}^{%i}", q2Bin))->getVal() ,    -10,   10 );
-    RooRealVar* n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
-    RooRealVar* n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
+    RooRealVar* n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,   0.01,  100.);
+    RooRealVar* n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,   0.01,  100.);
 
     RooAbsPdf* dcb_rt;
     RooRealVar* sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   0 , 0,   0.12, "GeV");
@@ -332,8 +329,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     RooRealVar* sigma_wt    = new RooRealVar (Form("#sigma_{WT1}^{%i}",years[iy])   , "sigmawt"    ,  wsp_mcmass[iy]->var(Form("#sigma_{WT1}^{%i}", q2Bin))->getVal() ,      0,    1, "GeV");
     RooRealVar* alpha_wt1   = new RooRealVar (Form("#alpha_{WT1}^{%i}",years[iy] )  , "alphawt1"   ,  wsp_mcmass[iy]->var(Form("#alpha_{WT1}^{%i}", q2Bin))->getVal() ,      0,   10 );
     RooRealVar* alpha_wt2   = new RooRealVar (Form("#alpha_{WT2}^{%i}",years[iy] )  , "alphawt2"   ,  wsp_mcmass[iy]->var(Form("#alpha_{WT2}^{%i}", q2Bin))->getVal() ,      0,   10 );
-    RooRealVar* n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       ,  wsp_mcmass[iy]->var(Form("n_{WT1}^{%i}", q2Bin))->getVal()      ,      0., 100.);
-    RooRealVar* n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       ,  wsp_mcmass[iy]->var(Form("n_{WT2}^{%i}", q2Bin))->getVal()      ,      0., 100.);
+    RooRealVar* n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       ,  wsp_mcmass[iy]->var(Form("n_{WT1}^{%i}", q2Bin))->getVal()      ,   0.01, 100.);
+    RooRealVar* n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       ,  wsp_mcmass[iy]->var(Form("n_{WT2}^{%i}", q2Bin))->getVal()      ,   0.01, 100.);
 
     RooAbsPdf* dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2 , wsp_mcmass[iy], years[iy], true, c_vars_wt, c_pdfs_wt );
 
@@ -343,8 +340,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     RooProdPdf * c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
     c_vars.add(c_vars_wt);
 
-    cout << "deltap built --> constraint not added yet (to be done)" << endl;
-    //// creating constraints for the difference between the two peaks
+//     cout << "deltap built --> constraint not added yet (to be done)" << endl;
+    // creating constraints for the difference between the two peaks
 //     RooFormulaVar* deltaPeaks = new RooFormulaVar(Form("deltaPeaks^{%i}", years[iy]), "@0 - @1", RooArgList(*mean_rt, *mean_wt))  ;
 //     c_deltaPeaks.push_back(     new RooGaussian(Form("c_deltaPeaks^{%i}", years[iy]), "c_deltaPeaks", *deltaPeaks, 
 //                                                 RooConst( deltaPeaks->getVal() ), 
@@ -362,7 +359,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
                                         RooConst(1.) , 
                                         RooConst(frac_sigma)
                                         );
-//     cout << fraction << " +/- " << fM_sigmas[years[iy]][q2Bin] << " ---> << "1 +/- " << frac_sigma << endl;                                    
     c_vars.add(*mFrac); 
 
     // Angular Component
@@ -430,9 +426,15 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       		                                        );
     } 
     RooRealVar *fsig = new RooRealVar( ("fsig_"+shortString+"_"+year).c_str(), ("fsig_"+shortString+"_"+year).c_str(),0,1 );
-//     fsig->setVal(0);
-//     fsig->setConstant(true);
+    
+    // import signal pdf in order to have initial parameters available in the wsp 
+    wksp->import(*pdf_sig_ang_mass);
+    wksp->import(*pdf_sig_ang_mass_penalty);
+    RooArgSet *params      = (RooArgSet *)pdf_sig_ang_mass->getParameters(observables);
+    wksp->saveSnapshot(Form("initial_signal_pars_%i",years[iy]), *params, true) ;
 
+
+    // sum signal and bkg pdf 
     RooAddPdf* full_pdf = new RooAddPdf( ("PDF_sig_ang_fullAngularMass_bkg_"+shortString+"_"+year).c_str(),
                                          ("PDF_sig_ang_fullAngularMass_bkg_"+shortString+"_"+year).c_str(),
                                           RooArgList(*pdf_sig_ang_mass, *bkg_pdf),
@@ -469,12 +471,13 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     }
   
   }
+  
 
   TFile* fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullAngularMass_toybkg" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
   
-  // save initial par values    
-  RooArgSet *params      = (RooArgSet *)simPdf->getParameters(observables);
-  RooArgSet* savedParams = (RooArgSet *)params->snapshot() ;
+  wksp->import(*simPdf,RecycleConflictNodes());
+  wksp->import(*simPdf_penalty,RecycleConflictNodes()); 
+
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
                             reco_vars,
@@ -555,11 +558,22 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     int combEntries = combData->numEntries();
     penTerm->setPower(power/combEntries);
 
-    // to start the fit, parameters are restored to the center of the parameter space
-    *params = *savedParams ;
+    // to start the fit, angular parameters are restored to the center of the parameter space
+    for (unsigned int iy = 0; iy < years.size(); iy++) {
+      wksp->loadSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], is));
+      wksp->loadSnapshot(Form("initial_signal_pars_%i",years[iy]));
+    }
+//     RooArgSet *check_params = (RooArgSet *)wksp->pdf("simPdf")->getParameters(observables);
+//     auto iter = check_params->createIterator();
+//     RooRealVar* ivar =  (RooRealVar*)iter->Next();
+//     cout << "initial par values: -------------"  << endl;
+//     while (ivar){
+//         if (ivar->getVal()!=0) ivar->Print();
+//         ivar = (RooRealVar*) iter->Next();
+//     }
 
     // run the fit
-    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm,&c_vars);
+    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,wksp->pdf("simPdf"),wksp->pdf("simPdf_penalty"),boundary,bound_dist,penTerm,&c_vars);
     vFitter.push_back(fitter);
 
     subTime.Start(true);
@@ -677,21 +691,21 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
 
   if (multiSample) {
-    subResults = new RooDataSet("subResults",
-				"Results of RECO sub-sample fitting",
-				savePars,Index(resStatus),
-				Import("convergent-positive-noPenalty",*subNoPen),
-				Import("convergent-positive",*subPosConv),
-				Import("convergent-negative",*subNegConv),
-				Import("notconvergent-positive",*subPosNotc),
-				Import("notconvergent-negative",*subNegNotc));
-
-    double time90quant = 0;
-    double quant = 0;
-    double totEntries = subResults->sumEntries();
-    for (time90quant = 0; quant<0.9; time90quant += 0.1)
-      quant = subResults->sumEntries(Form("fitTime<%.2f",time90quant))/totEntries;
-    cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec)"<<endl;
+//     subResults = new RooDataSet("subResults",
+// 				"Results of RECO sub-sample fitting",
+// 				savePars,Index(resStatus),
+// 				Import("convergent-positive-noPenalty",*subNoPen),
+// 				Import("convergent-positive",*subPosConv),
+// 				Import("convergent-negative",*subNegConv),
+// 				Import("notconvergent-positive",*subPosNotc),
+// 				Import("notconvergent-negative",*subNegNotc));
+// 
+//     double time90quant = 0;
+//     double quant = 0;
+//     double totEntries = subResults->sumEntries();
+//     for (time90quant = 0; quant<0.9; time90quant += 0.1)
+//       quant = subResults->sumEntries(Form("fitTime<%.2f",time90quant))/totEntries;
+//     cout<<"Average fit time: "<<subResults->mean(*fitTime)<<" sec (90% quantile: "<<time90quant<<" sec)"<<endl;
 
     cout<<"Fitted subsamples: "<<cnt[8]<<" of which good: "<<cnt[0]+cnt[1]<<" ("<<cnt[1]<<" with the use of the penalty term)"<<endl;
     cout<<"Bad fits: "<<cnt[3]<<" converging outside physical region, "<<cnt[5]+cnt[7]<<" not converged ("<<cnt[5]<<" in ph region)"<<endl;
@@ -703,16 +717,16 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 // 					   (nSample>0?"Workspace with RECO subsample fit result":
 // 					    "Workspace with full RECO fit result")));
 
-    if (multiSample) {
-      wksp->import(*subResults);
-    } else {
-      wksp->import(*combData,Rename("data"));
-      wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
-      if (fitter->usedPenalty) {
-	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence(),RecycleConflictNodes());
-	wksp->import(*penTerm,Silence(),RecycleConflictNodes());
-      }
-    }
+//     if (multiSample) {
+//       wksp->import(*subResults);
+//     } else {
+//       wksp->import(*combData,Rename("data"));
+//       wksp->import(*simPdf,RenameVariable(simPdf->GetName(),"pdf"),Silence());
+//       if (fitter->usedPenalty) {
+// 	wksp->import(*simPdf_penalty,RenameVariable(simPdf_penalty->GetName(),"pdfPen"),Silence(),RecycleConflictNodes());
+// 	wksp->import(*penTerm,Silence(),RecycleConflictNodes());
+//       }
+//     }
 
     fout->cd();
     wksp->Write();
