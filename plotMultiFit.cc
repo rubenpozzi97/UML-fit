@@ -25,7 +25,7 @@ double quantPerc [nQuant] = {0.025,0.16,0.84,0.975};
 int colors [12] = { 633, 417, 879, 857, 839, 801, 921, 607, 807, 419, 907, 402 };
 // int colors [13] = { 633, 417, 879, 857, 839, 887, 801, 921, 607, 807, 419, 907, 402 };
 
-double diffMax = 0.0499;
+double diffMax = 0.0599;
 
 void plotMultiFit (int binIndex=-1, int parity=1)
 {
@@ -77,7 +77,8 @@ void plotMultiFit (int binIndex=-1, int parity=1)
     vq2Bins.push_back(q2Bin);
 
     TChain fitResultsTree ("fitResultsTree","");
-    string filename = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_dataStat-*_b%i.root",q2Bin);
+    // string filename = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_dataStat-*_b%i.root",q2Bin);
+    string filename = Form("simFitResults4d/simFitResult_recoMC_fullAngularMass201620172018_dataStat-*_b%i.root",q2Bin);
     fitResultsTree.Add(filename.c_str());
 
     string filename_fR = Form("simFitResults/simFitResult_recoMC_fullAngular201620172018_MCStat_b%i.root",q2Bin);
@@ -241,10 +242,10 @@ void plotMultiFit (int binIndex=-1, int parity=1)
       lineRECO[iPar].back()->Draw();
 
       cUncert[iPar]->cd();
-      lineRMS[iPar].push_back( new TLine(vRMS[iPar][iBin],0,vRMS[iPar][iBin],1.1*ymaxUnc) );
-      lineRMS[iPar].back()->SetLineWidth(2);
-      lineRMS[iPar].back()->SetLineColor(colors[iBin]);
-      lineRMS[iPar].back()->Draw();
+      // lineRMS[iPar].push_back( new TLine(vRMS[iPar][iBin],0,vRMS[iPar][iBin],1.1*ymaxUnc) );
+      // lineRMS[iPar].back()->SetLineWidth(2);
+      // lineRMS[iPar].back()->SetLineColor(colors[iBin]);
+      // lineRMS[iPar].back()->Draw();
     }
 
     cDistr[iPar]->cd();
