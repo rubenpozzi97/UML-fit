@@ -127,6 +127,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
   RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
   RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
+  
+  RooArgSet sig_ang_pars(*Fl, *P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -142,14 +144,15 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooSimultaneous* simPdf = new RooSimultaneous("simPdf", "simultaneous pdf", sample);
   RooSimultaneous* simPdf_penalty = new RooSimultaneous("simPdf_penalty", "simultaneous pdf with penalty term", sample);
 
+  wksp->import(sig_ang_pars);
   // Define boundary check (returning 0 in physical region and 1 outside)
-  BoundCheck* boundary = new BoundCheck("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  BoundCheck* boundary = new BoundCheck("bound","Physical region",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"));
 
   // Define boundary distance calculator
-  BoundDist* bound_dist = new BoundDist("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,0,false);
+  BoundDist* bound_dist = new BoundDist("bound","Physical region",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"),true,0,false);
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
-  Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
+  Penalty* penTerm = new Penalty("penTerm","Penalty term",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"),0,0,0,0);
 
   // Random generators
   RooRandom::randomGenerator()->SetSeed(1);
@@ -428,8 +431,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     RooRealVar *fsig = new RooRealVar( ("fsig_"+shortString+"_"+year).c_str(), ("fsig_"+shortString+"_"+year).c_str(),0,1 );
     
     // import signal pdf in order to have initial parameters available in the wsp 
-    wksp->import(*pdf_sig_ang_mass);
-    wksp->import(*pdf_sig_ang_mass_penalty);
+    wksp->import(*pdf_sig_ang_mass, RecycleConflictNodes());
+    wksp->import(*pdf_sig_ang_mass_penalty, RecycleConflictNodes());
     RooArgSet *params      = (RooArgSet *)pdf_sig_ang_mass->getParameters(observables);
     wksp->saveSnapshot(Form("initial_signal_pars_%i",years[iy]), *params, true) ;
 
@@ -492,7 +495,9 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooRealVar* co4 = new RooRealVar("co4","Coefficient 4",0);
   RooRealVar* co5 = new RooRealVar("co5","Coefficient 5",0);
   RooRealVar* boundDist = new RooRealVar("boundDist","Distance from boundary",0);
-  RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+//   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  RooArgList pars (*wksp->var("Fl"),*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"));
+
   RooArgSet savePars (*co1,*co4,*co5,*fitTime,*minTime,*boundDist);
   savePars.add(pars);
   RooCategory resStatus ("resStatus","Status of the fit result");
@@ -563,6 +568,10 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
       wksp->loadSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], is));
       wksp->loadSnapshot(Form("initial_signal_pars_%i",years[iy]));
     }
+    
+    RooSimultaneous* simPdf_forFit  = (RooSimultaneous* ) wksp->pdf("simPdf");
+    RooSimultaneous* simPdf_penalty = (RooSimultaneous* ) wksp->pdf("simPdf_penalty");
+    
 //     RooArgSet *check_params = (RooArgSet *)wksp->pdf("simPdf")->getParameters(observables);
 //     auto iter = check_params->createIterator();
 //     RooRealVar* ivar =  (RooRealVar*)iter->Next();
@@ -573,13 +582,13 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 //     }
 
     // run the fit
-    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,wksp->pdf("simPdf"),wksp->pdf("simPdf_penalty"),boundary,bound_dist,penTerm,&c_vars);
+    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf_forFit,simPdf_penalty,boundary,bound_dist,penTerm,&c_vars);
     vFitter.push_back(fitter);
 
     subTime.Start(true);
     int status = fitter->fit();
     subTime.Stop();
-
+        
     // include fit time in dataset with per-toy informations
     fitTime->setVal(subTime.CpuTime());
     // fitTime->setVal(subTime.RealTime());
