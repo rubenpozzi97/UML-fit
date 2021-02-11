@@ -91,7 +91,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   RooRealVar* rand = new RooRealVar("rand", "rand", 0,1);
   RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
   RooArgSet reco_vars (*ctK, *ctL, *phi, *rand, *mass);
-//   RooArgSet reco_vars (*ctK, *ctL, *phi, *rand);
+  RooArgSet observables (*ctK, *ctL, *phi, *mass);
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
   RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
@@ -201,7 +201,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
     // create roodataset (in case data-like option is selected, only import the correct % of data)
     data.push_back( createDataset( nSample,  firstSample,  lastSample, wsp[iy],  
                                    q2Bin,  parity,  years[iy], 
-                                   reco_vars,  shortString  )); 
+                                   reco_vars, observables,  shortString  )); 
 
     // define angular PDF for signal, using the custom class
     // efficiency function and integral values are passed as arguments

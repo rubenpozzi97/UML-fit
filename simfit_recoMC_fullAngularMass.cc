@@ -212,7 +212,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     // create roodataset (in case data-like option is selected, only import the correct % of data)
     data.push_back( createDataset( nSample,  firstSample,  lastSample, wsp[iy],  
                                    q2Bin,  parity,  years[iy], 
-                                   reco_vars,  shortString  )); 
+                                   reco_vars, observables,  shortString  )); 
 
     // Mass Component
     // import mass PDF from fits to the MC
