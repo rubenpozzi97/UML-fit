@@ -76,9 +76,15 @@ mkdir plotSimFit_d
 echo ./simfit_recoMC_fullAngular ${bin} ${par} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
 ./simfit_recoMC_fullAngular ${bin} ${par} ${multi} ${nsam} 1 ${plot} ${save} 2016 2017 2018
 
+if [ ! -d $HOME/simFitResults ]; then
+    mkdir $HOME/simFitResults
+fi
+if [ ! -d $HOME/plotSimFit_d ]; then
+    mkdir $HOME/plotSimFit_d
+fi
 cp plotSimFit_d/* $HOME/plotSimFit_d/
-
-for file in simFitResults/* ; do cp $file $HOME/${file//.root/_${multi}s${nsam}.root}; done
+cp simFitResults/* $HOME/simFitResults/
+# for file in simFitResults/* ; do cp $file $HOME/${file//.root/_${multi}s${nsam}.root}; done
 
 rm -rf plotSimFit_d
 rm -rf simFitResults

@@ -50,6 +50,10 @@ class Fitter {
   Double_t base4_corr;
   Double_t min_base;
 
+  void fillResultContainers(bool fromImprov = false) ;
+
+  Double_t computeBoundaryDistance() ;
+
  public:
 
   Double_t maxCoeff;
@@ -65,6 +69,7 @@ class Fitter {
   RooAbsReal* nll_penalty;
 
   Double_t boundDist;
+  Double_t boundDistTime;
 
   // lower threshold to parameters' uncertainties
   // to build the randomisation models (too small leads to many useless points)
@@ -76,8 +81,11 @@ class Fitter {
   std::vector<Double_t> vFitResult;
   std::vector<Double_t> vFitErrLow;
   std::vector<Double_t> vFitErrHigh;
-  std::vector<Double_t> vConfInterLow;
-  std::vector<Double_t> vConfInterHigh;
+  std::vector<Double_t> vImprovResult;
+
+  std::vector<Double_t> vResult; /* Containing always the latest result, either from a fit or fit-improv */
+  std::vector<Double_t> vConfInterLow; /* Custom MINOS error */
+  std::vector<Double_t> vConfInterHigh; /* Custom MINOS error */
 
   Fitter() {} ; 
   Fitter(const char *_name, const char *_title,
