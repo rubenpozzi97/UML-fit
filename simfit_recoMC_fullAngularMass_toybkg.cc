@@ -119,16 +119,26 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   mass->setRange("sbright",5.4,5.6) ;
 
   // define angular parameters with ranges from positiveness requirements on the decay rate
-  RooRealVar* Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
-  RooRealVar* P1    = new RooRealVar("P1","P_{1}",0,-1,1);   
-  RooRealVar* P2    = new RooRealVar("P2","P_{2}",0,-0.5,0.5);
-  RooRealVar* P3    = new RooRealVar("P3","P_{3}",0,-0.5,0.5);
-  RooRealVar* P4p   = new RooRealVar("P4p","P'_{4}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
-  RooRealVar* P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
+  RooRealVar* tmp_Fl    = new RooRealVar("Fl","F_{L}",0.5,0,1);
+  RooRealVar* tmp_P1    = new RooRealVar("P1","P_{1}",0,-1,1);   
+  RooRealVar* tmp_P2    = new RooRealVar("P2","P_{2}",0,-0.5,0.5);
+  RooRealVar* tmp_P3    = new RooRealVar("P3","P_{3}",0,-0.5,0.5);
+  RooRealVar* tmp_P4p   = new RooRealVar("P4p","P'_{4}",0,-1*sqrt(2),sqrt(2));
+  RooRealVar* tmp_P5p   = new RooRealVar("P5p","P'_{5}",0,-1*sqrt(2),sqrt(2));
+  RooRealVar* tmp_P6p   = new RooRealVar("P6p","P'_{6}",0,-1*sqrt(2),sqrt(2));
+  RooRealVar* tmp_P8p   = new RooRealVar("P8p","P'_{8}",0,-1*sqrt(2),sqrt(2));
   
-  RooArgSet sig_ang_pars(*Fl, *P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
+  RooArgSet sig_ang_pars(*tmp_Fl, *tmp_P1,*tmp_P2,*tmp_P3,*tmp_P4p,*tmp_P5p,*tmp_P6p,*tmp_P8p);
+  wksp->import(sig_ang_pars);
+  RooRealVar* Fl  = (RooRealVar*)wksp->var("Fl" );
+  RooRealVar* P1  = (RooRealVar*)wksp->var("P1" );
+  RooRealVar* P2  = (RooRealVar*)wksp->var("P2" );
+  RooRealVar* P3  = (RooRealVar*)wksp->var("P3" );
+  RooRealVar* P4p = (RooRealVar*)wksp->var("P4p");
+  RooRealVar* P5p = (RooRealVar*)wksp->var("P5p");
+  RooRealVar* P6p = (RooRealVar*)wksp->var("P6p");
+  RooRealVar* P8p = (RooRealVar*)wksp->var("P8p");
+
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -144,15 +154,14 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooSimultaneous* simPdf = new RooSimultaneous("simPdf", "simultaneous pdf", sample);
   RooSimultaneous* simPdf_penalty = new RooSimultaneous("simPdf_penalty", "simultaneous pdf with penalty term", sample);
 
-  wksp->import(sig_ang_pars);
   // Define boundary check (returning 0 in physical region and 1 outside)
-  BoundCheck* boundary = new BoundCheck("bound","Physical region",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"));
+  BoundCheck* boundary = new BoundCheck("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   // Define boundary distance calculator
-  BoundDist* bound_dist = new BoundDist("bound","Physical region",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"),true,0,false);
+  BoundDist* bound_dist = new BoundDist("bound","Physical region",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,true,0,false);
 
   // Define penalty term (parameters set to zero and will be set sample-by-sample)
-  Penalty* penTerm = new Penalty("penTerm","Penalty term",*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"),0,0,0,0);
+  Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
 
   // Random generators
   RooRandom::randomGenerator()->SetSeed(1);
@@ -495,8 +504,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   RooRealVar* co4 = new RooRealVar("co4","Coefficient 4",0);
   RooRealVar* co5 = new RooRealVar("co5","Coefficient 5",0);
   RooRealVar* boundDist = new RooRealVar("boundDist","Distance from boundary",0);
-//   RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
-  RooArgList pars (*wksp->var("Fl"),*wksp->var("P1"),*wksp->var("P2"),*wksp->var("P3"),*wksp->var("P4p"),*wksp->var("P5p"),*wksp->var("P6p"),*wksp->var("P8p"));
+  RooArgList pars (*Fl,*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p);
 
   RooArgSet savePars (*co1,*co4,*co5,*fitTime,*minTime,*boundDist);
   savePars.add(pars);
