@@ -311,7 +311,7 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
   RooDataSet* subNegNotc = new RooDataSet("subNegNotc","subNegNotc",savePars);
 
   // TTree with the MINOS output
-  vector<double> vFitResult  (pars.getSize());
+  vector<double> vResult  (pars.getSize());
   vector<double> vConfInterLow  (pars.getSize());
   vector<double> vConfInterHigh (pars.getSize());
   fout->cd();
@@ -322,14 +322,14 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
       MINOS_output->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
       MINOS_output->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-      MINOS_output->Branch(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+      MINOS_output->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
     }
   } else {
     for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
       RooRealVar* par = (RooRealVar*)pars.at(iPar);
       MINOS_output->SetBranchAddress(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
       MINOS_output->SetBranchAddress(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-      MINOS_output->SetBranchAddress(Form("%s_best",par->GetName()),&vFitResult[iPar]);
+      MINOS_output->SetBranchAddress(Form("%s_best",par->GetName()),&vResult[iPar]);
     }
   }
 
@@ -399,21 +399,14 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
       fitter->result()->SetTitle(Form("result_%s_subs%i",shortString.c_str(),is));
       fitter->result()->Print("v");
 
+      boundDist->setVal(fitter->boundDist);
+	
       if (fitter->usedPenalty) {
 	// include coefficient values in dataset with per-toy informations
 	co1->setVal(fitter->coeff1);
 	co4->setVal(fitter->coeff4);
 	co5->setVal(fitter->coeff5);
 
-	// Compute distance from boundary, print it
-	// and save it in dataset with per-toy informations
-	TStopwatch distTime;
-	distTime.Start(true);
-	double boundDistVal = bound_dist->getValV();
-	distTime.Stop();
-	cout<<"Distance from boundary: "<<boundDistVal<<" (computed in "<<distTime.CpuTime()<<" s)"<<endl;
-	boundDist->setVal(boundDistVal);
-	
 	TStopwatch improvTime;
 	improvTime.Start(true);
 	fitter->improveAng(seed);
@@ -434,12 +427,12 @@ void simfit_toy_fullAngularBin(int q2Bin, vector<double> genPars, uint seed, uin
 
       // cout<<"Error difference [custMINOS - fit], lower and higher:"<<endl;
       // for (int iPar = 0; iPar < pars.getSize(); ++iPar)
-      // 	cout<<vFitResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
-      // 	    <<vConfInterHigh[iPar]-vFitResult[iPar]-vFitErrHigh[iPar]<<endl;
+      // 	cout<<vResult[iPar]-vConfInterLow[iPar]+vFitErrLow[iPar]<<"   \t"
+      // 	    <<vConfInterHigh[iPar]-vResult[iPar]-vFitErrHigh[iPar]<<endl;
 
       // save MINOS errors
       for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-	vFitResult[iPar] = fitter->vFitResult[iPar];
+	vResult[iPar] = fitter->vResult[iPar];
 	vConfInterLow[iPar] = fitter->vConfInterLow[iPar];
 	vConfInterHigh[iPar] = fitter->vConfInterHigh[iPar];
       }
