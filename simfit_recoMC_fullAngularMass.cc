@@ -372,9 +372,11 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   
   }
 
-  if (nSample>0)   stat = stat + Form("-%i",firstSample);
-  if (multiSample) stat = stat + Form("-%i",lastSample);
-  TFile* fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullAngularMass" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
+  string tmpStat = stat;
+  if (nSample>0)   tmpStat = tmpStat + Form("-%i",firstSample);
+  if (multiSample) tmpStat = tmpStat + Form("-%i",lastSample);
+  TFile* fout = 0;
+  if (save) fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullAngularMass" + all_years + tmpStat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");
   
   // save initial par values    
   RooArgSet *params      = (RooArgSet *)simPdf->getParameters(observables);
@@ -398,25 +400,28 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   vector<double> vResult  (pars.getSize());
   vector<double> vConfInterLow  (pars.getSize());
   vector<double> vConfInterHigh (pars.getSize());
-  fout->cd();
-  TTree* fitResultsTree = new TTree("fitResultsTree","fitResultsTree");
-  for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
-    RooRealVar* par = (RooRealVar*)pars.at(iPar);
-    fitResultsTree->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
-    fitResultsTree->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
-    fitResultsTree->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
+  TTree* fitResultsTree = 0;
+  if (save) {
+    fout->cd();
+    fitResultsTree = new TTree("fitResultsTree","fitResultsTree");
+    for (int iPar = 0; iPar < pars.getSize(); ++iPar) {
+      RooRealVar* par = (RooRealVar*)pars.at(iPar);
+      fitResultsTree->Branch(Form("%s_low",par->GetName()),&vConfInterLow[iPar]);
+      fitResultsTree->Branch(Form("%s_high",par->GetName()),&vConfInterHigh[iPar]);
+      fitResultsTree->Branch(Form("%s_best",par->GetName()),&vResult[iPar]);
+    }
+    fitResultsTree->Branch("fitTime",&fitTime);
+    fitResultsTree->Branch("imprTime",&imprTime);
+    fitResultsTree->Branch("minTime",&minTime);
+    fitResultsTree->Branch("co1",&co1);
+    fitResultsTree->Branch("co4",&co4);
+    fitResultsTree->Branch("co5",&co5);
+    fitResultsTree->Branch("boundDist",&boundDist);
+    fitResultsTree->Branch("boundDistFit",&boundDistFit);
+    fitResultsTree->Branch("boundCheck",&boundCheck);
+    fitResultsTree->Branch("convCheck",&convCheck);
+    fitResultsTree->Branch("usedPenalty",&usedPenalty);
   }
-  fitResultsTree->Branch("fitTime",&fitTime);
-  fitResultsTree->Branch("imprTime",&imprTime);
-  fitResultsTree->Branch("minTime",&minTime);
-  fitResultsTree->Branch("co1",&co1);
-  fitResultsTree->Branch("co4",&co4);
-  fitResultsTree->Branch("co5",&co5);
-  fitResultsTree->Branch("boundDist",&boundDist);
-  fitResultsTree->Branch("boundDistFit",&boundDistFit);
-  fitResultsTree->Branch("boundCheck",&boundCheck);
-  fitResultsTree->Branch("convCheck",&convCheck);
-  fitResultsTree->Branch("usedPenalty",&usedPenalty);
 
   // Timer for fitting time
   TStopwatch subTime;
@@ -449,8 +454,13 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     *params = *savedParams ;
 
     // run the fit
-    fitter = new Fitter (Form("fitter%i",is),Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm,&c_vars);
+    tmpStat = stat;
+    if (nSample>0) tmpStat = tmpStat + Form("-%i",is);
+    fitter = new Fitter (Form("recoMC_fullAngularMass_%s_%s",tmpStat.c_str(),shortString.c_str()),
+			 Form("fitter%i",is),pars,combData,simPdf,simPdf_penalty,boundary,bound_dist,penTerm,&c_vars);
     vFitter.push_back(fitter);
+
+    fitter->plotDir = "plotSimFit4d_d";
 
     subTime.Start(true);
     int status = fitter->fit();
@@ -501,7 +511,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 	TStopwatch minosTime;
 	minosTime.Start(true);
 
-	fitter->MinosAng();
+	fitter->Minos();
 
 	minosTime.Stop();
 	minTime = minosTime.CpuTime();
@@ -525,7 +535,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 	  vConfInterHigh[iPar] = fitter->vFitErrHigh[iPar];
 	}
       }
-      fitResultsTree->Fill();
+      if (save) fitResultsTree->Fill();
 
     }
 
@@ -559,9 +569,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   if (save) {
     fout->cd();
     fitResultsTree->Write();
+    fout->Close();
   }
-
-  fout->Close();
 
   if (!plot || multiSample) return;
 

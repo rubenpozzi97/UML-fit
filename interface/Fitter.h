@@ -8,6 +8,8 @@
 #include <TH1D.h>
 #include <TString.h>
 #include <TStopwatch.h>
+#include <TCanvas.h>
+#include <TLine.h>
 
 #include <RooFitResult.h>
 #include <RooDataSet.h>
@@ -54,6 +56,11 @@ class Fitter {
 
   Double_t computeBoundaryDistance() ;
 
+  Int_t singleMinosInstance(double NLL_min, int iPar, bool isErrHigh, int nGenMINOS, std::vector<double> *vLastHit, TRandom3* randGenMinos, std::vector<double> *vPval, std::vector<double> *vdNLL);
+  Int_t improveMINOS(double NLL_min, int iPar, bool isErrHigh, int nGen, std::vector<double> *vLastHit, int seed);
+
+  void doPlotMINOS(int iPar, std::vector<double> *vPval, std::vector<double> *vdNLL);
+
  public:
 
   Double_t maxCoeff;
@@ -89,6 +96,9 @@ class Fitter {
 
   std::map<TString,double> improvVars; /* full set of post-improvement parameters */
 
+  TString plotString;
+  TString plotDir;
+
   Fitter() {} ; 
   Fitter(const char *_name, const char *_title,
 	 RooArgList _angPars,
@@ -120,8 +130,9 @@ class Fitter {
   Int_t improve(int seed = 1, int nGen = 10000) ;
   Int_t improveAng(int seed = 1, int nGen = 10000) ;
 
-  /* Int_t Minos(int seed = 1, int nGenMINOS = 20000) ; */
-  Int_t MinosAng(int seed = 1, int nGenMINOS = 20000) ;
+  Int_t Minos(int seed = 1, int nGenMINOS = 20000, int nImprovMINOS = 10000, bool plotMINOS = false) ;
+  /* Retro-compatibility for 3D fits */
+  Int_t MinosAng(int seed = 1, int nGenMINOS = 20000, bool plotMINOS = false) { return Minos(seed,nGenMINOS,0,plotMINOS); };
 
   RooFitResult* result () { if (usedPenalty) return result_penalty; return result_free; };
 
