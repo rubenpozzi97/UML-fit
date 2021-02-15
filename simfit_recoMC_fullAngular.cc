@@ -574,7 +574,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
   }
 
   
-  c[confIndex]->SaveAs( ("plotSimFit_d/newphi/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + "_newphi.pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimFit_d/simFitResult_recoMC_fullAngular_" + shortString + "_" + all_years + stat + "_newphi.pdf").c_str() );
 
 }
 
