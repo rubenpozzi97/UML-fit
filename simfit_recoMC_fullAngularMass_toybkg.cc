@@ -163,7 +163,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
   // Random generators
   RooRandom::randomGenerator()->SetSeed(1);
-
+  TRandom gen_nevt;
+  
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
@@ -261,7 +262,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
 
     // create 4D pdf  for background and import to workspace
     RooProdPdf* bkg_pdf = new RooProdPdf(Form("bkg_pdf_%i",years[iy]), Form("bkg_pdf_%i",years[iy]), RooArgList(*bkg_ang_pdf,*bkg_exp)); 
-    wksp->import(*bkg_pdf);
+    wksp->import(*bkg_ang_pdf);
+    wksp->import(*bkg_pdf, RecycleConflictNodes());
     
     RooArgSet*  bkg_params       = (RooArgSet*)bkg_pdf->getParameters(observables);
     RooArgSet*  saved_bkg_params = (RooArgSet*)bkg_params->snapshot() ;
@@ -272,10 +274,10 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     // (e.g. problems when we have > 100 pars from SB, bin 1 2018, bin2 2018)
     wksp->defineSet(Form("bkg_params_%i",years[iy]),     *bkg_params, true);
     
-    RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(nbkg_togen));//, Extended(true)) ;
+    RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(gen_nevt.Poisson(nbkg_togen)));
     
     // now generate toy bkg sample
-    for (uint itoy = 0; itoy < lastSample+1-firstSample; itoy++){
+    for (uint itoy = 0; itoy <= lastSample-firstSample; itoy++){
       RooDataSet *toy_bkg = bkg_pdf->generate(*genSpec) ;
       data[iy][itoy]->append(*toy_bkg);
 
@@ -304,7 +306,7 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
         ivar->setConstant(true);
         ivar = (RooRealVar*) iter->Next();
       }
-      wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], itoy), *bkg_params, kTRUE) ;
+      wksp->saveSnapshot(Form("fit_bkg_pdf_%i_%i",years[iy], itoy+firstSample), *bkg_params, kTRUE) ;
     }      
 
     // Signal Mass Component
