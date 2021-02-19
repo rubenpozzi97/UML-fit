@@ -162,7 +162,6 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   Penalty* penTerm = new Penalty("penTerm","Penalty term",*P1,*P2,*P3,*P4p,*P5p,*P6p,*P8p,0,0,0,0);
 
   // Random generators
-  RooRandom::randomGenerator()->SetSeed(1);
   TRandom gen_nevt;
   
   // loop on the various datasets
@@ -275,9 +274,14 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
     wksp->defineSet(Form("bkg_params_%i",years[iy]),     *bkg_params, true);
     
     RooAbsPdf::GenSpec* genSpec = bkg_pdf->prepareMultiGen( observables, NumEvents(gen_nevt.Poisson(nbkg_togen)));
+
+
     
     // now generate toy bkg sample
     for (uint itoy = 0; itoy <= lastSample-firstSample; itoy++){
+      
+      // set the random generator seed for reproducibility (in case comparing multisample to single sample) 
+      RooRandom::randomGenerator()->SetSeed(itoy+firstSample);
       RooDataSet *toy_bkg = bkg_pdf->generate(*genSpec) ;
       data[iy][itoy]->append(*toy_bkg);
 
@@ -542,6 +546,8 @@ void simfit_recoMC_fullAngularMassBin(int q2Bin, int parity, bool multiSample, u
   // counters to monitor results' status
   int cnt[9];
   for (int iCnt=0; iCnt<9; ++iCnt) cnt[iCnt] = 0;
+  // seed for random generator for reproducibility
+  RooRandom::randomGenerator()->SetSeed(1);
 
   Fitter* fitter = 0;
   vector<Fitter*> vFitter (0);
