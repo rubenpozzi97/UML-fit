@@ -264,7 +264,7 @@ void simfit_recoMC_fullAngularBin(int q2Bin, int parity, bool multiSample, uint 
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data", 
-                            vars,
+                            reco_vars,
                             Index(sample), 
                             Import(map)); 
   RooDataSet* combData = 0;
