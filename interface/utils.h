@@ -100,13 +100,14 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 
     RooDataSet* dataCT, *dataWT;
     std::vector<RooDataSet*> datasample;
+    RooRealVar weight("weight","weight", 0.0, 1000.0);
 
     if (nSample>0){  
       for (uint is = firstSample; is <= lastSample; is++) {
 
 	RooDataSet* isample = new RooDataSet(("data_"+shortString + Form("_subs%i", is)).c_str(), 
 					     ("data_"+shortString + Form("_subs%i", is)).c_str(), 
-					     RooArgSet(reco_vars));
+					     RooArgSet(reco_vars,weight),WeightVar("weight"));
 
         dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
           ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
@@ -121,7 +122,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
     else{
       RooDataSet* isample = new RooDataSet(("data_"+shortString + "_subs0").c_str(), 
 					   ("data_"+shortString + "_subs0").c_str(), 
-					   RooArgSet(reco_vars));
+					   RooArgSet(reco_vars,weight),WeightVar("weight"));
       dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
       dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
       isample->append(*dataCT);
