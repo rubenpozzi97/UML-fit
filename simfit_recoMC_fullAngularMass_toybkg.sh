@@ -10,8 +10,8 @@ save=1
 
 # Create directories for fit logs, results and plots
 if [ ! -d logs_simFit ]; then mkdir logs_simFit; fi
-if [ ! -d simFitResults/newphi ]; then mkdir -p simFitResults/newphi; fi
-if [ ! -d plotSimFit_d ]; then mkdir plotSimFit_d; fi
+if [ ! -d simFitResults4d ]; then mkdir -p simFitResults4d; fi
+if [ ! -d plotSimFit4d_d ]; then mkdir plotSimFit4d_d; fi
 
 # Compile dictionary and macro
 # make AngDict
@@ -28,7 +28,7 @@ if make simfit_recoMC_fullAngularMass_toybkg; then
 	# done
 
 	./simfit_recoMC_fullAngularMass_toybkg ${bin} ${par} ${multi} ${nsam} 0 ${plot} ${save} 2016 2017 2018 \
-	    &>logs_simFit/simfit_recoMC_fullAngularMass_toybkg_randLik_${bin}_${par}_${multi}_${nsam}_2016_2017_2018_improve.out &
+	    &>logs_simFit/simfit_recoMC_fullAngularMass_toybkg_randLik_${bin}_${par}_${multi}_${nsam}_2016_2017_2018_improveToys.out &
 
     done < ../confSF/KDE_SF.list
 

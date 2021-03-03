@@ -326,7 +326,7 @@ Int_t RooBernsteinSideband::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet&
 //    std::cout<<"getAnalyticalIntegral==7: Analytic integral over z  "<<std::endl;
    return 7;
   }else{  
-   std::cout << "Error in RooBernsteinSideband::analyticalIntegral: set getAnalyticalIntegral==0" << std::endl;
+//    std::cout << "Error in RooBernsteinSideband::analyticalIntegral: set getAnalyticalIntegral==0" << std::endl;
 //    std::cout << "==> analVars = " << analVars << std::endl ;
    return 0;
  } 
