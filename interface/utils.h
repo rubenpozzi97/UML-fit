@@ -9,6 +9,7 @@ using namespace std;
 using namespace RooFit;
 
 extern std::map<int, float> scale_to_data;
+double mFsigmav = 0.008;
 
 // redo jpsi and psi2s
 std::map<int,std::vector<float>> frt_sigmas = {
@@ -142,5 +143,22 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
       datasample.push_back (isample);
     }
     return datasample;
+}
+
+std::vector<double> generatemF (int year, int q2Bin){
+    std::vector<double> mFset;
+    double mF;
+    int iy = year-2016;
+    double frac_sigma = mFsigmav/0.13;
+    RooRealVar* mFrac = new RooRealVar(Form("f_{M}^{%i}",year),"mistag fraction",1, 0.5, 1.5);
+    RooGaussian* c_fm = new RooGaussian(Form("c_fm^{%i}",year) , "c_fm" , *mFrac,  
+                            RooConst(1.) , 
+                            RooConst(frac_sigma));
+    RooDataSet *mistaggauss = c_fm->generate(*mFrac, 10);
+    for (int i =0;i<10;i++){
+        mF= mistaggauss->get(i)->getRealValue(Form("f_{M}^{%i}",year));
+        mFset.push_back(mF);
+    }
+    return mFset;
 }
 
