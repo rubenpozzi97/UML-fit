@@ -20,15 +20,15 @@ if make simfit_recoMC_fullMass; then
     while read -a line; do
         bin=${line[0]}
 
-        # for year in {2016..2018}; do
+         for year in {2016..2018}; do
 
-        #     ./simfit_recoMC_fullMass ${bin} ${par} ${multi} ${nsam} 0 ${plot} ${save} ${year} \
-        #       &>logs_simFit/simfit_recoMC_fullMass_${bin}_${par}_${multi}_${nsam}_${year}.out &
+             ./simfit_recoMC_fullMass ${bin} ${par} ${multi} ${nsam} ${plot} ${save} ${year} \
+               &>logs_simFit/simfit_recoMC_fullMass_${bin}_${par}_${multi}_${nsam}_${year}.out &
 
-        # done
+         done
 
-        ./simfit_recoMC_fullMass ${bin} ${par} ${multi} ${nsam} 0 ${plot} ${save} 2016 2017 2018 \
-            &>logs_simFit/simfit_recoMC_fullMass_${bin}_${par}_${multi}_${nsam}_2016_2017_2018.out &
+        #./simfit_recoMC_fullMass ${bin} ${par} ${multi} ${nsam} ${plot} ${save} 2016 2017 2018 \
+         #   &>logs_simFit/simfit_recoMC_fullMass_${bin}_${par}_${multi}_${nsam}_2016_2017_2018.out &
 
     done < ../confSF/KDE_SF.list
 
