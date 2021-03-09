@@ -1,17 +1,17 @@
 #!/bin/bash
 
-ppT_analysisrr=1
+par=0
 
 multi=0
-nsam=${1}
+nsam=${0}
 
 plot=1
 save=1
 
 # Create directories for fit logs, results and plots
 if [ ! -d logs_simFit ]; then mkdir logs_simFit; fi
-if [ ! -d simFitResults4d ]; then mkdir -p simFitResults4d; fi
-if [ ! -d plotSimFit_d ]; then mkdir plotSimFit_d; fi
+if [ ! -d simFitMassResults ]; then mkdir -p simFitMassResults; fi
+if [ ! -d plotSimMassFit ]; then mkdir plotSimMassFit; fi
 
 # Compile dictionary and macro
 # make AngDict

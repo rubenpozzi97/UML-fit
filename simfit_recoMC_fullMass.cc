@@ -31,8 +31,6 @@
 #include "PdfSigRTMass.h"
 #include "PdfSigWTMass.h"
 
-#include <string> 
-
 
 using namespace RooFit;
 using namespace std;
@@ -210,6 +208,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
 
+  TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");//UPDATE
+
   // save initial par values into a workspace 
   ws_pars->import(*simPdf);
   RooArgSet *params = (RooArgSet *)simPdf->getParameters(*mass);
@@ -225,8 +225,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   RooDataSet* combData = 0;
   RooAbsReal* nll = 0;
 
-  TFile* fout = new TFile(("simFitResults4d/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%i.root", q2Bin)).c_str(),"RECREATE");//UPDATE
- 
   for (uint is = firstSample; is <= lastSample; is++) {
 
     string the_cut = Form("sample==sample::data%d_subs%d", years[0], is);
@@ -271,14 +269,11 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     // Save fit results in file
     if (save) {
       fout->cd();
-      //fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
-      fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str());
+      fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
     }
-    fout->Close();
   } 
- 
 
-  //fout->Close();
+  fout->Close();
   if (!plot || multiSample) return;
 
   string plotString = shortString + "_" + all_years;
@@ -318,9 +313,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         break;
     }
   }
-  c[confIndex]->SaveAs( ("plotSimFit4d_d/simFitResult_recoMC_fullMass_" + plotString +  ".pdf").c_str() );
+  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString +  ".pdf").c_str() );
 }
-
 
 
 void simfit_recoMC_fullMassBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, std::vector<int> years)
@@ -339,7 +333,7 @@ int main(int argc, char** argv)
   // parity format: [0] even efficiency
   //                [1] odd efficiency
   //                [-1] for each parity recursively
-
+ 
   int q2Bin   = -1;
   int parity  = -1; 
 
@@ -359,7 +353,6 @@ int main(int argc, char** argv)
   if ( argc > 5 && atoi(argv[5]) == 0 ) plot = false;
   if ( argc > 6 && atoi(argv[6]) == 0 ) save = false;
 
-/*
   std::vector<int> years;
   if ( argc > 7 && atoi(argv[7]) != 0 ) years.push_back(atoi(argv[7]));
   else {
@@ -368,16 +361,7 @@ int main(int argc, char** argv)
   }
   if ( argc > 8 && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
   if ( argc > 9 && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
-*/
 
-  std::vector<int> years;
-  if ( argc > 8 && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
-  else {
-    cout << "No specific years selected, using default: 2016" << endl;
-    years.push_back(2016);
-  }
-  if ( argc > 9  && atoi(argv[9])  != 0 ) years.push_back(atoi(argv[9]));
-  if ( argc > 10 && atoi(argv[10]) != 0 ) years.push_back(atoi(argv[10]));
 
   cout <<  "q2Bin       " << q2Bin        << endl;
   cout <<  "parity      " << parity       << endl;
@@ -386,9 +370,8 @@ int main(int argc, char** argv)
   cout <<  "plot        " << plot         << endl;
   cout <<  "save        " << save         << endl;
   cout <<  "years[0]    " << years[0]     << endl;
-//   cout << years[1] << endl;
-//   cout << years[2] << endl;
-
+  //cout <<  "years[1]    " << years[1]     << endl;
+  //cout <<  "years[2]    " << years[2]     << endl;
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
   if ( parity  < -1 || parity  > 1      ) return 1;
