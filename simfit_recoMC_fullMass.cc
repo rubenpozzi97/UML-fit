@@ -314,7 +314,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                          Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()),
                          ProjWData(RooArgSet(sample), *combData),
                          Name(("plPDF"+year).c_str()));
-        //simPdf  ->paramOn(frames[fr],Layout(0.80,0.99,0.90));
+        (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.80,0.99,0.90));
 
         if (fr == 0) {
           leg->AddEntry(frames[fr]->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
@@ -324,7 +324,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         gPad->SetLeftMargin(0.19);
         frames[fr]->SetXTitle("mass (GeV)");
         frames[fr]->Draw();
-        leg->Draw("same");
+        //leg->Draw("same");
         break;
     }
   }
@@ -525,8 +525,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                          Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()), 
                          ProjWData(RooArgSet(sample), *combData),  
                          Name(("plPDF"+year).c_str()));
-        //simPdf  ->paramOn(frames[fr],Layout(0.80,0.99,0.90));
-  
+        (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.80,0.99,0.90));
+        
         if (fr == 0) { 
           leg->AddEntry(frames[fr]->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
           leg->AddEntry(frames[fr]->findObject(("plPDF"+year ).c_str()),("Mass component of the pdf "+year).c_str(),"l");
