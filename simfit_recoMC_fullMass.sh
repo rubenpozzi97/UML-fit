@@ -3,7 +3,7 @@
 par=1
 multi=0
 nsam=${0}
-constrain=0
+constrain=1
 
 plot=1
 save=1
