@@ -26,7 +26,6 @@
 class PdfSigMass : public RooAbsPdf {
  protected:
 
-
   RooRealProxy m ;
   
   RooRealProxy mean_rt     ;
@@ -52,9 +51,9 @@ class PdfSigMass : public RooAbsPdf {
 
   Double_t evaluate() const ;
 
- public:
+ public: 
   PdfSigMass() {} ; 
-  PdfSigMass(const char *name, const char *title,
+  PdfSigMass(const char *name, const char *title, 
 	    RooAbsReal& _m,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
@@ -70,10 +69,11 @@ class PdfSigMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac    ,
 	    RooAbsReal& _rtMassTerm,
-	    RooAbsReal& _wtMassTerm
+	    RooAbsReal& _wtMassTerm,
+            int comp
 	    );
 
-  PdfSigMass(const char *name, const char *title,
+  PdfSigMass(const char *name, const char *title, 
 	    RooAbsReal& _m,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
@@ -91,15 +91,16 @@ class PdfSigMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac ,
 	    RooAbsReal& _rtMassTerm,
-	    RooAbsReal& _wtMassTerm
+	    RooAbsReal& _wtMassTerm,
+            int comp
   	    );
 
-  PdfSigMass(const PdfSigMass& other, const char* name=0) ;
-  virtual TObject* clone(const char* newname) const { return new PdfSigMass(*this,newname); }
+  PdfSigMass(const PdfSigMass& other, const char* name=0, int* comp) ;
+  virtual TObject* clone(const char* newname) const { return new PdfSigMass(*this,newname,comp); }
   inline virtual ~PdfSigMass() { }
 
-  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
-  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0, int* comp) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0, int* comp) const ;
 
   ClassDef(PdfSigMass,1) // PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events
     };

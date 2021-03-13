@@ -35,7 +35,8 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac    ,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm
+		     RooAbsReal& _wtMassTerm,
+                     comp
 		     ) :
   RooAbsPdf(name,title), 
   m("m","m",this,_m),
@@ -75,7 +76,8 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm
+		     RooAbsReal& _wtMassTerm, 
+                     comp
 		     ) :
   RooAbsPdf(name,title), 
   m("m","m",this,_m),
@@ -100,7 +102,6 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
 }
 
 
-
 PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :  
   RooAbsPdf(other,name), 
   m("m",this,other.m),
@@ -120,18 +121,20 @@ PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :
   n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
   rtMassTerm("rtMassTerm", this, other.rtMassTerm),
-  wtMassTerm("wtMassTerm", this, other.wtMassTerm)
+  wtMassTerm("wtMassTerm", this, other.wtMassTerm),
+  comp 
 {
 }
-
 
 
 Double_t PdfSigMass::evaluate() const 
 {
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
-  
-  return mCT + (mFrac)*mWT;
+
+  if(comp == 0){return mCT;}
+  else if(comp == 1){return mWT;}  
+  else{return mCT + (mFrac)*mWT;}
 
 }
 
@@ -149,14 +152,14 @@ namespace {
 Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   if ( matchArgs(allVars,analVars,m) ){
-    if ( fullRangeMass(m,rangeName) ) {
+    if ( fullRangeMass(m,rangeName,comp) ) {
       return 1 ;
     }
   }
   return 0 ;
 }
 
-Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName) const
+Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName, comp) const
 {
   assert(code>0 && code<2) ;
   
@@ -164,15 +167,24 @@ Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName) const
   
   RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
   double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg))->getVal();
-  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
   
   RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
   double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
-  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl;
 
-  double theIntegral = rtMassIntegral + mFrac*wtMassIntegral  ;
+  double theIntegral = rtMassIntegral + mFrac*wtMassIntegral ;
+
+  if(comp == 0){
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
+  return rtMassIntegral;}
+
+  else if(comp == 1){
+  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl;  
+  return wtMassIntegral;}
+
+  else{
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
+  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl; 
   std::cout <<  "integral: " << theIntegral << std::endl;
-
-  return theIntegral ;
+  return theIntegral;}
 
 }

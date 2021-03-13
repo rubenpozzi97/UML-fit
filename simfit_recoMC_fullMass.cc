@@ -39,7 +39,7 @@ std::map<int,float> scale_to_data;
 
 TCanvas* c [4*nBins];
 
-void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, bool constrain, std::vector<int> years)
+void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, bool constrain, int comp, std::vector<int> years)
 {
 
   RooMsgService::instance().setGlobalKillBelow(RooFit::WARNING) ;
@@ -72,7 +72,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
   RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
   RooRealVar* rand = new RooRealVar("rand","rand", 0,1);
-  RooArgSet reco_vars ( *mass, *rand);
+  RooArgSet reco_vars (*mass, *rand);
 
   RooCategory sample ("sample", "sample");
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -96,9 +96,12 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     if (!retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity )))  return;
 
     // create roodataset (in case data-like option is selected, only import the correct % of data)
-    data.push_back( createDataset( nSample,  firstSample,  lastSample, wsp[iy],  
-                                   q2Bin,  parity,  years[iy], 
-                                   reco_vars,  shortString  ));
+    // if comp == 0, only uses dataCT
+    // if comp == 1, only uses data WT
+    // else uses both datasets
+    data.push_back(createDataset(nSample,  firstSample,  lastSample, wsp[iy],  
+                                 q2Bin,  parity,  years[iy], 
+                                 reco_vars,  shortString, comp));
  
     
     // import mass PDF from fits to the MC (only uses it if constrain > 0)
@@ -127,7 +130,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     RooProdPdf* final_PDF;
 
     RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
-    //   mFrac->setConstant();
+    // mFrac->setConstant();
 
     // create RT component 
     if(constrain){
@@ -216,7 +219,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *c_dcb_rt,
-                                                 *c_dcb_wt
+                                                 *c_dcb_wt,
+                                                 comp
                                                  ));
       else
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
@@ -226,7 +230,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *c_dcb_rt,
-                                                 *c_dcb_wt
+                                                 *c_dcb_wt,
+                                                 comp
                                                  ));
 
       /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
@@ -254,7 +259,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *dcb_rt,
-                                                 *dcb_wt
+                                                 *dcb_wt,
+                                                 comp
                                                  ));
       else
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
@@ -264,14 +270,14 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *dcb_rt,
-                                                 *dcb_wt
+                                                 *dcb_wt,
+                                                 comp
                                                  ));
-
+      
       final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                              ("final_PDF_"+year).c_str(),
                                              RooArgList(*PDF_sig_mass[iy]));
     }
-
 
     // insert sample in the category map, to be imported in the combined dataset
     // and associate model with the data
@@ -293,7 +299,12 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
 
-  TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic%i.root", q2Bin, parity,constrain)).c_str(),"UPDATE");
+
+  string component = "";
+  if(comp == 0){component = "CT";}
+  else if(comp == 1){component = "WT";}
+  else{component = "CT+WT";}
+  TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic%i_", q2Bin, parity,constrain) + component).c_str(),"UPDATE");
 
   // save initial par values into a workspace 
   // The kTRUE flag imports the values of the objects in (*params) into the workspace
@@ -331,7 +342,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                             RooFit::NumCPU(1)
                                             );
     
-
     RooMinimizer m(*nll) ;
     m.optimizeConst (kTRUE); // do not recalculate constant terms
     m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
@@ -350,13 +360,13 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     subTime.Stop();
     cout << "fitting done  " << subTime.CpuTime() << endl;
     
-    RooFitResult* fitResult = m.save(("result_" + shortString + Form("subs%d",is)).c_str()) ;
+    RooFitResult* fitResult = m.save(("result_" + shortString + "_" + Form("subs%d",is)).c_str()) ;
     fitResult->Print("v");
     
     // Save fit results in file
     if (save) {
        fout->cd();
-       //fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete);
+       //fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str(),TObject::kWriteDelete); //only works if root file already exists
        fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str()); 
    }
   }
@@ -368,7 +378,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   if (nSample>0) plotString = plotString + Form("_s%i",nSample);
 
   int confIndex = 2*nBins*parity  + q2Bin;
-  string longString  = "Fit to reconstructed events";
+  string longString  = "Fit to reconstructed events - " + component;
   longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);
 
   // plot fit projections 
@@ -404,18 +414,18 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         break;
     }
   }
-  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + ".pdf").c_str());
-  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + ".gif").c_str()); 
+  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
+  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
 }
 
 
-void simfit_recoMC_fullMassBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, bool constrain, std::vector<int> years)
+void simfit_recoMC_fullMassBin1(int q2Bin, int parity, bool multiSample, uint nSample, bool plot, bool save, bool constrain, int comp, std::vector<int> years)
 {
   if ( parity==-1 )
     for (parity=0; parity<2; ++parity)
-      simfit_recoMC_fullMassBin(q2Bin, parity, multiSample, nSample, plot, save, constrain, years);
+      simfit_recoMC_fullMassBin(q2Bin, parity, multiSample, nSample, plot, save, constrain, comp, years);
   else
-    simfit_recoMC_fullMassBin(q2Bin, parity, multiSample, nSample, plot, save, constrain, years);
+    simfit_recoMC_fullMassBin(q2Bin, parity, multiSample, nSample, plot, save, constrain, comp, years);
 }
 
 int main(int argc, char** argv)
@@ -446,16 +456,19 @@ int main(int argc, char** argv)
   if ( argc > 6 && atoi(argv[6]) == 0 ) save = false;
 
   bool constrain = true;
-  if (argc > 7 && atoi(argv[7]) == 0 ) constrain = false;
+  if ( argc > 7 && atoi(argv[7]) == 0 ) constrain = false;
+
+  int comp = 0;
+  if ( argc > 8 ) comp = atoi(argv[8]);
 
   std::vector<int> years;
-  if ( argc > 8 && atoi(argv[8]) != 0 ) years.push_back(atoi(argv[8]));
+  if ( argc > 9 && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]) );
   else {
     cout << "No specific years selected, using default: 2016" << endl;
     years.push_back(2016);
   }
-  if ( argc > 9 && atoi(argv[9]) != 0 ) years.push_back(atoi(argv[9]));
   if ( argc > 10 && atoi(argv[10]) != 0 ) years.push_back(atoi(argv[10]));
+  if ( argc > 11 && atoi(argv[11]) != 0 ) years.push_back(atoi(argv[11]));
 
   cout <<  "q2Bin       " << q2Bin        << endl;
   cout <<  "parity      " << parity       << endl;
@@ -464,6 +477,7 @@ int main(int argc, char** argv)
   cout <<  "plot        " << plot         << endl;
   cout <<  "save        " << save         << endl;
   cout <<  "constrain   " << constrain    << endl;
+  cout <<  "comp        " << comp         << endl;
   cout <<  "years[0]    " << years[0]     << endl;
   //cout <<  "years[1]    " << years[1]     << endl;
   //cout <<  "years[2]    " << years[2]     << endl;
@@ -481,9 +495,9 @@ int main(int argc, char** argv)
 
   if ( q2Bin==-1 )
     for (q2Bin=0; q2Bin<nBins; ++q2Bin)
-      simfit_recoMC_fullMassBin1(q2Bin, parity, multiSample, nSample, plot, save, constrain, years);
+      simfit_recoMC_fullMassBin1(q2Bin, parity, multiSample, nSample, plot, save, constrain, comp, years);
   else
-    simfit_recoMC_fullMassBin1(q2Bin, parity, multiSample, nSample, plot, save, constrain, years);
+    simfit_recoMC_fullMassBin1(q2Bin, parity, multiSample, nSample, plot, save, constrain, comp, years);
 
   return 0;
 
