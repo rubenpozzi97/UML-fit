@@ -213,25 +213,23 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
      
       if (q2Bin < 5)  
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                 ("PDF_sig_mass_"+year).c_str(),
+                                                 ("PDF_sig_mass_"+year).c_str(), comp,
                                                  *mass,
                                                  *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *c_dcb_rt,
-                                                 *c_dcb_wt,
-                                                 comp
+                                                 *c_dcb_wt
                                                  ));
       else
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                 ("PDF_sig_mass_"+year).c_str(),
+                                                 ("PDF_sig_mass_"+year).c_str(), comp,
                                                  *mass,
                                                  *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                  *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *c_dcb_rt,
-                                                 *c_dcb_wt,
-                                                 comp
+                                                 *c_dcb_wt
                                                  ));
 
       /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
@@ -252,28 +250,27 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
     else{
       if (q2Bin < 5)
-          PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                 ("PDF_sig_mass_"+year).c_str(),
-                                                 *mass,
-                                                 *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
-                                                 *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-                                                 *mFrac,
-                                                 *dcb_rt,
-                                                 *dcb_wt,
-                                                 comp
-                                                 ));
+            PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
+                                                  ("PDF_sig_mass_"+year).c_str(), comp,
+                                                  *mass,
+                                                  *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
+                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
+                                                  *mFrac,
+                                                  *dcb_rt,
+                                                  *dcb_wt
+                                                  ));
+        
       else
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                 ("PDF_sig_mass_"+year).c_str(),
+                                                 ("PDF_sig_mass_"+year).c_str(), comp,
                                                  *mass,
                                                  *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                  *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
                                                  *mFrac,
                                                  *dcb_rt,
-                                                 *dcb_wt,
-                                                 comp
+                                                 *dcb_wt
                                                  ));
-      
+
       final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                              ("final_PDF_"+year).c_str(),
                                              RooArgList(*PDF_sig_mass[iy]));
