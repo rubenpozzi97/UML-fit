@@ -1,0 +1,187 @@
+q2Bin       0
+parity      1
+multiSample 0
+nSample     0
+plot        1
+save        1
+constrain   0
+comp        0
+years[0]    2016
+Conf: b0p1c0
+sh: /afs/cern.ch/user/m/mfaria/public/UML-fit/AutoDict_std__pair_std__string__RooDataSet___cxx.d: Permission denied
+Warning in <ACLiC>: Failed to generate the dependency file for /afs/cern.ch/user/m/mfaria/public/UML-fit/AutoDict_std__pair_std__string__RooDataSet___cxx.so
+Fitting full MC sample with 43967 entries
+Minuit2Minimizer: Minimize with max-calls 3000 convergence for edm < 1 strategy 0
+MnSeedGenerator: for initial parameters FCN = -2.910383045673e-11
+MnSeedGenerator: Initial state:   - FCN = -2.910383045673e-11 Edm =      -119805 NCalls =     25
+MnSeedGenerator: Negative G2 found - new state:   - FCN =  -185761.1648366 Edm =       187693 NCalls =     90
+VariableMetric: start iterating until Edm is < 0.001
+VariableMetric: Initial state   - FCN =  -185761.1648366 Edm =       187693 NCalls =     90
+VariableMetric: Iteration #   0 - FCN =  -185761.1648366 Edm =       187693 NCalls =     90
+VariableMetric: Iteration #   1 - FCN =   -238862.031222 Edm =      1136.46 NCalls =    121
+VariableMetric: Iteration #   2 - FCN =  -248017.7768947 Edm =      33.7723 NCalls =    141
+VariableMetric: Iteration #   3 - FCN =  -248142.1930711 Edm =       5.4145 NCalls =    156
+VariableMetric: Iteration #   4 - FCN =  -248153.0452599 Edm =     0.109168 NCalls =    170
+VariableMetric: Iteration #   5 - FCN =  -248153.5521381 Edm =     0.255533 NCalls =    184
+VariableMetric: Iteration #   6 - FCN =  -248154.4063414 Edm =   0.00191762 NCalls =    198
+VariableMetric: Iteration #   7 - FCN =  -248154.4084729 Edm =  0.000198996 NCalls =    212
+Number of iterations 9
+----------> Iteration 0
+            FVAL = -185761.164837 Edm = 187692.871463 Nfcn = 90
+            Error matrix change = 1
+            Parameters :  p0 = 1 p1 = 1 p2 = 0.001 p3 = 5.26269 p4 = 2.73693 p5 = 1.4468
+----------> Iteration 1
+            FVAL = -238862.031222 Edm = 1136.46056444 Nfcn = 121
+            Error matrix change = 0.845785
+            Parameters :  p0 = 6.44398 p1 = 1.41241 p2 = 0.0320515 p3 = 5.26188 p4 = 84.812 p5 = 1.95024
+----------> Iteration 2
+            FVAL = -248017.776895 Edm = 33.7723416608 Nfcn = 141
+            Error matrix change = 0.710983
+            Parameters :  p0 = 7.6966 p1 = 2.22775 p2 = 0.0473221 p3 = 5.27469 p4 = 62.8022 p5 = 3.08657
+----------> Iteration 3
+            FVAL = -248142.193071 Edm = 5.4144957344 Nfcn = 156
+            Error matrix change = 0.508696
+            Parameters :  p0 = 7.86394 p1 = 2.35218 p2 = 0.0497629 p3 = 5.27365 p4 = 59.2655 p5 = 3.26066
+----------> Iteration 4
+            FVAL = -248153.04526 Edm = 0.109168031624 Nfcn = 170
+            Error matrix change = 0.297119
+            Parameters :  p0 = 7.84751 p1 = 2.33552 p2 = 0.049542 p3 = 5.27253 p4 = 59.6302 p5 = 3.24083
+----------> Iteration 5
+            FVAL = -248153.552138 Edm = 0.255533249156 Nfcn = 184
+            Error matrix change = 0.36097
+            Parameters :  p0 = 7.83389 p1 = 2.31477 p2 = 0.0494067 p3 = 5.27259 p4 = 59.9191 p5 = 3.22455
+----------> Iteration 6
+            FVAL = -248154.406341 Edm = 0.0019176152314 Nfcn = 198
+            Error matrix change = 0.219014
+            Parameters :  p0 = 7.83465 p1 = 2.29376 p2 = 0.0495577 p3 = 5.27252 p4 = 59.8953 p5 = 3.22141
+----------> Iteration 7
+            FVAL = -248154.408473 Edm = 0.00019899628998 Nfcn = 212
+            Error matrix change = 0.126417
+            Parameters :  p0 = 7.83386 p1 = 2.29274 p2 = 0.0495495 p3 = 5.27253 p4 = 59.912 p5 = 3.22037
+----------> Iteration 8
+            FVAL = -248154.408473 Edm = 0.00019899628998 Nfcn = 212
+            Error matrix change = 0.126417
+            Parameters :  p0 = 7.83386 p1 = 2.29274 p2 = 0.0495495 p3 = 5.27253 p4 = 59.912 p5 = 3.22037
+Minuit2Minimizer : Valid minimum - status = 0
+FVAL  = -248154.40847285607
+Edm   = 0.000198996289979565158
+Nfcn  = 212
+#alpha_{RT1}^{2016}	  = 7.83386	 +/-  0.0170616	(limited)
+#alpha_{RT2}^{2016}	  = 2.29274	 +/-  0.0261101	(limited)
+#sigma_{RT1}^{2016}	  = 0.0495495	 +/-  0.000180634	(limited)
+mean_{RT}^{2016}	  = 5.27253	 +/-  0.000244325	(limited)
+n_{RT1}^{2016}	  = 59.912	 +/-  0.321495	(limited)
+n_{RT2}^{2016}	  = 3.22037	 +/-  0.0203798	(limited)
+Info in <Minuit2>: MnHesse: 2nd derivative zero for Parameter  : name = n_{RT1}^{2016}
+Info in <Minuit2>: MnHesse fails and will return diagonal matrix 
+Minuit2Minimizer::Hesse  - State returned from Hesse 
+
+# of function calls: 227
+function Value: -248154.4084729
+expected distance to the Minimum (edm): 0.0001989962899796
+external parameters: 
+# ext. ||   Name    ||   type  ||     Value     ||  Error +/- 
+
+   0   ||#alpha_{RT1}^{2016} ||  free   ||       7.83386116418 ||          no
+   1   ||#alpha_{RT2}^{2016} ||  free   ||       2.29273615613 ||          no
+   2   ||#sigma_{RT1}^{2016} ||  free   ||    0.04954951106722 ||          no
+   3   ||mean_{RT}^{2016} ||  free   ||      5.272525829606 ||          no
+   4   ||n_{RT1}^{2016} ||  free   ||      59.91203415012 ||          no
+   5   ||n_{RT2}^{2016} ||  free   ||      3.220367906385 ||          no
+
+
+
+covariance matrix status: 0
+covariance matrix is not present or not valid 
+
+
+Info in <Minuit2>: Minuit2Minimizer::Hesse : Hesse failed - matrix is not valid
+Info in <Minuit2>: MInuit2Minimizer::Hesse : hstatus = 3
+Warning in <ROOT::Math::Fitter::CalculateHessErrors>: Error when calculating Hessian
+Minuit2Minimizer: Minimize with max-calls 3000 convergence for edm < 1 strategy 2
+MnSeedGenerator: for initial parameters FCN = -248154.4084729
+MnSeedGenerator: Initial state:   - FCN =  -248154.4084729 Edm =    0.0977739 NCalls =     35
+MnSeedGenerator: Negative G2 found - new state:   - FCN =  -248154.4084729 Edm =    0.0977739 NCalls =     35
+Info in <Minuit2>: MnHesse: 2nd derivative zero for Parameter  : name = n_{RT1}^{2016}
+Info in <Minuit2>: MnHesse fails and will return diagonal matrix 
+MnSeedGenerator: run Hesse - new state:   - FCN =  -248154.4084729 Edm =    0.0977739 NCalls =     50
+VariableMetric: start iterating until Edm is < 0.001
+VariableMetric: Initial state   - FCN =  -248154.4084729 Edm =    0.0977739 NCalls =     50
+VariableMetric: Iteration #   0 - FCN =  -248154.4084729 Edm =    0.0977739 NCalls =     50
+VariableMetric: Iteration #   1 - FCN =  -248154.5166089 Edm =      0.10357 NCalls =     64
+VariableMetric: Iteration #   2 - FCN =  -248154.8239638 Edm =    0.0333461 NCalls =     79
+VariableMetric: Iteration #   3 - FCN =  -248154.8692714 Edm =  0.000208437 NCalls =     93
+Info in <Minuit2>: MnHesse: 2nd derivative zero for Parameter  : name = n_{RT1}^{2016}
+Info in <Minuit2>: MnHesse fails and will return diagonal matrix 
+VariableMetric: After Hessian   - FCN =  -248154.8692714 Edm =  0.000208437 NCalls =    108
+VariableMetric: Iteration #   4 - FCN =  -248154.8692714 Edm =  0.000208437 NCalls =    108
+Number of iterations 5
+----------> Iteration 0
+            FVAL = -248154.408473 Edm = 0.0977738770546 Nfcn = 50
+            Error matrix change = 1
+            Parameters :  p0 = 7.83386 p1 = 2.29274 p2 = 0.0495495 p3 = 5.27253 p4 = 59.912 p5 = 3.22037
+----------> Iteration 1
+            FVAL = -248154.516609 Edm = 0.10357028482 Nfcn = 64
+            Error matrix change = 0.500034
+            Parameters :  p0 = 7.83386 p1 = 2.29368 p2 = 0.0495537 p3 = 5.27252 p4 = 59.912 p5 = 3.11392
+----------> Iteration 2
+            FVAL = -248154.823964 Edm = 0.0333460910812 Nfcn = 79
+            Error matrix change = 0.250196
+            Parameters :  p0 = 7.83386 p1 = 2.33257 p2 = 0.0495189 p3 = 5.2725 p4 = 59.912 p5 = 2.86916
+----------> Iteration 3
+            FVAL = -248154.869271 Edm = 0.000208437165006 Nfcn = 93
+            Error matrix change = 0.125109
+            Parameters :  p0 = 7.83386 p1 = 2.34063 p2 = 0.0495625 p3 = 5.27254 p4 = 59.912 p5 = 2.81961
+----------> Iteration 4
+            FVAL = -248154.869271 Edm = 0.000208437165006 Nfcn = 108
+            Error matrix change = 1
+            Parameters :  p0 = 7.83386 p1 = 2.34063 p2 = 0.0495625 p3 = 5.27254 p4 = 59.912 p5 = 2.81961
+Info in <Minuit2>: Minuit2Minimizer::Minimize : Minimization did NOT converge, Hesse is not valid
+Minuit2Minimizer : Invalid Minimum - status = 2
+FVAL  = -248155
+Edm   = 0.000208437
+Nfcn  = 108
+Info in <Minuit2>: MnHesse: 2nd derivative zero for Parameter  : name = n_{RT1}^{2016}
+Info in <Minuit2>: MnHesse fails and will return diagonal matrix 
+Minuit2Minimizer::Hesse  - State returned from Hesse 
+
+# of function calls: 123
+function Value: -248154.8692714
+expected distance to the Minimum (edm): 0.0002084371650059
+external parameters: 
+# ext. ||   Name    ||   type  ||     Value     ||  Error +/- 
+
+   0   ||#alpha_{RT1}^{2016} ||  free   ||       7.83386116418 ||          no
+   1   ||#alpha_{RT2}^{2016} ||  free   ||      2.340626916596 ||          no
+   2   ||#sigma_{RT1}^{2016} ||  free   ||    0.04956249386788 ||          no
+   3   ||mean_{RT}^{2016} ||  free   ||      5.272537790905 ||          no
+   4   ||n_{RT1}^{2016} ||  free   ||      59.91203415012 ||          no
+   5   ||n_{RT2}^{2016} ||  free   ||      2.819608302726 ||          no
+
+
+
+covariance matrix status: 0
+covariance matrix is not present or not valid 
+
+
+Info in <Minuit2>: Minuit2Minimizer::Hesse : Hesse failed - matrix is not valid
+Info in <Minuit2>: MInuit2Minimizer::Hesse : hstatus = 3
+Warning in <ROOT::Math::Fitter::CalculateHessErrors>: Error when calculating Hessian
+fitting done  3.39
+
+  RooFitResult: minimized FCN value: -248155, estimated distance to minimum: 0.000208437
+                covariance matrix quality: Not calculated at all
+                Status : MIGRAD=0 HESSE=300 MIGRAD=-1 HESSE=302 
+
+    Floating Parameter  InitialValue    FinalValue +/-  Error     GblCorr.
+  --------------------  ------------  --------------------------  --------
+   #alpha_{RT1}^{2016}    1.0000e+00    7.8339e+00 +/-  0.00e+00  <none>
+   #alpha_{RT2}^{2016}    1.0000e+00    2.3406e+00 +/-  0.00e+00  <none>
+   #sigma_{RT1}^{2016}    1.0000e-03    4.9562e-02 +/-  0.00e+00  <none>
+      mean_{RT}^{2016}    5.3000e+00    5.2725e+00 +/-  0.00e+00  <none>
+        n_{RT1}^{2016}    5.0000e+00    5.9912e+01 +/-  0.00e+00  <none>
+        n_{RT2}^{2016}    5.0000e+00    2.8196e+00 +/-  0.00e+00  <none>
+
+plotting 4d canvas: 1
+Info in <TCanvas::Print>: pdf file plotSimMassFit/simFitResult_recoMC_fullMass_b0p1c0_2016_CT.pdf has been created
+Info in <TCanvas::Print>: gif file plotSimMassFit/simFitResult_recoMC_fullMass_b0p1c0_2016_CT.gif has been created
