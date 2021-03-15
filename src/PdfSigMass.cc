@@ -15,11 +15,12 @@
 #include "RooDataHist.h"
 #include "TMatrixDSym.h"
 #include "RooFitResult.h"
+
 ClassImp(PdfSigMass) 
 
 using namespace RooFit;
 
-PdfSigMass::PdfSigMass(const char *name, const char *title, 
+PdfSigMass::PdfSigMass(const char *name, const char *title, int comp,
 		     RooAbsReal& _m,
          	     RooAbsReal& _mean_rt  ,
          	     RooAbsReal& _sigma_rt1,
@@ -35,8 +36,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac    ,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm,
-                     comp
+		     RooAbsReal& _wtMassTerm
 		     ) :
   RooAbsPdf(name,title), 
   m("m","m",this,_m),
@@ -58,7 +58,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
 {
 }
 
-PdfSigMass::PdfSigMass(const char *name, const char *title, 
+PdfSigMass::PdfSigMass(const char *name, const char *title, int comp,
 		     RooAbsReal& _m,
          	     RooAbsReal& _mean_rt  ,
          	     RooAbsReal& _sigma_rt1,
@@ -76,8 +76,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac,
 		     RooAbsReal& _rtMassTerm,
-		     RooAbsReal& _wtMassTerm, 
-                     comp
+		     RooAbsReal& _wtMassTerm
 		     ) :
   RooAbsPdf(name,title), 
   m("m","m",this,_m),
@@ -102,7 +101,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
 }
 
 
-PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :  
+PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name, int comp) :  
   RooAbsPdf(other,name), 
   m("m",this,other.m),
   mean_rt("mean_rt",this,other.mean_rt),
@@ -121,22 +120,21 @@ PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :
   n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
   rtMassTerm("rtMassTerm", this, other.rtMassTerm),
-  wtMassTerm("wtMassTerm", this, other.wtMassTerm),
-  comp 
+  wtMassTerm("wtMassTerm", this, other.wtMassTerm)
 {
 }
 
 
 Double_t PdfSigMass::evaluate() const 
-{
+{  
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
-
-  if(comp == 0){return mCT;}
-  else if(comp == 1){return mWT;}  
+ 
+  if(comp==0){return mCT;}
+  else if(comp==1){return mWT;} 
   else{return mCT + (mFrac)*mWT;}
-
 }
+
 
 namespace {
   Bool_t fullRangeMass(const RooRealProxy& x ,const char* range)
@@ -152,14 +150,15 @@ namespace {
 Int_t PdfSigMass::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName) const
 {
   if ( matchArgs(allVars,analVars,m) ){
-    if ( fullRangeMass(m,rangeName,comp) ) {
+    if ( fullRangeMass(m,rangeName) ) {
       return 1 ;
     }
   }
   return 0 ;
 }
 
-Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName, comp) const
+
+Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName, int comp) const
 {
   assert(code>0 && code<2) ;
   
@@ -167,24 +166,18 @@ Double_t PdfSigMass::analyticalIntegral(Int_t code, const char* rangeName, comp)
   
   RooAbsReal & rtMass = (RooAbsReal&)rtMassTerm.arg();
   double rtMassIntegral = ((RooAbsReal* )rtMass.createIntegral(marg))->getVal();
-  
+  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
+
   RooAbsReal & wtMass = (RooAbsReal&)wtMassTerm.arg();
   double wtMassIntegral = ((RooAbsReal* )wtMass.createIntegral(marg))->getVal();
+  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl;
 
   double theIntegral = rtMassIntegral + mFrac*wtMassIntegral ;
-
-  if(comp == 0){
-  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
-  return rtMassIntegral;}
-
-  else if(comp == 1){
-  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl;  
-  return wtMassIntegral;}
-
-  else{
-  std::cout <<  "PdfSigMass:analyticalIntegral:rtMassIntegral  " << rtMassIntegral << std::endl;
-  std::cout <<  "PdfSigMass:analyticalIntegral:wtMassIntegral  " << wtMassIntegral << std::endl; 
   std::cout <<  "integral: " << theIntegral << std::endl;
-  return theIntegral;}
 
+  if(comp==0){return rtMassIntegral;}
+  else if(comp==1){return wtMassIntegral;}
+  else{return theIntegral;}
 }
+
+

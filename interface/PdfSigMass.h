@@ -51,9 +51,12 @@ class PdfSigMass : public RooAbsPdf {
 
   Double_t evaluate() const ;
 
- public: 
+ public:
+
+  int comp;
+
   PdfSigMass() {} ; 
-  PdfSigMass(const char *name, const char *title, 
+  PdfSigMass(const char *name, const char *title, int comp,
 	    RooAbsReal& _m,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
@@ -69,11 +72,10 @@ class PdfSigMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac    ,
 	    RooAbsReal& _rtMassTerm,
-	    RooAbsReal& _wtMassTerm,
-            int comp
+	    RooAbsReal& _wtMassTerm
 	    );
 
-  PdfSigMass(const char *name, const char *title, 
+  PdfSigMass(const char *name, const char *title, int comp,
 	    RooAbsReal& _m,
 	    RooAbsReal& _mean_rt  ,
 	    RooAbsReal& _sigma_rt1,
@@ -91,18 +93,16 @@ class PdfSigMass : public RooAbsPdf {
 	    RooAbsReal& _n_wt2    ,
 	    RooAbsReal& _mFrac ,
 	    RooAbsReal& _rtMassTerm,
-	    RooAbsReal& _wtMassTerm,
-            int comp
+	    RooAbsReal& _wtMassTerm
   	    );
 
-  PdfSigMass(const PdfSigMass& other, const char* name=0, int* comp) ;
+  PdfSigMass(const PdfSigMass& other, const char* name=0, int comp=0) ;
   virtual TObject* clone(const char* newname) const { return new PdfSigMass(*this,newname,comp); }
   inline virtual ~PdfSigMass() { }
 
-  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0, int* comp) const ;
-  Double_t analyticalIntegral(Int_t code, const char* rangeName=0, int* comp) const ;
+  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0, int comp=0) const ;
 
   ClassDef(PdfSigMass,1) // PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events
     };
- 
 #endif

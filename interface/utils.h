@@ -96,7 +96,7 @@ bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::str
 
 std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastSample, RooWorkspace *ws, 
                                        int q2Bin, int parity, int year, //std::map<int,float> scale_to_data,
-                                       RooArgSet reco_vars, std::string shortString  ){
+                                       RooArgSet reco_vars, std::string shortString, int comp){
 
     RooDataSet* dataCT, *dataWT;
     std::vector<RooDataSet*> datasample;
@@ -113,8 +113,11 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
         dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
           ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
 
-        isample->append(*dataCT);
-        isample->append(*dataWT);
+        if(comp == 0){isample->append(*dataCT);}
+        else if(comp == 1){isample->append(*dataWT);}
+        else{
+          isample->append(*dataCT);
+          isample->append(*dataWT);}
         datasample.push_back (isample);
       }
     }
@@ -124,10 +127,15 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 					   RooArgSet(reco_vars));
       dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
       dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
-      isample->append(*dataCT);
-      isample->append(*dataWT);
-      datasample.push_back (isample);
+
+      if(comp == 0){isample->append(*dataCT);}
+      else if(comp == 1){isample->append(*dataWT);}
+      else{
+        isample->append(*dataCT);
+        isample->append(*dataWT);}
+      datasample.push_back (isample); 
     }
+ 
     return datasample;
 }
 
