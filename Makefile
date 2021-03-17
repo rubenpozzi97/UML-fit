@@ -17,6 +17,7 @@ EXECUTABLE5 := plotMultiResults
 EXECUTABLE6 := simfit_toy_fullAngular
 EXECUTABLE7 := simfit_recoMC_fullAngularMass
 EXECUTABLE8 := simfit_recoMC_fullMass
+EXECUTABLE9 := parameter_comparison
 
 EXTRACLASS := RooDataHist.cxx
 CLASS0     := PdfRT
