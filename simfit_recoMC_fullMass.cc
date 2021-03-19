@@ -3,6 +3,7 @@
 #include <TCanvas.h>
 #include <TAxis.h>
 #include <TLegend.h>
+#include <TLine.h>
 #include <TMath.h>
 #include <TH3D.h>
 #include <list>
@@ -91,7 +92,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   // loop on the various datasets
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
-    string filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/recoMCDataset_b%i_%i.root", years[iy], q2Bin, years[iy]); 
+    string filename_data = Form("recoMCDataset_b%i_%i.root", q2Bin, years[iy]);
+    filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
 
     // import data (or MC as data proxy)
     if (!retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity )))  return;
@@ -129,6 +131,11 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     RooAbsPdf* dcb_wt;
     RooProdPdf* c_dcb_wt;
     RooProdPdf* final_PDF;
+    RooRealVar* nRT;
+    RooRealVar* nWT;
+
+    if(comp==0){nRT = new RooRealVar(Form("nRT^{%i}",years[iy]), "yieldRT" ,  data[iy][0]->numEntries(), 0,  data[iy][0]->numEntries());}
+    else if(comp==1){nWT = new RooRealVar(Form("nRT^{%i}",years[iy]), "yieldRT" ,  data[iy][0]->numEntries(), 0,  data[iy][0]->numEntries());}
 
     RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
     // mFrac->setConstant();
@@ -145,34 +152,34 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
     else{
       mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , 5.3, 5, 6, "GeV");
-      sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , 0.001, 0, 1, "GeV");
-      alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , 1, 0, 10 );
-      alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , 1, -10, 10 );
-      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , 5., 1., 100.);
-      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , 5., 0., 100.);
+      sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , 0, 0, 1, "GeV");
+      alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , 1,   0, 10 );
+      alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , 2, -5, 10 );
+      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , 1, 0., 100.);
+      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , 1, 0., 100.);
     }
 
-    sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   0 , 0,   0.12, "GeV");
-    f1rt      = new RooRealVar (Form("f^{RT%i}",years[iy])          , "f1rt"      ,   0 , 0.,  1.);
+    sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   0, 0,   1, "GeV");
+    f1rt      = new RooRealVar (Form("f^{RT%i}",years[iy])          , "f1rt"      ,   0., 0.,  1.);
 
     if(constrain){
       if (q2Bin >= 5){
         sigma_rt2-> setVal(wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() );
         f1rt     -> setVal(wsp_mcmass[iy]->var(Form("f^{RT%i}", q2Bin))->getVal() );
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt );
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
       } 
       else{
         alpha_rt2->setRange(0,10);
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2 , wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt  );
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
       }
     }
     else{
       if (q2Bin >= 5){
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt );
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
       }
       else{
         alpha_rt2->setRange(0,10);
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2 , wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt  );
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
       }
     }
 
@@ -401,21 +408,17 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
   c[confIndex]->cd();
 
-  TPad *p1 = new TPad("p1","p1",0.,0.27,0.82,0.99);
-  p1->SetTitle("");
+  TPad *p1 = new TPad("p1","p1",0.,0.27,1.,1.);
   p1->SetBorderMode(1);
   p1->SetFrameBorderMode(0);
   p1->SetBorderSize(2);
-  p1->SetBottomMargin(0.10);
-
+  //p1->SetBottomMargin(0.40);
   p1->Draw();
 
-  TPad *p2 = new TPad("p2","p2",0.,0.065,0.82,0.24);
-  p2->SetTitle("");
-  p2->SetTopMargin(0.);
-  p2->SetBottomMargin(0.4);
+  TPad *p2 = new TPad("p2","p2",0.,0.065,1.,0.24);
   p2->SetBorderMode(1);
-
+  p2->SetTopMargin(0);
+  p2->SetBottomMargin(0.4);
   p2->Draw();
 
   for (unsigned int iy = 0; iy < years.size(); iy++) {
@@ -425,14 +428,14 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     TLegend *leg = new TLegend (0.6,0.7,0.9,0.9);
 
     for (unsigned int fr = 0; fr < frames.size(); fr++){
-        combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(40),
+        combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(80),
                          Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()),
                          Name(("plData"+year).c_str()));
         (ws_pars->pdf("simPdf"))->plotOn(frames[fr], LineWidth(1),
                          Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()),
                          ProjWData(RooArgSet(sample), *combData),
                          Name(("plPDF"+year).c_str()));
-        (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.7,0.99,0.90));
+        (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.65,0.9,0.9));
    
         if (fr == 0) {
           leg->AddEntry(frames[fr]->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
@@ -443,6 +446,11 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
         p1->cd();
         frames[fr]->SetXTitle("mass (GeV)");
+        frames[fr]->GetYaxis()->SetTitleFont(43);
+        frames[fr]->GetYaxis()->SetTitleSize(30);
+        frames[fr]->GetYaxis()->SetTitleOffset(1.);
+        frames[fr]->GetYaxis()->SetLabelFont(43);
+        frames[fr]->GetYaxis()->SetLabelSize(30);
         frames[fr]->Draw();
         //leg->Draw("same");
      
@@ -453,27 +461,24 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
         pull_plot->SetTitle("");
         pull_plot->GetXaxis()->SetTitle("mass (GeV)");
-        pull_plot->GetXaxis()->SetTitleFont(42);
         pull_plot->GetXaxis()->SetTitleSize(0.15);
-        pull_plot->GetXaxis()->SetTitleOffset(1.09);
-
-        pull_plot->GetXaxis()->SetLabelFont(42);
+        pull_plot->GetXaxis()->SetTitleOffset(0.9);
         pull_plot->GetXaxis()->SetLabelSize(0.15);
-        pull_plot->GetXaxis()->SetLabelOffset(0.01);
-        pull_plot->GetXaxis()->SetTickLength(0.13);
-
+        pull_plot->GetXaxis()->SetTickLength(0.1);
         pull_plot->GetYaxis()->SetTitle("Pull");
-        pull_plot->GetYaxis()->SetTitleFont(42);
         pull_plot->GetYaxis()->SetTitleSize(0.15);
-        pull_plot->GetYaxis()->SetTitleOffset(1.09);
+        pull_plot->GetYaxis()->SetTitleOffset(0.1);
+        pull_plot->GetYaxis()->SetLabelSize(0.15);
+        pull_plot->GetYaxis()->SetNdivisions(305);
 
-        pull_plot->GetYaxis()->SetLabelFont(42);
-        pull_plot->GetYaxis()->SetLabelSize(0.13);
-        pull_plot->GetYaxis()->SetLabelOffset(0.01);
-        pull_plot->GetYaxis()->SetNdivisions(305);        
-         
+        gPad->Update();
+        TLine *line = new TLine(gPad->GetUxmin(), 0, gPad->GetUxmax(), 0); 
+        line->SetLineStyle(2);
+        line->SetLineColor(kBlue);
+   
         p2->cd();
         pull_plot->Draw();
+        line->Draw("same");
 
         break;
     }
