@@ -56,7 +56,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   uint firstSample = ( multiSample || nSample==0 ) ? 0 : nSample-1;
   uint lastSample = nSample > 0 ? nSample-1 : 0;
 
-  std::vector<RooWorkspace*> wsp, wsp_mcmass;
+  std::vector<RooWorkspace*> wsp, wsp_mcmass, wsp_even, wsp_odd;
   std::vector<std::vector<RooDataSet*>> data;
 
   std::vector<RooAbsPdf*> PDF_sig_mass(0);
@@ -86,7 +86,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
 
-  // Construct a simultaneous pdf using category sample as index
+  // Construct a simultaneous pdf using category sample as index (simultaneous over the 3 years)
   RooSimultaneous* simPdf = new RooSimultaneous("simPdf", "simultaneous pdf", sample);
 
   // loop on the various datasets
@@ -96,20 +96,28 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
 
     // import data (or MC as data proxy)
-    if (!retrieveWorkspace( filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity )))  return;
+    if(parity < 2){if (!retrieveWorkspace(filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), parity))  return;}
+    else{if (!retrieveWorkspace(filename_data, wsp_even, Form("ws_b%ip%i", q2Bin, 0), wsp_odd, Form("ws_b%ip%i", q2Bin, 1), parity))  return;}
 
     // create roodataset (in case data-like option is selected, only import the correct % of data)
     // if comp == 0, only uses dataCT
     // if comp == 1, only uses data WT
     // else uses both datasets
-    data.push_back(createDataset(nSample,  firstSample,  lastSample, wsp[iy],  
-                                 q2Bin,  parity,  years[iy], 
-                                 reco_vars,  shortString, comp));
- 
+
+    if(parity < 2){
+      data.push_back(createDataset(nSample,  firstSample,  lastSample, wsp[iy], wsp[iy], 
+                                   q2Bin,  parity,  years[iy], 
+                                   reco_vars,  shortString, comp));
+    }
+    else{
+      data.push_back(createDataset(nSample,  firstSample,  lastSample, wsp_even[iy], wsp_odd[iy],
+                                   q2Bin,  parity,  years[iy],
+                                   reco_vars,  shortString, comp));
+    }
     
     // import mass PDF from fits to the MC (only uses it if constrain > 0)
     string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
-    if (!retrieveWorkspace( filename_mc_mass, wsp_mcmass, "w"))  return;
+    if (!retrieveWorkspace(filename_mc_mass, wsp_mcmass, "w", wsp_mcmass, "w", 0))  return;
 
     RooRealVar* mean_rt = 0;
     RooRealVar* sigma_rt = 0;
@@ -152,15 +160,15 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
     else{
       mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , 5.3, 5, 6, "GeV");
-      sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , 0, 0, 1, "GeV");
+      sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , 1, 0, 1, "GeV");
       alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , 1,   0, 10 );
-      alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , 2, -5, 10 );
-      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , 1, 0., 100.);
-      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , 1, 0., 100.);
+      alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , 1, -10, 10 );
+      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , 1, 0., 200.);
+      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , 1, 0., 200.);
     }
 
-    sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   0, 0,   1, "GeV");
-    f1rt      = new RooRealVar (Form("f^{RT%i}",years[iy])          , "f1rt"      ,   0., 0.,  1.);
+    sigma_rt2 = new RooRealVar (Form("#sigma_{RT2}^{%i}",years[iy] ), "sigmaRT2"  ,   1, 0,   1, "GeV");
+    f1rt      = new RooRealVar (Form("f^{RT%i}",years[iy])          , "f1rt"      ,   0.1, 0.,  1.);
 
     if(constrain){
       if (q2Bin >= 5){
@@ -399,7 +407,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
   int confIndex = 2*nBins*parity  + q2Bin;
   string longString  = "Fit to reconstructed events - " + component;
-  longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);
+  if(parity < 2){longString = longString + Form(parity==1?" (q2-bin %i even)":" (q2-bin %i odd)",q2Bin);}
+  else{longString = longString + "both parity datasets" + Form(" - q2-bin %i",q2Bin);}
 
   // plot fit projections 
   c[confIndex] = new TCanvas (("c_"+shortString).c_str(),("Fit to RECO-level MC - "+longString).c_str(),3000,1400);
@@ -483,8 +492,13 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         break;
     }
   }
-  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
-  c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
+  if(parity < 2){
+    c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
+    c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
+  }
+  else{
+    c[confIndex]->SaveAs( ("plotSimMassFit_odd+even/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+  }
 }
 
 
@@ -503,6 +517,7 @@ int main(int argc, char** argv)
   //                [-1] for each bin recursively
   // parity format: [0] even efficiency
   //                [1] odd efficiency
+  //                [2] for merged even and odd datasets
   //                [-1] for each parity recursively
  
   int q2Bin   = -1;
@@ -552,10 +567,11 @@ int main(int argc, char** argv)
   //cout <<  "years[2]    " << years[2]     << endl;
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
-  if ( parity  < -1 || parity  > 1      ) return 1;
+  if ( parity  < -1 || parity  > 2      ) return 1;
 
-  if ( q2Bin==-1 )   cout << "Running all the q2 bins" << endl;
-  if ( parity==-1 )  cout << "Running both the parity datasets" << endl;
+  if ( q2Bin == -1 )   cout << "Running all the q2 bins" << endl;
+  if ( parity == -1 )  cout << "Running both the parity datasets recursively" << endl;
+  else if (parity == 2) cout << "Running both parity datasets merged" << endl;
 
   // https://docs.google.com/spreadsheets/d/1gG-qowySO9WJpMmr_bAWmOAu05J8zr95yJXGIYCY9-A/edit?usp=sharing
   scale_to_data.insert(std::make_pair(2016, 0.006*2 /2.5  )); // *2 since we are using only odd/even events, second factor is "data-driven"
