@@ -76,7 +76,7 @@ void constrainVar2(RooRealVar* var,
 }
 
 
-bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name){
+bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name, std::vector<RooWorkspace*> &ws1, std::string ws_name_odd, int parity){
 
     TFile* f =  TFile::Open( filename.c_str() ) ;
     if ( !f || !f->IsOpen() ) {
@@ -84,21 +84,29 @@ bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::str
       return false;
     }
     RooWorkspace* open_w = (RooWorkspace*)f->Get(ws_name.c_str());
-    if ( !open_w || open_w->IsZombie() ) {
+    RooWorkspace* open_w_odd = (RooWorkspace*)f->Get(ws_name_odd.c_str()); 
+
+   if ( !open_w || open_w->IsZombie() ) {
       cout<<"Workspace "<< ws_name <<  "not found in file: " << filename << endl;
       return false;
     }
-    ws.push_back( open_w );
+    if(parity < 2){ws.push_back( open_w );}
+    else{
+      ws.push_back( open_w ); // even
+      ws1.push_back( open_w_odd ); // odd
+    }
     f->Close();
     return true;
 }
 
 
-std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastSample, RooWorkspace *ws, 
+std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastSample, RooWorkspace *ws, RooWorkspace *ws1, 
                                        int q2Bin, int parity, int year, //std::map<int,float> scale_to_data,
                                        RooArgSet reco_vars, std::string shortString, int comp){
 
     RooDataSet* dataCT, *dataWT;
+    RooDataSet* dataCT_even, *dataWT_even;
+    RooDataSet* dataCT_odd, *dataWT_odd;
     std::vector<RooDataSet*> datasample;
 
     if (nSample>0){  
@@ -116,8 +124,9 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
         if(comp == 0){isample->append(*dataCT);}
         else if(comp == 1){isample->append(*dataWT);}
         else{
-          isample->append(*dataCT);
-          isample->append(*dataWT);}
+            isample->append(*dataCT);
+            isample->append(*dataWT);
+        }
         datasample.push_back (isample);
       }
     }
@@ -125,14 +134,44 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
       RooDataSet* isample = new RooDataSet(("data_"+shortString + "_subs0").c_str(), 
 					   ("data_"+shortString + "_subs0").c_str(), 
 					   RooArgSet(reco_vars));
-      dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
-      dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
 
-      if(comp == 0){isample->append(*dataCT);}
-      else if(comp == 1){isample->append(*dataWT);}
+      if(parity < 2){
+        dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
+        dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
+      }
       else{
-        isample->append(*dataCT);
-        isample->append(*dataWT);}
+        dataCT_even = (RooDataSet*)ws->data(Form(("data_ctRECO_ev_b%i"),q2Bin));
+        dataCT_odd = (RooDataSet*)ws1->data(Form(("data_ctRECO_od_b%i"),q2Bin));
+        dataWT_even = (RooDataSet*)ws->data(Form(("data_wtRECO_ev_b%i"),q2Bin));
+        dataWT_odd = (RooDataSet*)ws1->data(Form(("data_wtRECO_od_b%i"),q2Bin));
+      }
+
+      if(comp == 0){
+        if(parity < 2){isample->append(*dataCT);}
+        else{
+          isample->append(*dataCT_even);
+          isample->append(*dataCT_odd);
+        }
+      }
+      else if(comp == 1){
+        if(parity < 2){isample->append(*dataWT);}
+        else{
+          isample->append(*dataWT_even);
+          isample->append(*dataWT_odd);
+        }
+      }
+      else{
+        if(parity < 2){
+          isample->append(*dataCT);
+          isample->append(*dataWT);
+        }
+        else{
+          isample->append(*dataCT_even);
+          isample->append(*dataCT_odd);
+          isample->append(*dataWT_even);
+          isample->append(*dataWT_odd);
+        }
+      }
       datasample.push_back (isample); 
     }
  
