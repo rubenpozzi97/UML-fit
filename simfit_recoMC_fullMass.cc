@@ -9,6 +9,7 @@
 #include <list>
 #include <map>
 
+#include <RooArgList.h>
 #include <RooAbsPdf.h>
 #include <RooHist.h>
 #include <RooCategory.h>
@@ -72,7 +73,16 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   gInterpreter->GenerateDictionary("std::pair<std::map<string,RooDataSet*>::iterator, bool>", "map;string;RooDataSet.h");
   std::map<std::string, RooDataSet*> map;
 
-  RooRealVar* mass = new RooRealVar("mass","mass", 5.,5.6);
+  RooRealVar* mass = 0;
+  if(comp == 0){
+    mass = new RooRealVar("mass","mass", 5.,5.6);
+  }
+  else if(comp == 1){
+    mass = new RooRealVar("mass","mass", 4.9,5.7);
+  }
+  else{
+    mass = new RooRealVar("mass","mass", 5.,5.6);
+  }
   RooRealVar* rand = new RooRealVar("rand","rand", 0,1);
   RooArgSet reco_vars (*mass, *rand);
 
@@ -99,11 +109,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     if(parity < 2){if (!retrieveWorkspace(filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), parity))  return;}
     else{if (!retrieveWorkspace(filename_data, wsp_even, Form("ws_b%ip%i", q2Bin, 0), wsp_odd, Form("ws_b%ip%i", q2Bin, 1), parity))  return;}
 
-    // create roodataset (in case data-like option is selected, only import the correct % of data)
-    // if comp == 0, only uses dataCT
-    // if comp == 1, only uses data WT
-    // else uses both datasets
-
     if(parity < 2){
       data.push_back(createDataset(nSample,  firstSample,  lastSample, wsp[iy], wsp[iy], 
                                    q2Bin,  parity,  years[iy], 
@@ -116,8 +121,94 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
     
     // import mass PDF from fits to the MC (only uses it if constrain > 0)
-    string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
-    if (!retrieveWorkspace(filename_mc_mass, wsp_mcmass, "w", wsp_mcmass, "w", 0))  return;
+    //string filename_mc_mass = Form("/eos/cms/store/user/fiorendi/p5prime/massFits/results_fits_%i_fM_newbdt.root",years[iy]);
+    //if (!retrieveWorkspace(filename_mc_mass, wsp_mcmass, "w", wsp_mcmass, "w", 0))  return;
+
+    TString filename_mc_mass_RT;
+    TString filename_mc_mass_WT;
+    TFile* f_RT;
+    TFile* f_WT;
+    RooFitResult* fitresult_RT;
+    RooFitResult* fitresult_WT;
+
+    if(constrain){
+      filename_mc_mass_RT = ("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic0_", q2Bin, parity) + "CT.root").c_str();
+      filename_mc_mass_WT = ("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic0_", q2Bin, parity) + "WT.root").c_str();
+ 
+      f_RT = TFile::Open(filename_mc_mass_RT);
+      f_WT = TFile::Open(filename_mc_mass_WT);
+
+      fitresult_RT = (RooFitResult*)f_RT->Get(Form("simFitResult_b%ip%ic0subs0",q2Bin,parity));
+      fitresult_WT = (RooFitResult*)f_WT->Get(Form("simFitResult_b%ip%ic0subs0",q2Bin,parity));
+    }
+
+    double mean_rt_initial = 0;
+    double sigma_rt_initial = 0;
+    double alpha_rt1_initial = 0;
+    double alpha_rt2_initial = 0;
+    double n_rt1_initial = 0;
+    double n_rt2_initial = 0;
+    double sigma_rt2_initial = 0;
+    double f1rt_initial = 0;
+    double mean_wt_initial = 0;
+    double sigma_wt_initial = 0;
+    double alpha_wt1_initial = 0;
+    double alpha_wt2_initial = 0;
+    double n_wt1_initial = 0;
+    double n_wt2_initial = 0;
+
+    double mean_rt_error = 0;
+    double sigma_rt_error = 0;
+    double alpha_rt1_error = 0;
+    double alpha_rt2_error = 0;
+    double n_rt1_error = 0;
+    double n_rt2_error = 0;
+    double sigma_rt2_error = 0;
+    double f1rt_error = 0;
+    double mean_wt_error = 0;
+    double sigma_wt_error = 0;
+    double alpha_wt1_error = 0;
+    double alpha_wt2_error = 0;
+    double n_wt1_error = 0;
+    double n_wt2_error = 0;
+
+    if(constrain){
+      mean_rt_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("mean_{RT}^{%i}",years[iy])) )->getVal();
+      sigma_rt_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#sigma_{RT1}^{%i}",years[iy])) )->getVal();
+      alpha_rt1_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#alpha_{RT1}^{%i}",years[iy])) )->getVal();
+      alpha_rt2_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#alpha_{RT2}^{%i}",years[iy])) )->getVal();
+      n_rt1_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("n_{RT1}^{%i}",years[iy])) )->getVal();
+      n_rt2_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("n_{RT2}^{%i}",years[iy])) )->getVal();
+      if(q2Bin >= 5){
+        sigma_rt2_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#sigma_{RT2}^{%i}",years[iy])) )->getVal();
+        f1rt_initial = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("f^{RT%i}",years[iy])) )->getVal();
+      }
+
+      mean_wt_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("mean_{WT}^{%i}",years[iy])) )->getVal();
+      sigma_wt_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#sigma_{WT1}^{%i}",years[iy])) )->getVal();
+      alpha_wt1_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#alpha_{WT1}^{%i}",years[iy])) )->getVal();
+      alpha_wt2_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#alpha_{WT2}^{%i}",years[iy])) )->getVal();
+      n_wt1_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("n_{WT1}^{%i}",years[iy])) )->getVal();
+      n_wt2_initial = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("n_{WT2}^{%i}",years[iy])) )->getVal();
+
+      mean_rt_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("mean_{RT}^{%i}",years[iy])) )->getError();
+      sigma_rt_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#sigma_{RT1}^{%i}",years[iy])) )->getError();
+      alpha_rt1_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#alpha_{RT1}^{%i}",years[iy])) )->getError();
+      alpha_rt2_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#alpha_{RT2}^{%i}",years[iy])) )->getError();
+      n_rt1_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("n_{RT1}^{%i}",years[iy])) )->getError();
+      n_rt2_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("n_{RT2}^{%i}",years[iy])) )->getError();
+      if(q2Bin >= 5){
+        sigma_rt2_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("#sigma_{RT2}^{%i}",years[iy])) )->getError();
+        f1rt_error = ( (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("f^{RT%i}",years[iy])) )->getError();
+      }
+
+      mean_wt_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("mean_{WT}^{%i}",years[iy])) )->getError();
+      sigma_wt_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#sigma_{WT1}^{%i}",years[iy])) )->getError();
+      alpha_wt1_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#alpha_{WT1}^{%i}",years[iy])) )->getError();
+      alpha_wt2_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("#alpha_{WT2}^{%i}",years[iy])) )->getError();
+      n_wt1_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("n_{WT1}^{%i}",years[iy])) )->getError();
+      n_wt2_error = ( (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("n_{WT2}^{%i}",years[iy])) )->getError();
+    }
 
     RooRealVar* mean_rt = 0;
     RooRealVar* sigma_rt = 0;
@@ -139,24 +230,39 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     RooAbsPdf* dcb_wt;
     RooProdPdf* c_dcb_wt;
     RooProdPdf* final_PDF;
-    RooRealVar* nRT;
-    RooRealVar* nWT;
-
-    if(comp==0){nRT = new RooRealVar(Form("nRT^{%i}",years[iy]), "yieldRT" ,  data[iy][0]->numEntries(), 0,  data[iy][0]->numEntries());}
-    else if(comp==1){nWT = new RooRealVar(Form("nRT^{%i}",years[iy]), "yieldRT" ,  data[iy][0]->numEntries(), 0,  data[iy][0]->numEntries());}
+    RooRealVar* yield_RT;
+    RooRealVar* yield_WT;
 
     RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",0.13, 0, 1);
     // mFrac->setConstant();
 
+    int total_yield = data[iy][0]->numEntries();
+    double yield_WT_initial = (mFrac->getVal())*total_yield;
+    double yield_RT_initial = total_yield-yield_WT_initial;  
+ 
+    yield_RT = new RooRealVar(Form("yield_{RT}^{%i}",years[iy]), "yield_RT", yield_RT_initial, 0, total_yield);
+    yield_WT = new RooRealVar(Form("yield_{WT}^{%i}",years[iy]), "yield_WT", yield_WT_initial, 0, total_yield);
+
     // create RT component 
     if(constrain){
+    
+      /*
       wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_RT_%i",q2Bin));
       mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , wsp_mcmass[iy]->var(Form("mean_{RT}^{%i}",q2Bin))->getVal()     ,      5,    6, "GeV");
       sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , wsp_mcmass[iy]->var(Form("#sigma_{RT1}^{%i}",q2Bin))->getVal()  ,      0,    1, "GeV");
       alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , wsp_mcmass[iy]->var(Form("#alpha_{RT1}^{%i}", q2Bin))->getVal() ,      0,   10 );
       alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , wsp_mcmass[iy]->var(Form("#alpha_{RT2}^{%i}", q2Bin))->getVal() ,    -10,   10 );
-      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  100.);
-      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  100.);      
+      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , wsp_mcmass[iy]->var(Form("n_{RT1}^{%i}", q2Bin))->getVal()      ,      0.,  200.);
+      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , wsp_mcmass[iy]->var(Form("n_{RT2}^{%i}", q2Bin))->getVal()      ,      0.,  200.);      
+    */
+
+      mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , mean_rt_initial   ,      5,    6, "GeV");
+      sigma_rt      = new RooRealVar (Form("#sigma_{RT1}^{%i}",years[iy] ), "sigmart1"    , sigma_rt_initial  ,      0,    1, "GeV");
+      alpha_rt1     = new RooRealVar (Form("#alpha_{RT1}^{%i}",years[iy] ), "alphart1"    , alpha_rt1_initial ,      0,   10 );
+      alpha_rt2     = new RooRealVar (Form("#alpha_{RT2}^{%i}",years[iy] ), "alphart2"    , alpha_rt2_initial ,    -10,   10 );
+      n_rt1         = new RooRealVar (Form("n_{RT1}^{%i}",years[iy])      , "nrt1"        , n_rt1_initial    ,      0.,  200.);
+      n_rt2         = new RooRealVar (Form("n_{RT2}^{%i}",years[iy])      , "nrt2"        , n_rt2_initial      ,      0.,  200.);
+ 
     }
     else{
       mean_rt       = new RooRealVar (Form("mean_{RT}^{%i}",years[iy])    , "massrt"      , 5.3, 5, 6, "GeV");
@@ -172,27 +278,47 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
     if(constrain){
       if (q2Bin >= 5){
-        sigma_rt2-> setVal(wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() );
-        f1rt     -> setVal(wsp_mcmass[iy]->var(Form("f^{RT%i}", q2Bin))->getVal() );
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
+        //sigma_rt2-> setVal(wsp_mcmass[iy]->var(Form("#sigma_{RT2}^{%i}",q2Bin))->getVal() );
+        //f1rt     -> setVal(wsp_mcmass[iy]->var(Form("f^{RT%i}", q2Bin))->getVal() );
+        sigma_rt2-> setVal( sigma_rt2_initial );
+        f1rt     -> setVal( f1rt_initial );
+        //dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt,
+                                   sigma_rt_initial, sigma_rt2_initial, alpha_rt1_initial, alpha_rt2_initial, n_rt1_initial, n_rt2_initial, f1rt_initial, 
+                                   sigma_rt_error, sigma_rt2_error, alpha_rt1_error, alpha_rt2_error, n_rt1_error, n_rt2_error, f1rt_error,
+                                   years[iy], true, c_vars_rt, c_pdfs_rt);
       } 
       else{
         alpha_rt2->setRange(0,10);
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
+        //dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], true, c_vars_rt, c_pdfs_rt);
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, 
+				   sigma_rt_initial, alpha_rt1_initial, alpha_rt2_initial, n_rt1_initial, n_rt2_initial,
+		                   sigma_rt_error, alpha_rt1_error, alpha_rt2_error, n_rt1_error, n_rt2_error, 
+                                   years[iy], true, c_vars_rt, c_pdfs_rt);
       }
     }
     else{
       if (q2Bin >= 5){
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
+        //dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2 ,f1rt, 
+			  	   sigma_rt_initial, sigma_rt2_initial, alpha_rt1_initial, alpha_rt2_initial, n_rt1_initial, n_rt2_initial, f1rt_initial,
+				   sigma_rt_error, sigma_rt2_error, alpha_rt1_error, alpha_rt2_error, n_rt1_error, n_rt2_error, f1rt_error, 
+				   years[iy], false, c_vars_rt, c_pdfs_rt);
       }
       else{
         alpha_rt2->setRange(0,10);
-        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
+        //dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, wsp_mcmass[iy], years[iy], false, c_vars_rt, c_pdfs_rt);
+        dcb_rt = createRTMassShape(q2Bin, mass, mean_rt, sigma_rt, alpha_rt1, alpha_rt2, n_rt1, n_rt2, 
+				   sigma_rt_initial, alpha_rt1_initial, alpha_rt2_initial, n_rt1_initial, n_rt2_initial,
+				   sigma_rt_error, alpha_rt1_error, alpha_rt2_error, n_rt1_error, n_rt2_error,	
+				   years[iy], false, c_vars_rt, c_pdfs_rt);
       }
     }
 
     // create WT component
     if(constrain){
+
+      /*
       wsp_mcmass[iy]->loadSnapshot(Form("reference_fit_WT_%i",q2Bin));
       mean_wt     = new RooRealVar (Form("mean_{WT}^{%i}",years[iy])      , "masswt"     ,  wsp_mcmass[iy]->var(Form("mean_{WT}^{%i}", q2Bin))->getVal()    ,      5,    6, "GeV");
       sigma_wt    = new RooRealVar (Form("#sigma_{WT1}^{%i}",years[iy])   , "sigmawt"    ,  wsp_mcmass[iy]->var(Form("#sigma_{WT1}^{%i}", q2Bin))->getVal() ,      0,    1, "GeV");
@@ -200,8 +326,21 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       alpha_wt2   = new RooRealVar (Form("#alpha_{WT2}^{%i}",years[iy] )  , "alphawt2"   ,  wsp_mcmass[iy]->var(Form("#alpha_{WT2}^{%i}", q2Bin))->getVal() ,      0,   10 );
       n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       ,  wsp_mcmass[iy]->var(Form("n_{WT1}^{%i}", q2Bin))->getVal()      ,      0., 100.);
       n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       ,  wsp_mcmass[iy]->var(Form("n_{WT2}^{%i}", q2Bin))->getVal()      ,      0., 100.);
-    
-    dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2 , wsp_mcmass[iy], years[iy], true, c_vars_wt, c_pdfs_wt );
+      */
+
+      mean_wt       = new RooRealVar (Form("mean_{WT}^{%i}",years[iy])    , "masswt"      , mean_wt_initial   ,      5,    6, "GeV");
+      sigma_wt      = new RooRealVar (Form("#sigma_{WT1}^{%i}",years[iy] ), "sigmawt1"    , sigma_wt_initial  ,      0,    1, "GeV");
+      alpha_wt1     = new RooRealVar (Form("#alpha_{WT1}^{%i}",years[iy] ), "alphawt1"    , alpha_wt1_initial ,      0,   10 );
+      alpha_wt2     = new RooRealVar (Form("#alpha_{WT2}^{%i}",years[iy] ), "alphawt2"    , alpha_wt2_initial ,      0,   10 );
+      n_wt1         = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])      , "nwt1"        , n_wt1_initial     ,     0.,  100.);
+      n_wt2         = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])      , "nwt2"        , n_wt2_initial     ,     0.,  100.);
+
+
+      //dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, wsp_mcmass[iy], years[iy], true, c_vars_wt, c_pdfs_wt );
+      dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, 
+				 sigma_wt_initial, alpha_wt1_initial, alpha_wt1_initial, n_wt1_initial, n_wt2_initial, 
+				 sigma_wt_error, alpha_wt1_error, alpha_wt2_error, n_wt1_error, n_wt2_error,
+				 years[iy], true, c_vars_wt, c_pdfs_wt );
     }
     else{
       mean_wt     = new RooRealVar (Form("mean_{WT}^{%i}",years[iy])      , "masswt"     , 5.3, 5, 6, "GeV");
@@ -211,7 +350,11 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       n_wt1       = new RooRealVar (Form("n_{WT1}^{%i}",years[iy])        , "nwt1"       , 5, 0., 100.);
       n_wt2       = new RooRealVar (Form("n_{WT2}^{%i}",years[iy])        , "nwt2"       , 5, 0., 100.);
 
-      dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2 , wsp_mcmass[iy], years[iy], false, c_vars_wt, c_pdfs_wt );
+      //dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, wsp_mcmass[iy], years[iy], false, c_vars_wt, c_pdfs_wt );
+      dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, 
+				 sigma_wt_initial, alpha_wt1_initial, alpha_wt2_initial, n_wt1_initial, n_wt2_initial,
+				 sigma_wt_error, alpha_wt1_error, alpha_wt2_error, n_wt1_error, n_wt2_error, 
+				 years[iy], false, c_vars_wt, c_pdfs_wt );
     }
 
     if(constrain){
@@ -226,7 +369,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       constr_wt_list.add(*dcb_wt);
       c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
       c_vars.add(c_vars_wt);
-     
+
       if (q2Bin < 5)  
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
                                                  ("PDF_sig_mass_"+year).c_str(),
@@ -248,10 +391,13 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *c_dcb_wt
                                                  ));
 
+
       /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
-      double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal();
-      double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal();
-      double fraction = nwt_mc / (nrt_mc + nwt_mc);
+      //double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal();
+      //double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal();
+      //double fraction_Sara = nwt_mc / nrt_mc;
+
+      double fraction = yield_WT_initial / yield_RT_initial; //should change this to fit result after extending fit
 
       c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,
                                       RooConst(fraction) ,
@@ -261,42 +407,16 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       c_vars.add(*mFrac);
 
       final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
-                                             ("final_PDF_"+year).c_str(),
-                                             RooArgList(*PDF_sig_mass[iy],*c_fm[iy]));
+                                 ("final_PDF_"+year).c_str(),
+                                 RooArgList(*PDF_sig_mass[iy],*c_fm[iy]));
     }
     else{
-      if (q2Bin < 5){
-            PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                  ("PDF_sig_mass_"+year).c_str(),
-                                                  *mass,
-                                                  *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
-                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-                                                  *mFrac,
-                                                  *dcb_rt,
-                                                  *dcb_wt
-                                                  ));
-      }  
-      else{
-          PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
-                                                 ("PDF_sig_mass_"+year).c_str(),
-                                                 *mass,
-                                                 *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
-                                                 *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-                                                 *mFrac,
-                                                 *dcb_rt,
-                                                 *dcb_wt
-                                                 ));
-      }
       if(comp==0){final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                              ("final_PDF_"+year).c_str(),
                                                RooArgList(*dcb_rt));}
       else if(comp==1){final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                              ("final_PDF_"+year).c_str(),
                                              RooArgList(*dcb_wt));}
-
-      else{final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
-                                      ("final_PDF_"+year).c_str(),
-                                      RooArgList(*PDF_sig_mass[iy]));}
     }
 
     // insert sample in the category map, to be imported in the combined dataset
@@ -319,12 +439,12 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
 
-
   string component = "";
   if(comp == 0){component = "CT";}
   else if(comp == 1){component = "WT";}
   else{component = "CT+WT";}
-  TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic%i_", q2Bin, parity,constrain) + component).c_str(),"UPDATE");
+
+  TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic%i_", q2Bin, parity,constrain) + component + ".root").c_str(),"UPDATE");
 
   // save initial par values into a workspace 
   // The kTRUE flag imports the values of the objects in (*params) into the workspace
@@ -390,7 +510,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     
     RooFitResult* fitResult = m.save(("result_" + shortString + "_" + Form("subs%d",is)).c_str()) ;
     fitResult->Print("v");
-    
+  
     // Save fit results in file
     if (save) {
        fout->cd();
@@ -398,8 +518,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
        fitResult->Write(("simFitResult_"+shortString+ Form("subs%d",is)).c_str()); 
    }
   }
-
   fout->Close();
+
   if (!plot || multiSample) return;
 
   string plotString = shortString + "_" + all_years;
@@ -493,11 +613,20 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
   if(parity < 2){
-    c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
-    c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
+    if(constrain){
+      c[confIndex]->SaveAs( ("plotSimMassFit_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+    }
+    else{ 
+      c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
+    }
   }
   else{
-    c[confIndex]->SaveAs( ("plotSimMassFit_odd+even/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+    if(constrain){
+      c[confIndex]->SaveAs( ("plotSimMassFit_odd+even_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+    }
+    else{
+      c[confIndex]->SaveAs( ("plotSimMassFit_odd+even/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+    }
   }
 }
 
@@ -515,7 +644,7 @@ int main(int argc, char** argv)
 {
   // q2-bin format: [0-8] for one bin
   //                [-1] for each bin recursively
-  // parity format: [0] even efficiency
+  // parity format: [0] even efficienc
   //                [1] odd efficiency
   //                [2] for merged even and odd datasets
   //                [-1] for each parity recursively
@@ -568,6 +697,8 @@ int main(int argc, char** argv)
 
   if ( q2Bin   < -1 || q2Bin   >= nBins ) return 1;
   if ( parity  < -1 || parity  > 2      ) return 1;
+  if ( constrain == true & comp < 2    ) return 1;
+  if ( constrain == false & comp >=2   ) return 1;
 
   if ( q2Bin == -1 )   cout << "Running all the q2 bins" << endl;
   if ( parity == -1 )  cout << "Running both the parity datasets recursively" << endl;
