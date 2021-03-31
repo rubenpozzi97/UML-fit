@@ -221,13 +221,30 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       c_dcb_wt = new RooProdPdf(("c_dcb_wt_"+year).c_str(), ("c_dcb_wt_"+year).c_str(), constr_wt_list );
       c_vars.add(c_vars_wt);
 
+      /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
+      double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal();
+      double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal();
+      double fraction = nwt_mc / nrt_mc;
+
+      c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,
+                                      RooConst(fraction),
+                                      RooConst(fM_sigmas[years[iy]][q2Bin])
+                                      ));
+
+      cout << "HERE 0" << endl;
+
+      cout << fraction << "   " << fM_sigmas[years[iy]][q2Bin] << endl;
+      c_vars.add(*mFrac);
+
+      cout << "HERE 1" << endl;
+
       if (q2Bin < 5){
           PDF_sig_mass.push_back( new PdfSigMass(("PDF_sig_mass_"+shortString+"_"+year).c_str(),
                                                  ("PDF_sig_mass_"+year).c_str(),
                                                  *mass,
                                                  *mean_rt, *sigma_rt, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2,
                                                  *mean_wt, *sigma_wt, *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-                                                 *mFrac,
+                                                 *mFrac, *c_fm[iy],
                                                  *c_dcb_rt,
                                                  *c_dcb_wt
                                                  ));
@@ -238,27 +255,19 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                  *mass,
                                                  *mean_rt, *sigma_rt, *sigma_rt2, *alpha_rt1, *alpha_rt2, *n_rt1, *n_rt2, *f1rt,
                                                  *mean_wt, *sigma_wt,             *alpha_wt1, *alpha_wt2, *n_wt1, *n_wt2,
-                                                 *mFrac,
+                                                 *mFrac, *c_fm[iy],
                                                  *c_dcb_rt,
                                                  *c_dcb_wt
                                                  ));
       }
-
-      /// create constraint on mFrac (here there is no efficiency, therefore value set to measured value on MC)
-      double nrt_mc   =  wsp_mcmass[iy]->var(Form("nRT_%i",q2Bin))->getVal();
-      double nwt_mc   =  wsp_mcmass[iy]->var(Form("nWT_%i",q2Bin))->getVal();
-      double fraction = nwt_mc / nrt_mc;
-
-      c_fm.push_back(new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,
-                                      RooConst(fraction) ,
-                                      RooConst(fM_sigmas[years[iy]][q2Bin])
-                                      ));
-      cout << fraction << "   " << fM_sigmas[years[iy]][q2Bin] << endl;
-      c_vars.add(*mFrac);
+      cout << "HERE 2" << endl;
 
       final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                  ("final_PDF_"+year).c_str(),
-                                 RooArgList(*PDF_sig_mass[iy], *c_fm[iy]));
+                                 //RooArgList(*PDF_sig_mass[iy], *c_fm[iy]));                         
+   				 RooArgList(*PDF_sig_mass[iy])); 
+
+      cout << "HERE 3" << endl;
     }
     else{
       if(comp==0){final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
@@ -289,6 +298,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     }
   }
 
+  cout << "HERE 4" << endl;
+
   string component = "";
   if(comp == 0){component = "CT";}
   else if(comp == 1){component = "WT";}
@@ -296,12 +307,18 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
   TFile* fout = new TFile(("simFitMassResults/simFitResult_recoMC_fullMass" + all_years + stat + Form("_b%ip%ic%i_", q2Bin, parity,constrain) + component + ".root").c_str(),"UPDATE");
 
+  cout << "HERE 5" << endl;
+
   // save initial par values into a workspace 
   // The kTRUE flag imports the values of the objects in (*params) into the workspace
   // If not set, the present values of the workspace parameters objects are stored
+
   ws_pars->import(*simPdf);
-  RooArgSet *params = (RooArgSet *)simPdf->getParameters(*mass);
+  cout << "HERE 5" << endl;
+  RooArgSet *params = (RooArgSet*)simPdf->getParameters(*mass);
+  cout << "HERE 6" << endl;
   ws_pars->saveSnapshot("initial_pars", *params, kTRUE);
+  cout << "HERE 7" << endl;
 
   // Construct combined dataset in (x,sample)
   RooDataSet allcombData ("allcombData", "combined data",
@@ -310,6 +327,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                           Import(map));
   RooDataSet* combData = 0;
   RooAbsReal* nll = 0;
+
+  cout << "HERE 6" << endl;
 
   for (uint is = firstSample; is <= lastSample; is++) {
 
@@ -324,6 +343,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     else cout<<"Fitting full MC sample with "<<combData->numEntries()<<" entries"<<endl;
 
     ws_pars->loadSnapshot("initial_pars");
+
+    cout << "HERE 7" << endl;
 
     TStopwatch subTime;
     if(constrain){
@@ -340,6 +361,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                               );
     }   
 
+    cout << "HERE 8" << endl;
+
     RooMinimizer m(*nll) ;
     m.optimizeConst (kTRUE); // do not recalculate constant terms
     m.setOffsetting(kTRUE);  //  Enable internal likelihood offsetting for enhanced numeric precision.
@@ -347,7 +370,9 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     m.setPrintEvalErrors(-1);
     m.setMinimizerType("Minuit2");
     //m.setVerbose(kTRUE); 
-    
+   
+    cout << "HERE 9" << endl;
+ 
     subTime.Start(true);
     m.setStrategy(0);
     m.migrad();
@@ -410,12 +435,21 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         combData->plotOn(frames[fr], MarkerColor(kRed+1), LineColor(kRed+1), Binning(80),
                          Cut(("sample==sample::data"+year+Form("_subs%d",firstSample)).c_str()),
                          Name(("plData"+year).c_str()));
+
+        simPdf->plotOn(frames[fr], LineWidth(1),
+                       Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()),
+                       ProjWData(RooArgSet(sample), *combData),
+                       Name(("plPDF"+year).c_str()));
+        simPdf->paramOn(frames[fr],Layout(0.65,0.9,0.9));
+
+
+        /*
         (ws_pars->pdf("simPdf"))->plotOn(frames[fr], LineWidth(1),
-                         Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()),
-                         ProjWData(RooArgSet(sample), *combData),
-                         Name(("plPDF"+year).c_str()));
+                      Slice(sample, ("data"+year+Form("_subs%i",firstSample)).c_str()),
+                      ProjWData(RooArgSet(sample), *combData),
+                      Name(("plPDF"+year).c_str()));
         (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.65,0.9,0.9));
-   
+        */
         if (fr == 0) {
           leg->AddEntry(frames[fr]->findObject(("plData"+year).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
           leg->AddEntry(frames[fr]->findObject(("plPDF"+year ).c_str()),("Mass component of the pdf "+year).c_str(),"l");
