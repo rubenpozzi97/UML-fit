@@ -4,6 +4,12 @@
 #include <RooWorkspace.h>
 #include <RooConstVar.h>
 #include <map>
+#include <TStyle.h>
+#include <RooMCStudy.h>
+#include <TF1.h>
+#include <RooAbsPdf.h>
+#include <RooCategory.h> 
+#include <RooArgSet.h>
 
 using namespace std;
 using namespace RooFit;
@@ -41,34 +47,35 @@ RooGaussian* constrainVar(RooRealVar* var,
                           RooArgSet &c_vars,
                           RooArgSet &c_pdfs
                           ){
-    RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  *var,  
-                                                  RooConst( w->var(inVarName.c_str())->getVal()  ), 
-                                                  RooConst( w->var(inVarName.c_str())->getError())
-                                                 ); 
-//     gauss_constr ->Print();
+    RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", inVarName.c_str(), year), 
+                                                Form("c_%s_%i", inVarName.c_str(), year), 
+                                                *var,  
+                                                RooConst(w->var(inVarName.c_str())->getVal()), 
+                                                RooConst(w->var(inVarName.c_str())->getError())
+                                                ); 
+    //gauss_constr ->Print();
     if (addToList){
       c_vars.add(*var);    
       c_pdfs.add(*gauss_constr);
+
     }
     return gauss_constr;                 
 }
 
 void constrainVar2(RooRealVar* var, 
-                          string inVarName,  
-                          RooWorkspace *w, 
-                          int year,
-                          bool addToList,
-                          RooArgSet &c_vars,
-                          RooArgSet &c_pdfs
-                          ){
-    RooGaussian* gauss_constr = new RooGaussian(  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  Form("c_%s_%i", inVarName.c_str(), year) , 
-                                                  *var,  
-                                                  RooConst( w->var(inVarName.c_str())->getVal()  ), 
-                                                  RooConst( w->var(inVarName.c_str())->getError())
-                                                 ); 
+                   string inVarName,  
+                   RooWorkspace *w, 
+                   int year,
+                   bool addToList,
+                   RooArgSet &c_vars,
+                   RooArgSet &c_pdfs
+                   ){
+    RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", inVarName.c_str(), year) , 
+        					Form("c_%s_%i", inVarName.c_str(), year),
+                                                *var,
+                                                RooConst(w->var(inVarName.c_str())->getVal()), 
+                                                RooConst(w->var(inVarName.c_str())->getError())
+                                                ); 
     if (addToList){
       c_vars.add(*var);    
       c_pdfs.add(*gauss_constr);
@@ -90,10 +97,10 @@ bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::str
       cout<<"Workspace "<< ws_name <<  "not found in file: " << filename << endl;
       return false;
     }
-    if(parity < 2){ws.push_back( open_w );}
+    if(parity < 2){ws.push_back(open_w);}
     else{
-      ws.push_back( open_w ); // even
-      ws1.push_back( open_w_odd ); // odd
+      ws.push_back(open_w); // even
+      ws1.push_back(open_w_odd); // odd
     }
     f->Close();
     return true;
@@ -116,16 +123,52 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 					     ("data_"+shortString + Form("_subs%i", is)).c_str(), 
 					     RooArgSet(reco_vars));
 
-        dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
-        dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
-          ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
-
-        if(comp == 0){isample->append(*dataCT);}
-        else if(comp == 1){isample->append(*dataWT);}
+        if(parity < 2){
+          dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+        }
         else{
+          dataCT_even = (RooDataSet*)ws->data(Form("data_ctRECO_ev_b%i",q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          dataCT_odd = (RooDataSet*)ws1->data(Form("data_ctRECO_od_b%i",q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          dataWT_even = (RooDataSet*)ws->data(Form("data_wtRECO_ev_b%i",q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+          dataWT_odd = (RooDataSet*)ws1->data(Form("data_wtRECO_od_b%i",q2Bin))
+            ->reduce( RooArgSet(reco_vars), Form("rand > %f && rand < %f", is*scale_to_data[year], (is+1)*scale_to_data[year] )) ;
+        }
+
+        if(comp == 0){
+          if(parity < 2){ 
+            isample->append(*dataCT);
+          }
+          else{
+            isample->append(*dataCT_even);
+            isample->append(*dataCT_odd);
+          }
+        }
+        else if(comp == 1){
+          if(parity < 2){
+            isample->append(*dataWT);
+          }
+          else{
+            isample->append(*dataWT_even);
+            isample->append(*dataWT_odd);
+          }
+        } 
+        else{
+          if(parity < 2){
             isample->append(*dataCT);
             isample->append(*dataWT);
+          }
+          else{
+            isample->append(*dataCT_even);
+            isample->append(*dataCT_odd);
+            isample->append(*dataWT_even);
+            isample->append(*dataWT_odd);
+          }
         }
         datasample.push_back (isample);
       }
@@ -177,4 +220,69 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
  
     return datasample;
 }
+
+void validate_fit(RooWorkspace* w, RooCategory sample, int year, int q2Bin, int parity){
+
+  RooRealVar mass = *(w->var("mass"));
+  
+  RooAbsPdf* model = w->pdf("simPdf");
+
+  vector<RooRealVar> params;
+  params.push_back(*(w->var( Form("sig_yield^{%i}",year) )));
+
+  string var_name = (w->var( Form("sig_yield^{%i}",year)) )->GetName();
+
+  int params_size = params.size();
+
+  RooMCStudy* mcstudy = new RooMCStudy(*model, RooArgSet(mass, sample), Binned(kTRUE), Silence(), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
+
+  mcstudy->generateAndFit(5000);
+  vector<RooPlot*> framesPull, framesParam;
+
+  for(int i = 0; i < params_size; ++i){
+    framesPull.push_back(mcstudy->plotPull(params.at(i),FrameBins(200)));//FrameRange(-5,5)
+    framesPull[i]->SetTitle("");
+    framesParam.push_back(mcstudy->plotParam(params.at(i),FrameBins(50)));
+    framesParam[i]->SetTitle("");
+  }
+
+  vector<TGraph*> h;
+
+  for(int i = 0; i < params_size; ++i){
+    h.push_back(static_cast<TGraph*>(framesPull.at(i)->getObject(0)));
+  }
+
+  gStyle->SetOptFit(0111);
+
+  TCanvas* c_pull = new TCanvas("pulls", "pulls", 900, 800);
+
+  gPad->SetLeftMargin(0.15);
+
+  for(int i = 0; i < params_size; ++i){
+    h[i]->SetTitle("");
+    h[i]->Draw();
+    c_pull->Update();
+    h[i]->Fit("gaus","","",-20,20);
+    h[i]->GetFunction("gaus")->SetLineColor(4);
+    h[i]->GetFunction("gaus")->SetLineWidth(5);
+    h[i]->SetTitle( ("Pull - " + var_name + Form(" b%ip%i year %i",q2Bin, parity, year) ).c_str() );
+    h[i]->GetXaxis()->SetTitle("Pull");
+    h[i]->GetYaxis()->SetTitle("Toy MCs");
+    h[i]->GetXaxis()->SetRangeUser(-10,10);
+    h[i]->Draw("same");
+  }
+
+  TCanvas* c_params = new TCanvas("params", "params", 900, 800);
+
+  for(int i = 0; i < params_size; ++i){
+    c_params->cd();
+    framesParam.at(i)->GetYaxis()->SetTitleOffset(1.4);
+    framesParam.at(i)->Draw();
+  }
+
+  c_pull->SaveAs( ("plotSimMassFit_pulls/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+  c_params->SaveAs( ("plotSimMassFit_pulls/pulls_params_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+
+}
+
 
