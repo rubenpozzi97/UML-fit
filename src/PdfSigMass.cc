@@ -36,7 +36,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac    ,
-		     RooAbsReal& _constrTerm,
+		     //RooAbsReal& _constrTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 		     ) :
@@ -55,7 +55,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  constrTerm("constrTerm","constrTerm",this,_constrTerm), 
+  //constrTerm("constrTerm","constrTerm",this,_constrTerm), 
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -78,7 +78,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
          	     RooAbsReal& _n_wt1    ,
          	     RooAbsReal& _n_wt2    ,
 		     RooAbsReal& _mFrac    ,
-           	     RooAbsReal& _constrTerm,
+           	     //RooAbsReal& _constrTerm,
 		     RooAbsReal& _rtMassTerm,
 		     RooAbsReal& _wtMassTerm
 		     ) :
@@ -99,7 +99,7 @@ PdfSigMass::PdfSigMass(const char *name, const char *title,
   n_wt1("n_wt1"    , "n_wt1"    ,this,_n_wt1    ),
   n_wt2("n_wt2"    , "n_wt2"    ,this,_n_wt2    ),
   mFrac("mFrac","mFrac",this,_mFrac),
-  constrTerm("constrTerm","constrTerm",this,_constrTerm),
+  //constrTerm("constrTerm","constrTerm",this,_constrTerm),
   rtMassTerm("rtMassTerm","rtMassTerm",this,_rtMassTerm),
   wtMassTerm("wtMassTerm","wtMassTerm",this,_wtMassTerm)
 {
@@ -124,7 +124,7 @@ PdfSigMass::PdfSigMass(const PdfSigMass& other, const char* name) :
   n_wt1("n_wt1",this,other.n_wt1),
   n_wt2("n_wt2",this,other.n_wt2),
   mFrac("mFrac",this,other.mFrac),
-  constrTerm("constrTerm","constrTerm",this,other.constrTerm),
+  //constrTerm("constrTerm","constrTerm",this,other.constrTerm),
   rtMassTerm("rtMassTerm",this,other.rtMassTerm),
   wtMassTerm("wtMassTerm",this,other.wtMassTerm)
 {
@@ -136,9 +136,10 @@ Double_t PdfSigMass::evaluate() const
   double mCT = ((RooAbsPdf&)(rtMassTerm.arg())).getVal();
   double mWT = ((RooAbsPdf&)(wtMassTerm.arg())).getVal();
 
-  double c_mFrac = constrTermVal()->getVal();
+  //double c_mFrac = constrTermVal()->getVal();
+  //return mCT + (mFrac * c_mFrac)*mWT;
 
-  return mCT + (mFrac * c_mFrac)*mWT;
+  return mCT + mFrac*mWT;
 }
 
 
