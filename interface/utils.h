@@ -224,19 +224,22 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 void validate_fit(RooWorkspace* w, RooCategory sample, int year, int q2Bin, int parity){
 
   RooRealVar mass = *(w->var("mass"));
-  
+
   RooAbsPdf* model = w->pdf("simPdf");
 
   vector<RooRealVar> params;
   params.push_back(*(w->var( Form("sig_yield^{%i}",year) )));
-
   string var_name = (w->var( Form("sig_yield^{%i}",year)) )->GetName();
 
   int params_size = params.size();
+  cout << "params size = " << params_size << endl;
+  cout << "variable value = " << params[0].getVal() << endl;
 
-  RooMCStudy* mcstudy = new RooMCStudy(*model, RooArgSet(mass, sample), Binned(kTRUE), Silence(), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
-
+  cout << "Starting toy MC study" << endl;
+  RooMCStudy* mcstudy = new RooMCStudy(*model, RooArgSet(mass,sample), Binned(kTRUE), Silence(kTRUE), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
   mcstudy->generateAndFit(5000);
+  cout << "Ending toy MC study" << endl;
+
   vector<RooPlot*> framesPull, framesParam;
 
   for(int i = 0; i < params_size; ++i){
