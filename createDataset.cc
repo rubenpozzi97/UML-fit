@@ -61,22 +61,19 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
   // Load ntuples
   TChain* t_num = new TChain();
   string year_str = Form("201%i", year);
-
-  if (data==0){
+  if (data==0 && isLMNR)
     t_num->Add(Form("/eos/cms/store/user/fiorendi/p5prime/201%i/skims/newphi/201%iMC_LMNR.root/ntuple", year, year));
-  }
-  else{
+  else if (data==0 && isJpsi)
+    t_num->Add(Form("/eos/cms/store/user/fiorendi/p5prime/201%i/skims/newphi/201%iMC_JPSI.root/ntuple", year, year));
+  else if (data==0 && isPsi)
+    t_num->Add(Form("/eos/cms/store/user/fiorendi/p5prime/201%i/skims/newphi/201%iMC_PSI.root/ntuple", year, year));
+  else
     t_num->Add(Form("/eos/cms/store/user/fiorendi/p5prime/201%i/skims/newphi/201%iData_All_finalSelection.root/ntuple", year, year));
-  }
-
   int numEntries = t_num->GetEntries();
   std::cout << numEntries << std::endl;
   int counter;
 
   // Import branches from ntuples:
-  double tagB0;
-  t_num->SetBranchAddress( "tagB0"    , &tagB0     );
-
   // angular variables
   double recoCosThetaK, recoCosThetaL, recoPhi;
   t_num->SetBranchAddress( "cos_theta_k"     , &recoCosThetaK );
@@ -101,8 +98,10 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
   // t_num->SetBranchAddress( "bPt"    , &recoB0pT  );
   // t_num->SetBranchAddress( "bEta"   , &recoB0eta );
 
+  double tagB0;
+  t_num->SetBranchAddress( "tagB0"    , &tagB0     );
+
   // event number for even/odd splitting
-  double eventN_Dou;
   Long64_t eventN;
   t_num->SetBranchAddress( "eventN", &eventN     );
 
@@ -110,6 +109,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
   // will be a boolean in ntuples in the future
   // keep it here for now since not finalized
   // as from https://github.com/CMSKStarMuMu/RooSideBand/blob/master/testSidebandFit.cc#L2592-L2661
+
   double wt_mass, wt_kstarmass, kaonPt, pionPt, mmpiMass, mmkMass;
   t_num->SetBranchAddress( "wt_mass",      &wt_mass      );
   t_num->SetBranchAddress( "wt_kstarmass", &wt_kstarmass );
@@ -150,7 +150,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     RooDataSet* data_ctRECO_od [nBins];
     RooDataSet* data_wtRECO_ev [nBins];
     RooDataSet* data_wtRECO_od [nBins];
-    for (int i=0; i<nBins; ++i) if (runBin[i]) {
+    for (int i=0; i<nBins; ++i) if (runBin[i]){
         data_ctRECO_ev [i] = new RooDataSet( ("data_ctRECO_ev_"+shortString[i]).c_str(), "Correctly-tagged reconstructed candidates after selections (even)",
     					     reco_vars, "weight" );
         data_ctRECO_od [i] = new RooDataSet( ("data_ctRECO_od_"+shortString[i]).c_str(), "Correctly-tagged reconstructed candidates after selections (odd)",
@@ -159,7 +159,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
 					     reco_vars, "weight" );
         data_wtRECO_od [i] = new RooDataSet( ("data_wtRECO_od_"+shortString[i]).c_str(), "Wrongly-tagged reconstructed candidates after selections (odd)",
 					     reco_vars, "weight" );
-      }
+    }
   
     // Prepare numerator dataset
     cout<<"Starting numerator dataset filling..."<<endl;
@@ -167,6 +167,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
       // anti-radiation cut
+      passB0Psi_jpsi = 1;
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
       else if (isPsi  && passB0Psi_psip == 0)  continue;
@@ -360,12 +361,12 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
       }
     }
   }
+
   else{
     RooDataSet* data [nBins];
     for (int i=0; i<nBins; ++i) {
       if (runBin[i] ){
-        data [i] = new RooDataSet( ("Dataset/data_"+shortString[i]).c_str(), "Reconstructed candidates after selections",
- 		                    reco_vars);
+        data [i] = new RooDataSet( ("data_"+shortString[i]).c_str(), "Reconstructed candidates after selections",reco_vars);
       }
     }
 
@@ -375,6 +376,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
       // anti-radiation cut
+      passB0Psi_jpsi = 1;
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
       else if (isPsi  && passB0Psi_psip == 0)  continue;
