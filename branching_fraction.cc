@@ -45,10 +45,14 @@ void branching_fraction(int year){
   //branching fraction
   double branch[n_q2Bin];
   for(int i = 0; i < n_q2Bin; i++){
-    if( (i != 4) && (i != 6) ){branch[i] = (yields[i]/yields[4])*(eff_x_acc[4]/eff_x_acc[i])*(B_norm/bin_width[4])/bin_width[i];}
+    if( (i != 4) && (i != 6) ){branch[i] = (yields[i]/yields[4])*(eff_x_acc[4]/eff_x_acc[i])*(B_norm/bin_width[4]);}
   
-  cout << "bin = " << i << " branch = " << branch[i] << endl;
+  //cout << "bin = " << i << " branch = " << branch[i] << endl;
   }
+
+  //branching fraction (resonant channels)
+  double branch_resonant = (yields[6]/yields[4])*(eff_x_acc[4]/eff_x_acc[6])*(B_norm/bin_width[4]);
+  cout << "year " << year << " - " << "dB_Psi/dq2 = " << branch_resonant << endl;
 
   return;
 }
