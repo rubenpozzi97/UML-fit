@@ -79,8 +79,6 @@ void MC_validation(bool create, bool data, int year, int q2Bin){
   int n_bins = 40;
 
   TString variables[] = {"mumuMass", "mmkMass", "mmpiMass", "pionPt", "kaonPt", "kstarmass", "kstTrkpEta", "kstTrkmEta", "mupEta", "mumEta", "mumuEta", "kstEta", "bEta", "kstTrkpPhi", "kstTrkmPhi", "mupPhi", "mumPhi", "mumuPhi", "kstPhi", "bPhi", "kstTrkpPt", "kstTrkmPt", "mupPt", "mumPt", "mumuPt", "kstPt", "bPt"};
-  TString variables1[] = {"mumuPt", "kstPt", "bPt"};
-  TString variables2[] = {"bPt"};
 
   int n_var = sizeof(variables)/sizeof(variables[0]);
 
@@ -96,13 +94,11 @@ void MC_validation(bool create, bool data, int year, int q2Bin){
   std::vector<TH1D*> histos_mc;
 
   // Sideband subtraction
-  //histos_sideband_sub = sideband_subtraction(*w, *w_fit, n_bins, n_var, year, q2Bin);
+  histos_sideband_sub = sideband_subtraction(*w, *w_fit, n_bins, n_var, year, q2Bin);
 
   // sPlot
   do_splot(*w, *w_fit, q2Bin, year);
-  if((q2Bin == 4) && (year != 8)){histos_splot = splot_method(*w, *w_fit, n_bins, variables1, 3, year, q2Bin);}
-  else if((q2Bin == 4) && (year == 8)){histos_splot = splot_method(*w, *w_fit, n_bins, variables2, 1, year, q2Bin);}
-  else{histos_splot = splot_method(*w, *w_fit, n_bins, variables, n_var, year, q2Bin);}
+  histos_splot = splot_method(*w, *w_fit, n_bins, variables, n_var, year, q2Bin);
 
   return;
 }
@@ -266,9 +262,6 @@ TH1D* make_splot(RooWorkspace& w, RooWorkspace& w_fit, int n, TString label, int
 
   // Background pdf
   RooExponential* BgModel = new RooExponential("BgModel", "BgModel", *mass, *lambda);
-  cout << "lambda = " << lambda->getVal() << endl;
-  cout << "mass min = " << mass->getMin() << endl;
-  cout << "mass max = " << mass->getMax() << endl;
 
   // Total pdf
   RooAddPdf* model = new RooAddPdf("model", "model", RooArgList(*BpModel,*BgModel), RooArgList(*BpYield,*BgYield));
@@ -284,7 +277,6 @@ TH1D* make_splot(RooWorkspace& w, RooWorkspace& w_fit, int n, TString label, int
 
   data->plotOn(mframe);
   model->plotOn(mframe,LineColor(kRed));
-  model->paramOn(mframe,Layout(0.75,0.9,0.9));
   model->plotOn(mframe,Components(*BpModel),LineStyle(kDashed),LineColor(kOrange));
   model->plotOn(mframe,Components(*BgModel),LineStyle(kDashed),LineColor(kBlue));
   mframe->SetTitle("mass");
@@ -459,7 +451,7 @@ void do_splot(RooWorkspace& w, RooWorkspace& w_fit, int q2Bin, int year){
     alpha_rt2->setConstant();
     n_rt2->setConstant();
   }
-  else if(q2Bin >= 4){
+  if(q2Bin >= 4){
     sigma_rt2 = w_fit.var(Form("#sigma_{RT2}^{201%i}",year));
     f1rt = w_fit.var(Form("f^{RT201%i}",year));
 
@@ -578,43 +570,33 @@ std::vector<TH1D*> sideband_subtraction(RooWorkspace& w, RooWorkspace& w_fit, in
 
   std::vector<TH1D*> histos;
 
-  if(q2Bin != 4){
-    histos.push_back(create_histogram(variables[1], "mumuMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[2], "mmkMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[3], "mmpiMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[4], "pionPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[5], "kaonPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[6], "kstarmass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[7], "kstTrkpEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[8], "kstTrkmEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[9], "mupEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[10], "mumEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[11], "mumuEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[12], "kstEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[13], "bEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[14], "kstTrkpPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[15], "kstTrkmPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[16], "mupPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[17], "mumPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[18], "mumuPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[19], "kstPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[20], "bPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[21], "kstTrkpPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[22], "kstTrkmPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[23], "mupPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[24], "mumPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[25], "mumuPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[26], "kstPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[27], "bPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-  }
-  else if((q2Bin == 4) && (year != 8)){
-    histos.push_back(create_histogram(variables[25], "mumuPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[26], "kstPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-    histos.push_back(create_histogram(variables[27], "bPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-  }
-  else if((q2Bin == 4) && (year == 8)){
-    histos.push_back(create_histogram(variables[27], "bPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
-  }
+  histos.push_back(create_histogram(variables[1], "mumuMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[2], "mmkMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[3], "mmpiMass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[4], "pionPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[5], "kaonPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[6], "kstarmass",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[7], "kstTrkpEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[8], "kstTrkmEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[9], "mupEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[10], "mumEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[11], "mumuEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[12], "kstEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[13], "bEta",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[14], "kstTrkpPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[15], "kstTrkmPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[16], "mupPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[17], "mumPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[18], "mumuPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[19], "kstPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[20], "bPhi",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[21], "kstTrkpPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[22], "kstTrkmPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[23], "mupPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[24], "mumPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[25], "mumuPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[26], "kstPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
+  histos.push_back(create_histogram(variables[27], "bPt",factor, reduceddata_side, reduceddata_central, data, n, year, q2Bin));
 
   return histos;
 
@@ -900,51 +882,8 @@ void createDatasets(bool data, int year, int q2Bin, RooWorkspace& w){
     BkstPt->setVal(kstPt);
 
     if((recoB0Mass > 5.0) && (recoB0Mass < 5.6)){
-
-      if(data){
-
-        if((q2Bin == 4) && (year != 8)){
-          data_DATA->add(*Bmass);
-          data_DATA->add(*BmumuPt);
-          data_DATA->add(*BkstPt);
-          data_DATA->add(*BbPt);
-        }
-        else if((q2Bin == 4) && (year == 8)){
-          data_DATA->add(*Bmass);
-          data_DATA->add(*BbPt);
-        }
-        else{
-          data_DATA->add(*Bmass);
-          data_DATA->add(*BkaonPt);
-          data_DATA->add(*BpionPt);
-          data_DATA->add(*BbPt);
-          data_DATA->add(*BmmpiMass);
-          data_DATA->add(*BmmkMass);
-          data_DATA->add(*BmumuMass);
-          data_DATA->add(*BbPt);
-          data_DATA->add(*Bkstarmass);
-          data_DATA->add(*BkstTrkpEta);
-          data_DATA->add(*BkstTrkmEta);
-          data_DATA->add(*BmupEta);
-          data_DATA->add(*BmumEta);
-          data_DATA->add(*BmumuEta);
-          data_DATA->add(*BkstEta);
-          data_DATA->add(*BbEta);
-          data_DATA->add(*BkstTrkpPhi);
-          data_DATA->add(*BkstTrkmPhi);
-          data_DATA->add(*BmupPhi);
-          data_DATA->add(*BmumPhi);
-          data_DATA->add(*BmumuPhi);
-          data_DATA->add(*BkstPhi);
-          data_DATA->add(*BbPhi);
-          data_DATA->add(*BkstTrkpPt);
-          data_DATA->add(*BkstTrkmPt);
-          data_DATA->add(*BmupPt);
-          data_DATA->add(*BmumPt);
-          data_DATA->add(*BmumuPt);
-          data_DATA->add(*BkstPt);
-        }
-      }
+      if(data){data_DATA->add(vars);}
+      else{data_MC->add(vars);}
     }
   }
 
@@ -969,7 +908,7 @@ void createDatasets(bool data, int year, int q2Bin, RooWorkspace& w){
 void addVariables(RooWorkspace& w){
 
   RooRealVar mass("mass","mass", 5.0, 5.6);
-  RooRealVar mumuMass("mumuMass", "mumuMass", 2., 4.);
+  RooRealVar mumuMass("mumuMass", "mumuMass", 0., 5.);
   RooRealVar mmkMass("mmkMass", "mmkMass", 3., 6.);
   RooRealVar mmpiMass("mmpiMass", "mmpiMass", 1.5, 5.5);
   RooRealVar pionPt("pionPt", "pionPt", 0., 40.);
