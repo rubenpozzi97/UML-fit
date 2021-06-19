@@ -9,15 +9,18 @@
 #include <iostream>
 #include <string>
 #include <TAttMarker.h>
+#include <TChain.h>
+#include <TGraphErrors.h>
 
-void efficiency(int year, int q2Bin = -1){
+double read_weights(TH1F* histo_variable, double var_value, int year, int q2Bin);
+double getWeight(double var_value, TH1F* h_weight);
+
+void efficiency(int year){
 
   double q2_bins[] = {1, 2, 4.3, 6, 8.68, 10.09, 12.86, 14.18, 16};
   const int n_q2_bins = 8;
 
-  if(q2Bin < -1 || q2Bin >= n_q2_bins){return;}
   if(year < 2016 || year > 2018){return;}
-
 
   // RECO MC
   TString input_file_mc_cuts_jpsi = Form("/eos/cms/store/user/fiorendi/p5prime/%i/skims/newphi/%iMC_JPSI.root",year,year);
@@ -46,14 +49,33 @@ void efficiency(int year, int q2Bin = -1){
   // GEN-FILTER MC (acceptance)
   TString input_file_mc_gen_jpsi = "/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/newphi/GEN_BFilter_B0JpsiKstar.root";
   TString input_file_mc_gen_psi = "/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/newphi/GEN_BFilter_B0PsiKstar.root";
-  TString input_file_mc_gen_lmnr = "/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/newphi/GEN_BFilter_B0MuMuKstar_p2.root";
+  TString input_file_mc_gen_lmnr = "/eos/cms/store/user/fiorendi/p5prime/2016/skims/GEN_NoFilter/newphi/GEN_BFilter_B0MuMuKstar_p*.root/ntuple";
   TFile* f_mc_gen_jpsi = new TFile(input_file_mc_gen_jpsi);
   TFile* f_mc_gen_psi = new TFile(input_file_mc_gen_psi);
-  TFile* f_mc_gen_lmnr = new TFile(input_file_mc_gen_lmnr);
+  TChain* t_gen_lmnr = new TChain();
 
   TTree* t_gen_jpsi = (TTree*)f_mc_gen_jpsi->Get("ntuple");
   TTree* t_gen_psi = (TTree*)f_mc_gen_psi->Get("ntuple");
-  TTree* t_gen_lmnr = (TTree*)f_mc_gen_lmnr->Get("ntuple");
+  t_gen_lmnr->Add(input_file_mc_gen_lmnr);
+
+  // data(splot)/MC weights for systematics
+  TFile* weight_b0 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b0.root",year));
+  TFile* weight_b1 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b1.root",year));
+  TFile* weight_b2 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b2.root",year));
+  TFile* weight_b3 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b3.root",year));
+  TFile* weight_b4 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b4.root",year));
+  TFile* weight_b5 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b5.root",year));
+  TFile* weight_b6 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b6.root",year));
+  TFile* weight_b7 = new TFile(Form("~/public/UML-fit/results/mc_validation_plots/weights/weights_%i_b7.root",year));
+
+  TH1F* histo_wei_b0 = (TH1F*)weight_b0->Get("weights_bdt_prob");
+  TH1F* histo_wei_b1 = (TH1F*)weight_b1->Get("weights_bdt_prob");
+  TH1F* histo_wei_b2 = (TH1F*)weight_b2->Get("weights_bdt_prob");
+  TH1F* histo_wei_b3 = (TH1F*)weight_b3->Get("weights_bdt_prob");
+  TH1F* histo_wei_b4 = (TH1F*)weight_b4->Get("weights_bdt_prob");
+  TH1F* histo_wei_b5 = (TH1F*)weight_b5->Get("weights_bdt_prob");
+  TH1F* histo_wei_b6 = (TH1F*)weight_b6->Get("weights_bdt_prob");
+  TH1F* histo_wei_b7 = (TH1F*)weight_b7->Get("weights_bdt_prob");
 
   double mumuMass_jpsi;
   double mumuMass_psi;
@@ -139,56 +161,122 @@ void efficiency(int year, int q2Bin = -1){
   double den_entries[] = {0., 0., 0., 0., 0., 0., 0., 0.};
   double num_entries[] = {0., 0., 0., 0., 0., 0., 0., 0.};
 
+  // systematics (using weight of B meson eta)
+  double reco_entries_weight[] = {0., 0., 0., 0., 0., 0., 0., 0.};
+  double gen_entries_weight[] = {0., 0., 0., 0., 0., 0., 0., 0.};
+
+  double reco_eta_lmnr;
+  double reco_eta_jpsi;
+  double reco_eta_psi;
+  double gen_eta_lmnr;
+  double gen_eta_jpsi;
+  double gen_eta_psi;
+
+  t_cuts_lmnr->SetBranchAddress("bEta", &reco_eta_lmnr);
+  t_cuts_jpsi->SetBranchAddress("bEta", &reco_eta_jpsi);
+  t_cuts_psi->SetBranchAddress("bEta", &reco_eta_psi);
+  t_nocuts_lmnr->SetBranchAddress("genbEta", &gen_eta_lmnr);
+  t_nocuts_jpsi->SetBranchAddress("genbEta", &gen_eta_jpsi);
+  t_nocuts_psi->SetBranchAddress("genbEta", &gen_eta_psi);
+
   cout << "RECO JPSI"  << endl; 
   for(int evt = 0; evt < t_cuts_jpsi->GetEntries(); evt++){
     t_cuts_jpsi->GetEntry(evt);
      
-    if( (pow(mumuMass_jpsi,2) > q2_bins[4]) && (pow(mumuMass_jpsi,2) < q2_bins[5]) ){reco_entries[4] += 1;}
+    if( (pow(mumuMass_jpsi,2) > q2_bins[4]) && (pow(mumuMass_jpsi,2) < q2_bins[5]) ){
+      reco_entries[4] += 1;
+      reco_entries_weight[4] += read_weights(histo_wei_b4,reco_eta_jpsi,year,4);
+    }
   }
 
   cout << "RECO PSI"  << endl;
   for(int evt = 0; evt < t_cuts_psi->GetEntries(); evt++){
     t_cuts_psi->GetEntry(evt);
 
-    if( (pow(mumuMass_psi,2) > q2_bins[6]) && (pow(mumuMass_psi,2) < q2_bins[7]) ){reco_entries[6] += 1;}
+    if( (pow(mumuMass_psi,2) > q2_bins[6]) && (pow(mumuMass_psi,2) < q2_bins[7]) ){
+      reco_entries[6] += 1;
+      reco_entries_weight[6] += read_weights(histo_wei_b6,reco_eta_psi,year,6);
+    }
   }
 
   cout << "RECO LMNR"  << endl;
   for(int evt = 0; evt < t_cuts_lmnr->GetEntries(); evt++){
     t_cuts_lmnr->GetEntry(evt);
 
-    if( (pow(mumuMass_lmnr,2) > q2_bins[0]) && (pow(mumuMass_lmnr,2) < q2_bins[1]) ){reco_entries[0] += 1;}
-    else if( (pow(mumuMass_lmnr,2) > q2_bins[1]) && (pow(mumuMass_lmnr,2) < q2_bins[2]) ){reco_entries[1] += 1;}
-    else if( (pow(mumuMass_lmnr,2) > q2_bins[2]) && (pow(mumuMass_lmnr,2) < q2_bins[3]) ){reco_entries[2] += 1;}
-    else if( (pow(mumuMass_lmnr,2) > q2_bins[3]) && (pow(mumuMass_lmnr,2) < q2_bins[4]) ){reco_entries[3] += 1;}
-    else if( (pow(mumuMass_lmnr,2) > q2_bins[5]) && (pow(mumuMass_lmnr,2) < q2_bins[6]) ){reco_entries[5] += 1;}
-    else if( (pow(mumuMass_lmnr,2) > q2_bins[7]) && (pow(mumuMass_lmnr,2) < q2_bins[8]) ){reco_entries[7] += 1;}
+    if( (pow(mumuMass_lmnr,2) > q2_bins[0]) && (pow(mumuMass_lmnr,2) < q2_bins[1]) ){
+      reco_entries[0] += 1;
+      reco_entries_weight[0] += read_weights(histo_wei_b0,reco_eta_lmnr,year,0);
+    }
+    else if( (pow(mumuMass_lmnr,2) > q2_bins[1]) && (pow(mumuMass_lmnr,2) < q2_bins[2]) ){
+      reco_entries[1] += 1;
+      reco_entries_weight[1] += read_weights(histo_wei_b1,reco_eta_lmnr,year,1);
+    }
+    else if( (pow(mumuMass_lmnr,2) > q2_bins[2]) && (pow(mumuMass_lmnr,2) < q2_bins[3]) ){
+      reco_entries[2] += 1;
+      reco_entries_weight[2] += read_weights(histo_wei_b2,reco_eta_lmnr,year,2);
+    }
+    else if( (pow(mumuMass_lmnr,2) > q2_bins[3]) && (pow(mumuMass_lmnr,2) < q2_bins[4]) ){
+      reco_entries[3] += 1;
+      reco_entries_weight[3] += read_weights(histo_wei_b3,reco_eta_lmnr,year,3);
+    }
+    else if( (pow(mumuMass_lmnr,2) > q2_bins[5]) && (pow(mumuMass_lmnr,2) < q2_bins[6]) ){
+      reco_entries[5] += 1;
+      reco_entries_weight[5] += read_weights(histo_wei_b5,reco_eta_lmnr,year,5);
+    }
+    else if( (pow(mumuMass_lmnr,2) > q2_bins[7]) && (pow(mumuMass_lmnr,2) < q2_bins[8]) ){
+      reco_entries[7] += 1;
+      reco_entries_weight[7] += read_weights(histo_wei_b7,reco_eta_lmnr,year,7);
+    }
   }
 
   cout << "GEN JPSI" << endl;
   for(int evt = 0; evt < t_nocuts_jpsi->GetEntries(); evt++){
       t_nocuts_jpsi->GetEntry(evt);
 
-      if( (pow(gen_mumuMass_jpsi,2) > q2_bins[4]) && (pow(gen_mumuMass_jpsi,2) < q2_bins[5]) ){gen_entries[4] += 1;}
+      if( (pow(gen_mumuMass_jpsi,2) > q2_bins[4]) && (pow(gen_mumuMass_jpsi,2) < q2_bins[5]) ){
+        gen_entries[4] += 1;
+        gen_entries_weight[4] += read_weights(histo_wei_b4,gen_eta_jpsi,year,4);      
+    }
   }
 
   cout << "GEN PSI" << endl;
   for(int evt = 0; evt < t_nocuts_psi->GetEntries(); evt++){
       t_nocuts_psi->GetEntry(evt);
 
-      if( (pow(gen_mumuMass_psi,2) > q2_bins[6]) && (pow(gen_mumuMass_psi,2) < q2_bins[7]) ){gen_entries[6] += 1;}
+      if( (pow(gen_mumuMass_psi,2) > q2_bins[6]) && (pow(gen_mumuMass_psi,2) < q2_bins[7]) ){
+        gen_entries[6] += 1;
+        gen_entries_weight[6] += read_weights(histo_wei_b6,gen_eta_psi,year,6);
+    }
   }
 
   cout << "GEN LMNR" << endl;
   for(int evt = 0; evt < t_nocuts_lmnr->GetEntries(); evt++){
       t_nocuts_lmnr->GetEntry(evt);
 
-    if( (pow(gen_mumuMass_lmnr,2) > q2_bins[0]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[1]) ){gen_entries[0] += 1;}
-    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[1]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[2]) ){gen_entries[1] += 1;}
-    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[2]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[3]) ){gen_entries[2] += 1;}
-    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[3]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[4]) ){gen_entries[3] += 1;}
-    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[5]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[6]) ){gen_entries[5] += 1;}
-    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[7]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[8]) ){gen_entries[7] += 1;}
+    if( (pow(gen_mumuMass_lmnr,2) > q2_bins[0]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[1]) ){
+      gen_entries[0] += 1;
+      gen_entries_weight[0] += read_weights(histo_wei_b0,gen_eta_lmnr,year,0);
+    }
+    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[1]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[2]) ){
+      gen_entries[1] += 1;
+      gen_entries_weight[1] += read_weights(histo_wei_b1,gen_eta_lmnr,year,1);
+    }
+    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[2]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[3]) ){
+      gen_entries[2] += 1;
+      gen_entries_weight[2] += read_weights(histo_wei_b2,gen_eta_lmnr,year,2);
+    }
+    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[3]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[4]) ){
+      gen_entries[3] += 1;
+      gen_entries_weight[3] += read_weights(histo_wei_b3,gen_eta_lmnr,year,3);
+    }
+    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[5]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[6]) ){
+      gen_entries[5] += 1;
+      gen_entries_weight[5] += read_weights(histo_wei_b5,gen_eta_lmnr,year,5);
+    }
+    else if( (pow(gen_mumuMass_lmnr,2) > q2_bins[7]) && (pow(gen_mumuMass_lmnr,2) < q2_bins[8]) ){
+      gen_entries[7] += 1;
+      gen_entries_weight[7] += read_weights(histo_wei_b7,gen_eta_lmnr,year,7);
+    }
   }
 
   cout << "GEN B-FILTER JPSI" << endl;
@@ -287,39 +375,78 @@ void efficiency(int year, int q2Bin = -1){
 
   }
 
-  cout << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "SEL NUM" << '|' << setw(15) << "SEL DEN" << '|' << setw(15) << "GEN NUM" << '|' << setw(15) << "GEN DEN" << '|' << setw(15) << "Efficiency" << '|' << setw(15) << "Acceptance" << '|' << setw(15) << "Efficiency x acceptance" << '|' << endl;
-
-  TH1F* eff_x_acc = new TH1F("eff_x_acc","eff_x_acc",n_q2_bins,q2_bins);
+  cout << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "SEL NUM" << '|' << setw(15) << "SEL DEN" << '|' << setw(15) << "GEN NUM" << '|' << setw(15) << "GEN DEN" << '|' << setw(15) << "Efficiency" << '|' << setw(15) << "Acceptance" << '|' << setw(15) << "Efficiency x acceptance" << '|' << setw(15) << "Weighted eff" << '|' << setw(15) << "syst" << '|' << endl;
 
   double efficiency = 0.;
   double acceptance = 0.;
+  double weighted_efficiency = 0.;
+
+  double eff_x_acc[n_q2_bins];
+  double syst[n_q2_bins]; 
+  double absolute_syst[n_q2_bins];
 
   for(int i = 0; i < n_q2_bins; i++){
     efficiency = reco_entries[i]/gen_entries[i];
     acceptance = num_entries[i]/den_entries[i];
-    eff_x_acc->SetBinContent(i,efficiency*acceptance);
+    eff_x_acc[i] = efficiency*acceptance;
 
-  cout << '|' << setw(15) << q2_bins[i] << " - " << q2_bins[i+1] << '|' << setw(15) << reco_entries[i] << '|' << setw(15) << gen_entries[i] << '|' << setw(15) << num_entries[i] << '|' << setw(15) << den_entries[i] << '|' << setw(15) << efficiency << '|' << setw(15) << acceptance << '|' << setw(15) << eff_x_acc->GetBinContent(i) << '|' << endl;
+    weighted_efficiency = reco_entries_weight[i]/gen_entries_weight[i];
+
+    syst[i] = abs(weighted_efficiency-efficiency)/efficiency;
+    absolute_syst[i] = syst[i]*eff_x_acc[i];
+
+  cout << '|' << setw(15) << q2_bins[i] << " - " << q2_bins[i+1] << '|' << setw(15) << reco_entries[i] << '|' << setw(15) << gen_entries[i] << '|' << setw(15) << num_entries[i] << '|' << setw(15) << den_entries[i] << '|' << setw(15) << efficiency << '|' << setw(15) << acceptance << '|' << setw(15) << eff_x_acc[i] << '|' << setw(15) << weighted_efficiency << '|' << setw(15) << syst[i] << '|' << endl;
   }
+
+  double q2Bins_half[n_q2_bins];
+  double q2Bins_err[n_q2_bins];
+
+  for(int i = 0; i < n_q2_bins; i++){
+    q2Bins_half[i] = q2_bins[i] + 0.5* (q2_bins[i+1]-q2_bins[i]);
+    q2Bins_err[i] = 0.5* (q2_bins[i+1]-q2_bins[i]);
+  }
+
+  TGraphErrors* g_eff = new TGraphErrors(n_q2_bins,q2Bins_half,eff_x_acc,q2Bins_err,absolute_syst);
 
   TCanvas c;
   c.cd();
-  gStyle->SetOptStat(0);
-  eff_x_acc->SetTitle(Form("Efficiency x Acceptance - %i",year));
-  eff_x_acc->GetXaxis()->SetTitle("q^2 [GeV]");
-  eff_x_acc->GetYaxis()->SetTitle("#epsilon");
-  eff_x_acc->SetMarkerStyle(8);
-  eff_x_acc->SetMarkerColor(1);
-  eff_x_acc->Draw("P");
+  g_eff->SetTitle(Form("Efficiency x Acceptance - %i",year));
+  g_eff->GetXaxis()->SetTitle("q^{2} [GeV]");
+  g_eff->GetYaxis()->SetTitle("#epsilon");
+  g_eff->SetMarkerStyle(8);
+  g_eff->SetMarkerColor(1);
+  g_eff->Draw("AP");
   c.SaveAs(Form("~/public/UML-fit/Efficiency/eff_x_acc_%i.gif",year));
 
   TFile* f;
   f = new TFile(Form("~/public/UML-fit/Efficiency/eff_x_acc_%i.root",year),"UPDATE");
   f->cd();
-  eff_x_acc->Write();
+  g_eff->Write();
   f->Close();
+
 }
 
+double read_weights(TH1F* histo_variable, double var_value, int year, int q2Bin){
 
+  double weight;
+  double variable_min;
+  double variable_max;
 
+  variable_min = histo_variable->GetXaxis()->GetXmin();
+  variable_max = histo_variable->GetXaxis()->GetXmax();
 
+  //if the event is not in the range its weight is 1.
+  if(var_value>=variable_min && var_value<=variable_max){weight = getWeight(var_value,histo_variable);}
+  else{weight = 1;}
+
+  return weight;
+}
+
+double getWeight(double var_value, TH1F* h_weight){
+  int bin = h_weight->FindBin(var_value);
+  double error = h_weight->GetBinError(bin);
+  double weight = h_weight->GetBinContent(bin);
+  double relative_error = error/weight;
+  if(relative_error > 0.1){return 1;} // if the bin error is very large, we don't trust it
+  else{return weight;}
+}
