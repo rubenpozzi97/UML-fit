@@ -6,6 +6,8 @@
 #include <TLine.h>
 #include <TMath.h>
 #include <TAttFill.h>
+#include <TFrame.h>
+#include <TStyle.h>
 
 #include <TLatex.h>
 #include <list>
@@ -96,8 +98,11 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   if(comp == 0){
     mass = new RooRealVar("mass","mass", 5.,5.6);
   }
-  else if( (comp == 1) ){
+  else if(comp == 1){
     mass = new RooRealVar("mass","mass", 4.9,5.7);
+  }
+  else if((q2Bin == 4) && ((pdf_model == 0) || (pdf_model == 3) || (pdf_model == 4))){
+    mass = new RooRealVar("mass","mass", 5.1,5.5);
   }
   else if(pdf_model == 1){
     mass = new RooRealVar("mass","mass", 5.1,5.6);
@@ -130,8 +135,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   for (unsigned int iy = 0; iy < years.size(); iy++) {
     year.clear(); year.assign(Form("%i",years[iy]));
     string filename_data = ("reco" + dataString + Form("Dataset_b%i_%i.root", q2Bin, years[iy])).c_str(); 
-    //filename_data = Form("/eos/cms/store/user/fiorendi/p5prime/effKDE/%i/lmnr/newphi/", years[iy]) + filename_data;
-
+ 
     // import data (or MC as data proxy) HERE
     if(parity < 2){if (!retrieveWorkspace(filename_data, wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), wsp, Form("ws_b%ip%i", q2Bin, 1-parity ), parity))  return;}
     else{if (!retrieveWorkspace(filename_data, wsp_even, Form("ws_b%ip%i", q2Bin, 0), wsp_odd, Form("ws_b%ip%i", q2Bin, 1), parity))  return;}
@@ -233,31 +237,12 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       ws_pars->import(*signal_yield);
     }
     else if(dat == 1){//DATA
-      if(constrain == 1){//constrains
-        //initialises the yields to the values obtained when fitting data with scale factor (run constrain = 2 before constrain = 2)
-        TString input_scale_factor = Form("simFitMassResults/simFitResult_recoMC_fullMass%i_DATA_b%ip2c2_subs0CT+WT.root",years[iy],q2Bin);
-        TFile* f_scale_factor = TFile::Open(input_scale_factor);
-        RooFitResult* fitresult_scale_factor = (RooFitResult*)f_scale_factor->Get(Form("simFitResult_b%ip2c2m0subs0",q2Bin));
-   
-        RooRealVar* signal_yield_scale_factor = (RooRealVar*)fitresult_scale_factor->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
-        RooRealVar* CB_yield_scale_factor = (RooRealVar*)fitresult_scale_factor->floatParsFinal().find(Form("CB_yield^{%i}",years[iy]));
-     
-        signal_yield_initial = signal_yield_scale_factor->getVal();
-        CB_yield_initial = CB_yield_scale_factor->getVal();
-
-        signal_yield = new RooRealVar(Form("sig_yield^{%i}",years[iy]), "signal_yield", signal_yield_initial, 0, data[iy][0]->numEntries());
-        CB_yield = new RooRealVar(Form("CB_yield^{%i}",years[iy]), "CB_yield", CB_yield_initial, 0, data[iy][0]->numEntries());
-        ws_pars->import(*signal_yield);
-        ws_pars->import(*CB_yield);
-      }
-      else{//scale factor
-        signal_yield_initial = data[iy][0]->sumEntries(TString::Format("abs(mass-%g)<0.10", mass_peak));
-        signal_yield = new RooRealVar(Form("sig_yield^{%i}",years[iy]), "signal_yield", signal_yield_initial, 0, data[iy][0]->numEntries());
-        CB_yield_initial = data[iy][0]->numEntries() - signal_yield_initial;
-        CB_yield = new RooRealVar(Form("CB_yield^{%i}",years[iy]), "CB_yield", CB_yield_initial, 0, data[iy][0]->numEntries());
-        ws_pars->import(*signal_yield);
-        ws_pars->import(*CB_yield);
-      }
+      signal_yield_initial = data[iy][0]->sumEntries(TString::Format("abs(mass-%g)<0.10", mass_peak));
+      signal_yield = new RooRealVar(Form("sig_yield^{%i}",years[iy]), "signal_yield", signal_yield_initial, 0, data[iy][0]->numEntries());
+      CB_yield_initial = data[iy][0]->numEntries() - signal_yield_initial;
+      CB_yield = new RooRealVar(Form("CB_yield^{%i}",years[iy]), "CB_yield", CB_yield_initial, 0, data[iy][0]->numEntries());
+      ws_pars->import(*signal_yield);
+      ws_pars->import(*CB_yield);
     }
 
     // create RT component 
@@ -434,7 +419,10 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt_fix, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], false, c_vars_wt, c_pdfs_wt);
     }  
 
-    if(constrain == 1){
+    TFile* f_peaking_bkg = TFile::Open("~/public/UML-fit/Peaking_bkg/peaking_bkg.root");
+    RooFitResult* fitresult_peaking_bkg = (RooFitResult*)f_peaking_bkg->Get("fitresult_part_reco_bkg_data_bkg");
+
+    if(constrain == 1){ // fit with Gaussian constraints
       /// create constrained PDF for RT mass
       RooArgList constr_rt_list = RooArgList(c_pdfs_rt);
       constr_rt_list.add(*dcb_rt);
@@ -476,7 +464,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
       RooRealVar* mFrac = new RooRealVar(Form("mFrac^{%i}",years[iy]),"mistag fraction",fraction, 0, 1);
       ws_pars->import(*mFrac);
-
       c_fm.push_back( new RooGaussian(Form("c_fm^{%i}",years[iy]) , "c_fm" , *mFrac,
                                       RooConst(fraction),
                                       RooConst(fM_sigmas[years[iy]][q2Bin])
@@ -488,18 +475,16 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       signal_PDF = new RooAddPdf(("signal_PDF_"+year).c_str(),
 				 ("signal_PDF_"+year).c_str(),
 				  RooArgList(*c_dcb_wt,*c_dcb_rt), *mFrac);
-
       final_PDF = new RooProdPdf(("final_PDF_"+year).c_str(),
                                 ("final_PDF_"+year).c_str(),
                                  RooArgList(*signal_PDF, *c_fm[iy]));                         
-
       if(dat == 0){
         final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
       					   ("final_PDF_extended_"+year).c_str(),
 					    *final_PDF, *signal_yield);
       }
       else if(dat == 1){
-        lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", 1., -15., 5.);
+        lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", 1., -15., 15.);
         slope = new RooRealVar(Form("slope^{%i}",years[iy]), "slope", 1., -5., 5.);
         mean_cb = new RooRealVar(Form("mean_cb^{%i}",years[iy]), "mean_cb", 5.05, 5., 5.15);
         sigma_cb = new RooRealVar(Form("sigma_cb^{%i}",years[iy]), "sigma_cb", 1., 0., 5.);
@@ -508,8 +493,14 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         shift = new RooRealVar("shift", "shift", 5.13, 4.7, 5.2);
         f_erf = new RooRealVar("f_erf", "f_erf", 0.5, 0., 1.);
 
-        ws_pars->import(*lambda);
- 
+        if( ((q2Bin == 4) && (pdf_model != 3)) || ((q2Bin != 4) && (q2Bin != 6) && (pdf_model == 4))){
+          sigma_wt->setConstant();
+          alpha_wt1->setConstant();
+          alpha_wt2->setConstant();
+          n_wt1->setConstant();
+          n_wt2->setConstant();
+        }
+
         if( (pdf_model == 3) && (q2Bin != 6) && (q2Bin != 4) ){
           RooExponential* exp_bkg = new RooExponential(("exp_bkg_PDF_"+year).c_str(),
                                                        ("exp_bkg_PDF_"+year).c_str(),
@@ -543,16 +534,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                              ("final_PDF_extended_"+year).c_str(),
                                               RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
         }
-        else if((pdf_model == 4) && (q2Bin != 6)){
-          RooPolynomial* CB_bkg = new RooPolynomial(("CB_bkg_PDF_"+year).c_str(),
-                                                    ("CB_bkg_PDF_"+year).c_str(),
-                                                    *mass, *slope);
-
-          final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                             ("final_PDF_extended_"+year).c_str(),
-                                              RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
-
-        }
         else if((pdf_model == 4) && (q2Bin == 6)){
           RooExponential* exp_bkg = new RooExponential(("exp_bkg_PDF_"+year).c_str(),
                                                        ("exp_bkg_PDF_"+year).c_str(),
@@ -567,43 +548,30 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                              ("final_PDF_extended_"+year).c_str(),
                                               RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
         }
-        else if((q2Bin == 4) && (pdf_model == 0)){
-
+        /*else if((q2Bin == 4) && (pdf_model == 0)){
+          
           RooExponential* CB_bkg = new RooExponential(("CB_bkg_PDF_"+year).c_str(),
                                                       ("CB_bkg_PDF_"+year).c_str(),
                                                        *mass, *lambda);
 
-          TFile* f_peaking_bkg = TFile::Open("~/public/UML-fit/Peaking_bkg/peaking_bkg.root");
-          RooFitResult* fitresult_peaking_bkg = (RooFitResult*)f_peaking_bkg->Get("fitresult_final_pdf_data_hist");
           fitresult_peaking_bkg->Print("v");
 
           RooRealVar* shift_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("shift");
           RooRealVar* scale_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("scale");
-          RooRealVar* f_erf_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("f_erf");
-          RooRealVar* lambda_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("lambda");
 	  RooRealVar* frac_fit = (RooRealVar*)f_peaking_bkg->Get("frac");
 
           shift_fit->setConstant();
           scale_fit->setConstant();
-          f_erf_fit->setConstant();
-          lambda_fit->setConstant();
-          frac_fit->setConstant();
-
-          cout << "scale = " << scale_fit->getVal() << endl;
-          cout << "shift = " << shift_fit->getVal() << endl;
-          cout << "f_erf = " << f_erf_fit->getVal() << endl;
-          cout << "lambda = " << lambda_fit->getVal() << endl;
 
           RooProduct* part_bkg_yield = new RooProduct("part_bkg_yield", "peaking_bkg_yield", RooArgList(*frac_fit,*signal_yield));
 
           RooGenericPdf* erf_bkg = new RooGenericPdf("erf_bkg","erf_bkg","TMath::Erfc((mass-shift)*scale)",RooArgList(*mass,*shift_fit,*scale_fit));
-          RooExponential* exp_bkg = new RooExponential("exp_bkg","exp_bkg",*mass,*lambda_fit);
-          RooAddPdf* part_bkg = new RooAddPdf("part_bkg","part_bkg",RooArgList(*erf_bkg,*exp_bkg),*f_erf_fit);
 
           final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
                                              ("final_PDF_extended_"+year).c_str(),
-                                              RooArgList(*final_PDF, *CB_bkg, *part_bkg), RooArgList(*signal_yield, *CB_yield, *part_bkg_yield));
-        }
+                                              RooArgList(*final_PDF, *CB_bkg, *erf_bkg), RooArgList(*signal_yield, *CB_yield, *part_bkg_yield));
+          
+        }*/
         else{
           RooExponential* CB_bkg = new RooExponential(("CB_bkg_PDF_"+year).c_str(),
                                       ("CB_bkg_PDF_"+year).c_str(),
@@ -614,8 +582,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         }
       }
     }
-
-    else if(constrain == 0){
+    else if(constrain == 0){ // fit without Gaussian constraints
       if(comp == 0){
         final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
                                            ("final_PDF_extended_"+year).c_str(),
@@ -628,7 +595,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       } 
     }
 
-    else if(constrain == 2){
+    else if(constrain == 2){ // fit with values fixed to MC
       lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", -2., -10., 1.);
       slope = new RooRealVar(Form("slope^{%i}",years[iy]), "slope", 1., -5., 5.);
       mean_cb = new RooRealVar(Form("mean_cb^{%i}",years[iy]), "mean_cb", 5.05, 5., 5.15);
@@ -636,8 +603,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       cofs = new RooRealVar(Form("cofs^{%i}",years[iy]), "cofs", 0.5, 0., 1.);
       scale = new RooRealVar("scale", "scale", 12., 5., 15.);
       shift = new RooRealVar("shift", "shift", 5.13, 5.0, 5.5);
-
-      ws_pars->import(*lambda);
 
       RooRealVar* constrained_yield_RT = (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
       RooRealVar* constrained_yield_WT = (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
@@ -655,12 +620,45 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                   RooArgList(*dcb_wt,*dcb_rt), *mFrac);
 
       RooExponential* CB_bkg = new RooExponential(("CB_bkg_PDF_"+year).c_str(),
-                                  ("CB_bkg_PDF_"+year).c_str(),
-                                   *mass, *lambda);
-      final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                         ("final_PDF_extended_"+year).c_str(),
-                                          RooArgList(*signal_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
-    
+                                                  ("CB_bkg_PDF_"+year).c_str(),
+                                                   *mass, *lambda);
+
+      if(q2Bin == 4){
+ 
+        fitresult_peaking_bkg->Print("v");
+
+        RooRealVar* shift_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("shift");
+        RooRealVar* scale_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("scale");
+        RooRealVar* f_erf_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("f_erf");
+        RooRealVar* lambda_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("lambda");
+        RooRealVar* frac_fit = (RooRealVar*)f_peaking_bkg->Get("frac");
+
+        shift_fit->setConstant();
+        scale_fit->setConstant();
+        f_erf_fit->setConstant();
+        lambda_fit->setConstant();
+
+        cout << "scale = " << scale_fit->getVal() << endl;
+        cout << "shift = " << shift_fit->getVal() << endl;
+        cout << "f_erf = " << f_erf_fit->getVal() << endl;
+        cout << "lambda = " << lambda_fit->getVal() << endl;
+        cout << "frac = " << frac_fit->getVal() << endl;
+
+        RooProduct* part_bkg_yield = new RooProduct("part_bkg_yield", "peaking_bkg_yield", RooArgList(*frac_fit,*signal_yield));
+
+        RooGenericPdf* erf_bkg = new RooGenericPdf("erf_bkg","erf_bkg","TMath::Erfc((mass-shift)*scale)",RooArgList(*mass,*shift_fit,*scale_fit));
+        RooExponential* exp_bkg = new RooExponential("exp_bkg","exp_bkg",*mass,*lambda_fit);
+        RooAddPdf* part_bkg = new RooAddPdf("part_bkg","part_bkg",RooArgList(*erf_bkg,*exp_bkg),*f_erf_fit);
+
+        final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
+                                           ("final_PDF_extended_"+year).c_str(),
+                                            RooArgList(*signal_PDF, *CB_bkg, *part_bkg), RooArgList(*signal_yield, *CB_yield, *part_bkg_yield));
+      }
+      else{
+        final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
+                                           ("final_PDF_extended_"+year).c_str(),
+                                            RooArgList(*signal_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
+      }
     }
 
     // insert sample in the category map, to be imported in the combined dataset
@@ -777,30 +775,38 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     else{longString = longString + " both parity datasets" + Form(" - q2-bin %i ",q2Bin);}
 
     // plot fit projections 
-    c[confIndex] = new TCanvas (("c_"+shortString+Form("subs_%i",is)).c_str(),("Fit to RECO-level MC - "+longString).c_str(),3000,1400);
-    c[confIndex]->Divide(years.size());
-    cout<<"plotting 4d canvas: "<< years.size() << endl;
-
+    c[confIndex] = new TCanvas (("c_"+shortString+Form("subs_%i",is)).c_str(),("Fit to RECO-level MC - "+longString).c_str(),2000,1400);
     c[confIndex]->cd();
 
-    TPad *p1 = new TPad("p1","p1",0.,0.27,1.,1.);
+    TPad *p1 = new TPad("p1","p1",0.,0.27,0.7,1.);
     p1->SetBorderMode(1);
     p1->SetFrameBorderMode(0);
     p1->SetBorderSize(2);
-    //p1->SetBottomMargin(0.40);
     p1->Draw();
 
-    TPad *p2 = new TPad("p2","p2",0.,0.065,1.,0.24);
+    TPad *p2 = new TPad("p2","p2",0.,0.065,0.7,0.235);
     p2->SetBorderMode(1);
     p2->SetTopMargin(0);
     p2->SetBottomMargin(0.4);
     p2->Draw();
 
+    TPad *p3 = new TPad("p3","p3",0.65,0.,1.,1.);
+    p3->SetTopMargin(0.075);
+    p3->Draw();
+
+    RooPlot* mass_frame = mass->frame(Title("    "));
+    mass_frame->GetYaxis()->SetLabelSize(0);
+    mass_frame->GetYaxis()->SetTickLength(0);
+    mass_frame->GetXaxis()->SetLabelSize(0);
+    mass_frame->GetXaxis()->SetTickLength(0);
+    mass_frame->GetXaxis()->SetTitle(" ");
+    mass_frame->GetYaxis()->SetTitle(" ");
+
     for (unsigned int iy = 0; iy < years.size(); iy++) {
       year.clear(); year.assign(Form("%i",years[iy]));
       std::vector<RooPlot*> frames;
       frames.push_back( prepareFrame( mass ->frame(Title((longString+year).c_str()))));
-      TLegend *leg = new TLegend (0.1,0.7,0.3,0.9);
+      TLegend *leg = new TLegend (0.65,0.7,0.8,0.88);
 
       for (unsigned int fr = 0; fr < frames.size(); fr++){
           // data
@@ -850,55 +856,73 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                               Components(("CB_bkg_PDF_"+year).c_str()),
                                               Name(("CB_bkgPDF"+year+Form("_subs_%i",is)).c_str()));
   
-             if((pdf_model == 0) && (q2Bin == 4)){
-               (ws_pars->pdf("simPdf"))->plotOn(frames[fr], LineColor(kOrange), LineStyle(kSolid),
-                                                Slice(sample, ("data"+year+Form("_subs%i",is)).c_str()),
-                                                ProjWData(RooArgSet(sample), *combData),
-                                                Components("part_bkg"),
-                                                Name(("part_bkgPDF"+year+Form("_subs_%i",is)).c_str()));
-   
-              }
-            }
+           }
           }
-          (ws_pars->pdf("simPdf"))->paramOn(frames[fr],Layout(0.75,0.9,0.9));
-          frames[fr]->getAttText()->SetTextSize(0.02);
-   
+
+          combData->plotOn(mass_frame,MarkerColor(kWhite),LineColor(kWhite));
+          (ws_pars->pdf("simPdf"))->plotOn(mass_frame,ProjWData(RooArgSet(sample), *combData), LineColor(kWhite));
+          (ws_pars->pdf("simPdf"))->paramOn(mass_frame,Layout(0.1,0.9,1.));
+
           double chis = frames[fr]->chiSquare(("plPDF"+year+Form("_subs_%i",is)).c_str(), ("plData"+year+Form("_subs_%i",is)).c_str(),n_float_params);
 
           TLatex* tex = new TLatex(0.15, 0.6, Form("#chi^{2}/ndf = %f",chis));//%.3lf
           tex->SetNDC(kTRUE);
           tex->SetTextFont(42);
           tex->SetTextSize(0.04);
- 
+
+          TLatex* tex1;
+          if(q2Bin == 0){tex1 = new TLatex(0.15, 0.8, "1 < q^{2} < 2 GeV^{2}");}
+          else if(q2Bin == 1){tex1 = new TLatex(0.15, 0.8, "2 < q^{2} < 4.3 GeV^{2}");}
+          else if(q2Bin == 2){tex1 = new TLatex(0.15, 0.8, "4.3 < q^{2} < 6 GeV^{2}");}
+          else if(q2Bin == 3){tex1 = new TLatex(0.15, 0.8, "6 < q^{2} < 8.68 GeV^{2}");}
+          else if(q2Bin == 4){tex1 = new TLatex(0.15, 0.8, "8.68 < q^{2} < 10.09 GeV^{2} (J/ #psi)");}
+          else if(q2Bin == 5){tex1 = new TLatex(0.15, 0.8, "10.09 < q^{2} < 12.86 GeV^{2}");}
+          else if(q2Bin == 6){tex1 = new TLatex(0.15, 0.8, "12.86 < q^{2} < 14.18 GeV^{2} (#psi (2S))");}
+          else if(q2Bin == 7){tex1 = new TLatex(0.15, 0.8, "14.18 < q^{2} < 16 GeV^{2}");}
+          tex1->SetNDC(kTRUE);
+          tex1->SetTextFont(42);
+          tex1->SetTextSize(0.04);
+
+          RooRealVar* yield = (RooRealVar*)fitResult->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
+          TLatex* tex2;
+          if(q2Bin == 4){tex2 = new TLatex(0.15, 0.7, Form("Y_{N} = %.0lf #pm %.0lf",yield->getVal(),yield->getError()));}
+          else if(q2Bin == 6){tex2 = new TLatex(0.15, 0.7, Form("Y = %.0lf #pm %.0lf",yield->getVal(),yield->getError()));}
+          else{tex2 = new TLatex(0.15, 0.7, Form("Y_{S} = %.0lf #pm %.0lf",yield->getVal(),yield->getError()));}
+          tex2->SetNDC(kTRUE);
+          tex2->SetTextFont(42);
+          tex2->SetTextSize(0.04);
+
           if (fr == 0) {
-            leg->AddEntry(frames[fr]->findObject(("plData"+year+Form("_subs_%i",is)).c_str()),("Post-selection distribution "+year).c_str() ,"lep");
-            leg->AddEntry(frames[fr]->findObject(("plPDF"+year+Form("_subs_%i",is)).c_str()),("Mass component - total "+year).c_str(),"l");
+            leg->AddEntry(frames[fr]->findObject(("plData"+year+Form("_subs_%i",is)).c_str()), "Data" ,"lep");
+            leg->AddEntry(frames[fr]->findObject(("plPDF"+year+Form("_subs_%i",is)).c_str()), "Fit","l");
             if(comp == 2){
-              leg->AddEntry(frames[fr]->findObject(("signalPDF"+year+Form("_subs_%i",is)).c_str()),("Signal total "+year).c_str(),"l");
-              leg->AddEntry(frames[fr]->findObject(("RT_PDF"+year+Form("_subs_%i",is)).c_str()),("RT "+year).c_str(),"l");
-              leg->AddEntry(frames[fr]->findObject(("WT_PDF"+year+Form("_subs_%i",is)).c_str()),("WT "+year).c_str(),"l");
+              leg->AddEntry(frames[fr]->findObject(("signalPDF"+year+Form("_subs_%i",is)).c_str()), "Signal","l");
+              leg->AddEntry(frames[fr]->findObject(("RT_PDF"+year+Form("_subs_%i",is)).c_str()), "RT component","l");
+              leg->AddEntry(frames[fr]->findObject(("WT_PDF"+year+Form("_subs_%i",is)).c_str()), "WT component","l");
               if(dat == 1){
-                leg->AddEntry(frames[fr]->findObject(("CB_bkgPDF"+year+Form("_subs_%i",is)).c_str()),("Comb. Background "+year).c_str(),"l");
-                if((pdf_model == 0) && (q2Bin == 4)){
-                  leg->AddEntry(frames[fr]->findObject(("part_bkgPDF"+year+Form("_subs_%i",is)).c_str()),("Part. Reco. Background "+year).c_str(),"l");
-                }
+                leg->AddEntry(frames[fr]->findObject(("CB_bkgPDF"+year+Form("_subs_%i",is)).c_str()), "Background","l");
               }
             }
           }
 
-          c[confIndex]->cd(iy+1);
+          //c[confIndex]->cd(iy+1);
 
           p1->cd();
-          frames[fr]->SetXTitle("mass (GeV)");
-          frames[fr]->SetYTitle("number of evens / GeV");
+          frames[fr]->SetTitle(Form("CMS             L = 139.5 fb^{-1}             #sqrt{s} = 13 TeV             Year %i",years[iy]));
+          frames[fr]->SetXTitle("m(K^{+} #pi^{-} #mu^{+} #mu^{-}) (GeV)");
+          frames[fr]->SetYTitle(TString::Format("Events / (%g)",(mass->getMax()-mass->getMin())/80));
           frames[fr]->GetYaxis()->SetTitleFont(43);
           frames[fr]->GetYaxis()->SetTitleSize(30);
-          frames[fr]->GetYaxis()->SetTitleOffset(1.);
+          frames[fr]->GetYaxis()->SetTitleOffset(1.6);
           frames[fr]->GetYaxis()->SetLabelFont(43);
           frames[fr]->GetYaxis()->SetLabelSize(30);
           frames[fr]->Draw();
+          leg->SetTextSize(0.04);
+          leg->SetBorderSize(0);
           leg->Draw("same");
           tex->Draw("same");     
+          tex1->Draw("same");
+          tex2->Draw("same");
 
           // ratio plot
           RooHist* pull_hist = frames[fr]->pullHist(("plData"+year+Form("_subs_%i",is)).c_str(),("plPDF"+year+Form("_subs_%i",is)).c_str());
@@ -906,15 +930,15 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
           pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
           pull_plot->SetTitle("");
-          pull_plot->GetXaxis()->SetTitle("mass (GeV)");
+          pull_plot->GetXaxis()->SetTitle("m(K^{+} #pi^{-} #mu^{+} #mu^{-}) (GeV)");
           pull_plot->GetXaxis()->SetTitleSize(0.15);
           pull_plot->GetXaxis()->SetTitleOffset(0.9);
           pull_plot->GetXaxis()->SetLabelSize(0.15);
           pull_plot->GetXaxis()->SetTickLength(0.1);
           pull_plot->GetYaxis()->SetTitle("Pull");
-          pull_plot->GetYaxis()->SetTitleSize(0.15);
-          pull_plot->GetYaxis()->SetTitleOffset(0.1);
-          pull_plot->GetYaxis()->SetLabelSize(0.15);
+          pull_plot->GetYaxis()->SetTitleSize(0.13);
+          pull_plot->GetYaxis()->SetTitleOffset(0.13);
+          pull_plot->GetYaxis()->SetLabelSize(0.1);
           pull_plot->GetYaxis()->SetNdivisions(305);
 
           gPad->Update();
@@ -926,6 +950,9 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
           pull_plot->Draw();
           line->Draw("same");
 
+          p3->cd();
+          mass_frame->Draw();
+
           break;
       }// ends loop over frames
     }// ends loop over years
@@ -934,38 +961,45 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       if(nSample > 0){
         if(multiSample){
           c[confIndex]->SaveAs( ("plotSimMassFit_dataStat_multiSample/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+          c[confIndex]->SaveAs( ("plotSimMassFit_dataStat_multiSample/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
         }
         else{
           c[confIndex]->SaveAs( ("plotSimMassFit_dataStat/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+          c[confIndex]->SaveAs( ("plotSimMassFit_dataStat/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
         }
       }   
       else{
         if(parity < 2){
           if(constrain == 1){
             c[confIndex]->SaveAs( ("plotSimMassFit_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+            c[confIndex]->SaveAs( ("plotSimMassFit_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
           }
           else if(constrain == 0){ 
             c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str()); 
+            c[confIndex]->SaveAs( ("plotSimMassFit/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
           }
         }
         else{
           if(constrain == 1){
             c[confIndex]->SaveAs( ("plotSimMassFit_odd+even_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+            c[confIndex]->SaveAs( ("plotSimMassFit_odd+even_constrain/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
           }
           else if(constrain == 0){
             c[confIndex]->SaveAs( ("plotSimMassFit_odd+even/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".gif").c_str());
+            c[confIndex]->SaveAs( ("plotSimMassFit_odd+even/simFitResult_recoMC_fullMass_" + plotString + "_" + component + ".pdf").c_str());
           }
         }
       }
     }
     else if(dat == 1){
       c[confIndex]->SaveAs( ("plotSimMassFit_DATA/simFitResult_recoDATA_fullMass_" + plotString + "_" + component + ".gif").c_str());
+      c[confIndex]->SaveAs( ("plotSimMassFit_DATA/simFitResult_recoDATA_fullMass_" + plotString + "_" + component + ".pdf").c_str());
     }
 
     // validate fit
-    if( (nSample == 1) || ((dat == 1) && (pdf_model == 0) && (constrain < 2)) ){
-      validate_fit(ws_pars, sample, c_vars, years[0], q2Bin, parity, dat, constrain, nSample);
-    }
+    //if( (nSample == 1) || ((dat == 1) && (pdf_model == 0) && (constrain < 2)) ){
+    //  validate_fit(ws_pars, sample, c_vars, years[0], q2Bin, parity, dat, constrain, nSample);
+    //}
   }// ends loop over samples 
 }
 
