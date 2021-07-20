@@ -11,6 +11,7 @@
 #include <RooAbsPdf.h>
 #include <RooCategory.h> 
 #include <RooArgSet.h>
+#include <TString.h>
 
 using namespace std;
 using namespace RooFit;
@@ -29,8 +30,6 @@ std::map<int,std::vector<float>> fM_sigmas = {
   {2017, {0.020, 0.015, 0.016, 0.011, 0.004, 0.009, 0.005, 0.013}},
   {2018, {0.015, 0.011, 0.013, 0.008, 0.002, 0.006, 0.003, 0.008}},
 };
-
-
 
 RooPlot* prepareFrame(RooPlot* frame){
     frame->GetYaxis()->SetTitleOffset(1.8);
@@ -71,7 +70,7 @@ void constrainVar2(RooAbsReal* var,
                    RooArgSet &c_vars,
                    RooArgSet &c_pdfs
                    ){
-    RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", inVarName.c_str(), year) , 
+    RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", inVarName.c_str(), year), 
         					Form("c_%s_%i", inVarName.c_str(), year),
                                                 *var,
                                                 RooConst(w->var(inVarName.c_str())->getVal()), 
@@ -84,6 +83,7 @@ void constrainVar2(RooAbsReal* var,
 }
 
 void constrainVar3(TString input_file,
+                   TString inVarName,
 		   int year,
 		   int q2Bin,
                    bool addToList,
@@ -92,21 +92,24 @@ void constrainVar3(TString input_file,
                    ){
 
   TFile* f = TFile::Open(input_file);
-  RooFitResult* fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c1subs0",q2Bin));
 
-  RooRealVar* mean_difference = (RooRealVar*)fitresult->floatParsFinal().find(Form("mean_difference^{%i}",year));
+  RooFitResult* fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c0m0subs0",q2Bin));
 
-  RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", mean_difference->GetName(), year) ,
-                                              Form("c_%s_%i", mean_difference->GetName(), year),
-                                              *mean_difference,
-                                              RooConst(mean_difference->getVal()),
-                                              RooConst(mean_difference->getError())
+  RooRealVar* var = (RooRealVar*)fitresult->floatParsFinal().find(Form(inVarName));
+
+  cout << var->GetName() << "mean = " << var->getVal() << "error = " << var->getError() << endl;
+
+  RooGaussian* gauss_constr = new RooGaussian(Form("c_%s_%i", var->GetName(), year),
+                                              Form("c_%s_%i", var->GetName(), year),
+                                              *var,
+                                              RooConst(var->getVal()),
+                                              RooConst(var->getError())
                                               );
+  if (addToList){
+    c_vars.add(*var);
+    c_pdfs.add(*gauss_constr);
+  }
 
-    if (addToList){
-      c_vars.add(*mean_difference);
-      c_pdfs.add(*gauss_constr);
-    }
 }
 
 bool retrieveWorkspace(string filename, std::vector<RooWorkspace*> &ws, std::string ws_name, std::vector<RooWorkspace*> &ws1, std::string ws_name_odd, int parity){
@@ -206,6 +209,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
 					   RooArgSet(reco_vars));
 
       if(dat == 0){
+
         if(parity < 2){
           dataCT = (RooDataSet*)ws->data(Form((parity==1?"data_ctRECO_ev_b%i":"data_ctRECO_od_b%i"),q2Bin)) ;
           dataWT = (RooDataSet*)ws->data(Form((parity==1?"data_wtRECO_ev_b%i":"data_wtRECO_od_b%i"),q2Bin)) ;
@@ -223,7 +227,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
             isample->append(*dataCT_even);
             isample->append(*dataCT_odd);
           }
-         }
+        }
         else if(comp == 1){
           if(parity < 2){isample->append(*dataWT);}
           else{
@@ -231,6 +235,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
             isample->append(*dataWT_odd);
           }
         }
+
         else{
           if(parity < 2){
             isample->append(*dataCT);
@@ -246,7 +251,7 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
       }
 
       else if(dat == 1){ 
-        data = (RooDataSet*)ws->data(Form("Dataset/data_b%i",q2Bin));
+        data = (RooDataSet*)ws->data(Form("data_b%i",q2Bin));
         isample->append(*data);
       }
 
@@ -256,37 +261,54 @@ std::vector<RooDataSet*> createDataset(int nSample, uint firstSample, uint lastS
     return datasample;
 }
 
-void validate_fit(RooWorkspace* w, RooCategory sample, RooArgSet c_vars, int year, int q2Bin, int parity){
+void validate_fit(RooWorkspace* w, RooCategory sample, RooArgSet c_vars, int year, int q2Bin, int parity, int dat, int constrain, int nSample){
 
   RooRealVar mass = *(w->var("mass"));
   RooAbsPdf* model = w->pdf("simPdf");
 
   vector<RooRealVar> params;
-  params.push_back(*(w->var( Form("sig_yield^{%i}",year) )));
-  params.push_back(*(w->var( Form("mFrac^{%i}",year) )));
-  params.push_back(*(w->var( Form("mean_{RT}^{%i}",year) )));
-  params.push_back(*(w->var( Form("#sigma_{RT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("#alpha_{RT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("#alpha_{RT2}^{%i}",year) )));
-  params.push_back(*(w->var( Form("n_{RT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("n_{RT2}^{%i}",year) )));
-  if(q2Bin >= 5){
-    params.push_back(*(w->var( Form("#sigma_{RT2}^{%i}",year) )));
-    params.push_back(*(w->var( Form("f^{RT%i}",year) )));
+  if(constrain == 1){
+    params.push_back(*(w->var( Form("mFrac^{%i}",year) )));
+    params.push_back(*(w->var( Form("#sigma_{RT1}^{%i}",year) )));
+    params.push_back(*(w->var( Form("#alpha_{RT1}^{%i}",year) )));
+    params.push_back(*(w->var( Form("n_{RT1}^{%i}",year) )));
+
+    if(q2Bin != 7){
+      params.push_back(*(w->var( Form("#alpha_{RT2}^{%i}",year) )));
+      params.push_back(*(w->var( Form("n_{RT2}^{%i}",year) )));
+    }
+
+    if( (q2Bin == 4) || (q2Bin >= 5) ){
+      params.push_back(*(w->var( Form("#sigma_{RT2}^{%i}",year) )));
+      params.push_back(*(w->var( Form("f^{RT%i}",year) )));
+    }
+
+    params.push_back(*(w->var( Form("mean_difference^{%i}",year) )));
+    params.push_back(*(w->var( Form("#sigma_{WT1}^{%i}",year) )));
+    params.push_back(*(w->var( Form("#alpha_{WT1}^{%i}",year) )));
+    params.push_back(*(w->var( Form("#alpha_{WT2}^{%i}",year) )));
+    params.push_back(*(w->var( Form("n_{WT1}^{%i}",year) )));
+    params.push_back(*(w->var( Form("n_{WT2}^{%i}",year) )));
   }
-  params.push_back(*(w->var( Form("mean_difference^{%i}",year) )));
-  params.push_back(*(w->var( Form("#sigma_{WT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("#alpha_{WT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("#alpha_{WT2}^{%i}",year) )));
-  params.push_back(*(w->var( Form("n_{WT1}^{%i}",year) )));
-  params.push_back(*(w->var( Form("n_{WT2}^{%i}",year) )));
+  
+  params.push_back(*(w->var( Form("mean_{RT}^{%i}",year) )));
+  params.push_back(*(w->var( Form("sig_yield^{%i}",year) )));
+  if(dat == 1){params.push_back(*(w->var( Form("CB_yield^{%i}",year) )));}
+  if( (dat == 1) && (nSample == 0) ){params.push_back(*(w->var( Form("lambda^{%i}",year) )));}
+  if(constrain == 2){params.push_back(*(w->var( Form("factor^{%i}",year) )));}
 
   string var_name;
   int params_size = params.size();
 
   cout << "Starting toy MC study" << endl;
-  RooMCStudy* mcstudy = new RooMCStudy(*model, RooArgSet(mass,sample), Constrain(c_vars), Binned(kFALSE), Silence(kTRUE), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
-  mcstudy->generateAndFit(1000);
+  RooMCStudy* mcstudy;
+  if(constrain == 1){
+    mcstudy = new RooMCStudy(*model, RooArgSet(mass,sample), Constrain(c_vars), Binned(kTRUE), Silence(kTRUE), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
+  }
+  else if(constrain == 2){
+    mcstudy = new RooMCStudy(*model, RooArgSet(mass,sample), Binned(kTRUE), Silence(kTRUE), Extended(), FitOptions(Save(kTRUE), PrintEvalErrors(0)));
+  }
+  mcstudy->generateAndFit(5000);
   cout << "Ending toy MC study" << endl;
 
   vector<RooPlot*> framesPull, framesParam;
@@ -307,8 +329,12 @@ void validate_fit(RooWorkspace* w, RooCategory sample, RooArgSet c_vars, int yea
 
   TCanvas* c_pull;
   gPad->SetLeftMargin(0.15);
-
-  ofstream output(Form("simFitPullResults/out_b%i_year_%i.dat", q2Bin, year));
+ 
+  TString output_dir;
+  if(dat == 0){output_dir = Form("simFitPullResults_dataStat/out_b%i_year_%i.txt", q2Bin, year);}
+  else if( (dat == 1) && (constrain == 1) ){output_dir = Form("simFitPullResults_DATA/out_b%i_year_%i.txt", q2Bin, year);}
+  else if( (dat == 1) && (constrain == 2) ){output_dir = Form("simFitPullResults_SF/out_b%i_year_%i.txt", q2Bin, year);}
+  ofstream output(output_dir);
   output << '|' << setw(15) <<  "var_name" << '|' << setw(15) <<  "  pull mean  " << '|' << setw(15) <<  "  pull width  " << endl;
 
   for(int i = 0; i < params_size; ++i){
@@ -322,7 +348,7 @@ void validate_fit(RooWorkspace* w, RooCategory sample, RooArgSet c_vars, int yea
     h[i]->Fit("gaus","","",-20,20);
     h[i]->GetFunction("gaus")->SetLineColor(4);
     h[i]->GetFunction("gaus")->SetLineWidth(5);
-    h[i]->SetTitle( ("Pull - " + var_name + Form(" b%ip%i year %i",q2Bin, parity, year) ).c_str() );
+    h[i]->SetTitle( (var_name + Form("     Year %i", year) ).c_str() );
     h[i]->GetXaxis()->SetTitle("Pull");
     h[i]->GetYaxis()->SetTitle("Toy MCs");
     h[i]->GetXaxis()->SetRangeUser(-10,10);
@@ -331,24 +357,32 @@ void validate_fit(RooWorkspace* w, RooCategory sample, RooArgSet c_vars, int yea
     TF1* fit = h[i]->GetFunction("gaus");
     
     output << '|' << setw(15) <<  var_name << '|' << setw(15) <<  fit->GetParameter(1) << '|' << setw(15) <<  fit->GetParameter(2) << endl;
-    
-    c_pull->SaveAs(( "plotSimMassFit_pulls/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+ 
+
+    if(dat == 0){
+      c_pull->SaveAs(( "plotSimMassFit_pulls_dataStat/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+      c_pull->SaveAs(( "plotSimMassFit_pulls_dataStat/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".pdf").c_str() );
+    }
+    else if( (dat == 1) && (constrain == 1) ){
+      c_pull->SaveAs(( "plotSimMassFit_pulls_DATA/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+      c_pull->SaveAs(( "plotSimMassFit_pulls_DATA/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".pdf").c_str() );
+    }
+    else if( (dat == 1) && (constrain == 2) ){
+      c_pull->SaveAs(( "plotSimMassFit_pulls_SF/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
+      c_pull->SaveAs(( "plotSimMassFit_pulls_SF/pulls_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".pdf").c_str() );
+    }
     delete c_pull;
   }
   output.close();
 
-  TCanvas* c_params = new TCanvas("params", "params", 900, 800);
-
-  for(int i = 0; i < params_size; ++i){
-    var_name = params[i].GetName();
-
-    c_params->cd();
-    framesParam.at(i)->GetYaxis()->SetTitleOffset(1.4);
-    framesParam.at(i)->Draw();
-
-    c_params->SaveAs(( "plotSimMassFit_pulls/pulls_params_poisson_" + var_name + Form("b%ip%i_%i",q2Bin,parity,year) + ".gif").c_str() );
-  }
-
 }
 
+double MC_fit_result(TString input_file, TString inVarName, int q2Bin){
+
+  TFile* f = new TFile(input_file);
+  RooFitResult* fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c0m0subs0",q2Bin));
+  RooRealVar* var = (RooRealVar*)fitresult->floatParsFinal().find(inVarName);
+
+  return var->getVal();
+}
 
