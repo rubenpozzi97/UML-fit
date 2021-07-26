@@ -25,11 +25,11 @@ RooDoubleCBFast* createWTMassShape(int q2Bin,
                                                    );
    
     if (constrainVars){
-        //constrainVar3(input_file, Form("#sigma_{WT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
-        //constrainVar3(input_file, Form("#alpha_{WT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
-        //constrainVar3(input_file, Form("#alpha_{WT2}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
-        //constrainVar3(input_file, Form("n_{WT1}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs);
-        //constrainVar3(input_file, Form("n_{WT2}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs); 
+        constrainVar3(input_file, Form("#sigma_{WT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#alpha_{WT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#alpha_{WT2}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("n_{WT1}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("n_{WT2}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs); 
     }
     
     return dcb_wt;                                                   

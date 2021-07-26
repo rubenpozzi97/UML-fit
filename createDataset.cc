@@ -11,7 +11,7 @@ double PDGKstMass = 0.896;
 
 TCanvas* c [nBins];
 
-void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
+void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
 {
   // year format: [6] for 2016
   //              [7] for 2017
@@ -26,6 +26,8 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
   bool isJpsi = false;
   bool isPsi  = false;
   bool isLMNR = false;
+
+  cout << "q2Bin = " << q2Bin << endl;
 
   if (q2Bin==4)      isJpsi = true;
   else if (q2Bin==6) isPsi = true;
@@ -150,6 +152,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     RooDataSet* data_ctRECO_od [nBins];
     RooDataSet* data_wtRECO_ev [nBins];
     RooDataSet* data_wtRECO_od [nBins];
+
     for (int i=0; i<nBins; ++i) if (runBin[i]){
         data_ctRECO_ev [i] = new RooDataSet( ("data_ctRECO_ev_"+shortString[i]).c_str(), "Correctly-tagged reconstructed candidates after selections (even)",
     					     reco_vars, "weight" );
@@ -160,14 +163,13 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
         data_wtRECO_od [i] = new RooDataSet( ("data_wtRECO_od_"+shortString[i]).c_str(), "Wrongly-tagged reconstructed candidates after selections (odd)",
 					     reco_vars, "weight" );
     }
-  
+
     // Prepare numerator dataset
     cout<<"Starting numerator dataset filling..."<<endl;
     counter=0;
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
       // anti-radiation cut
-      passB0Psi_jpsi = 1;
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
       else if (isPsi  && passB0Psi_psip == 0)  continue;
@@ -205,6 +207,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
       phi.setVal(recoPhi);
       mass.setVal(recoB0Mass);
       rand.setVal(rand_gen.Uniform(1));
+  
       if (genSignal != tagB0+1) { // correctly tagged events
         if (eventN%2==0) data_ctRECO_ev[xBin]->add(reco_vars,PUweight);
         else data_ctRECO_od[xBin]->add(reco_vars,PUweight);
@@ -218,6 +221,7 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     // Save datasets in workspaces
     RooWorkspace *ws_ev [nBins];
     RooWorkspace *ws_od [nBins];
+
     for (int i=0; i<nBins; ++i) if (runBin[i]) {
         // Skip the creation of a file when the correct-tag efficiency cannot be computed (empty numerators)
         // which usually means that either you are using a resonant MC, which does not fill signal q2 bins,
@@ -240,7 +244,8 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
         ws_ev[i]->Write();
         ws_od[i]->Write();
         fout->Close();
-      }
+
+     }
 
     // Plot 1D distributions of datasets
     if (plot) {
@@ -376,7 +381,6 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
       // anti-radiation cut
-      passB0Psi_jpsi = 1;
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
       else if (isPsi  && passB0Psi_psip == 0)  continue;
@@ -412,13 +416,13 @@ void createDataset(int year, int q2Bin = -1, int data = 1, bool plot = false)
       ctL.setVal(recoCosThetaL);
       phi.setVal(recoPhi);
       mass.setVal(recoB0Mass);
+
       data[xBin]->add(reco_vars);
     }
     cout<<"Dataset prepared"<<endl;
 
     // Save datasets in workspaces
     RooWorkspace *ws [nBins];
-
     for (int i=0; i<nBins; ++i) if (runBin[i]) {
       if ( data[i]->numEntries()==0  ) {
         cout<<"Error: RECO data is empty in q2 bin "<<i<<endl;
