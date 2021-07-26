@@ -101,8 +101,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
   else if(comp == 1){
     mass = new RooRealVar("mass","mass", 4.9,5.7);
   }
-  else if((q2Bin == 4) && ((pdf_model == 0) || (pdf_model == 3) || (pdf_model == 4))){
-    mass = new RooRealVar("mass","mass", 5.1,5.5);
+  else if((q2Bin == 4) && (pdf_model == 0)){
+    mass = new RooRealVar("mass","mass", 5.1,5.45);
   }
   else if(pdf_model == 1){
     mass = new RooRealVar("mass","mass", 5.1,5.6);
@@ -383,7 +383,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     else if(constrain > 0){
       sigma_wt = new RooRealVar(Form("#sigma_{WT1}^{%i}",years[iy]), "sigmawt", MC_fit_result(input_file_WT, Form("#sigma_{WT1}^{%i}",years[iy]), q2Bin), 0, 1, "GeV");
       alpha_wt1 = new RooRealVar(Form("#alpha_{WT1}^{%i}",years[iy]), "alphawt1", MC_fit_result(input_file_WT, Form("#alpha_{WT1}^{%i}",years[iy]), q2Bin), 0, 10);
-      alpha_wt2 = new RooRealVar(Form("#alpha_{WT2}^{%i}",years[iy]), "alphawt2", MC_fit_result(input_file_WT, Form("#alpha_{WT1}^{%i}",years[iy]), q2Bin), 0, 10);
+      alpha_wt2 = new RooRealVar(Form("#alpha_{WT2}^{%i}",years[iy]), "alphawt2", MC_fit_result(input_file_WT, Form("#alpha_{WT2}^{%i}",years[iy]), q2Bin), 0, 10);
       n_wt1 = new RooRealVar(Form("n_{WT1}^{%i}",years[iy]), "nwt1", MC_fit_result(input_file_WT, Form("n_{WT1}^{%i}",years[iy]), q2Bin), 0., 100.);
       n_wt2 = new RooRealVar(Form("n_{WT2}^{%i}",years[iy]), "nwt2", MC_fit_result(input_file_WT, Form("n_{WT2}^{%i}",years[iy]), q2Bin), 0., 100.);
       mean_difference = new RooRealVar (Form("mean_difference^{%i}",years[iy]), "mean_difference", MC_fit_result(input_file_WT, Form("mean_{WT}^{%i}",years[iy]), q2Bin) - MC_fit_result(input_file_RT, Form("mean_{RT}^{%i}",years[iy]), q2Bin), -2, 2, "GeV");
@@ -398,7 +398,19 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
     if(constrain == 1){//constrained fit
       mass_wt = new RooFormulaVar(Form("mass_{WT}^{%i}",years[iy]), "meanwt", "@0+@1", RooArgList(*mean_rt,*mean_difference)); 
-      dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], true, c_vars_wt, c_pdfs_wt);
+
+      if( ((pdf_model != 0) && (q2Bin == 4)) || ((pdf_model == 3) && (q2Bin != 4) && (q2Bin != 6))){ // fix WT shape of MC to compute systematics
+        sigma_wt->setConstant();
+        alpha_wt1->setConstant();
+        alpha_wt2->setConstant();
+        n_wt1->setConstant();
+        n_wt2->setConstant();
+     
+        dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], false, c_vars_wt, c_pdfs_wt);
+      }
+      else{
+        dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], true, c_vars_wt, c_pdfs_wt);
+      }
     }
     else if(constrain == 0){//unconstrained fit
       dcb_wt = createWTMassShape(q2Bin, mass, mean_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], false, c_vars_wt, c_pdfs_wt);
@@ -418,9 +430,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
       dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt_fix, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], false, c_vars_wt, c_pdfs_wt);
     }  
-
-    TFile* f_peaking_bkg = TFile::Open("~/public/UML-fit/Peaking_bkg/peaking_bkg.root");
-    RooFitResult* fitresult_peaking_bkg = (RooFitResult*)f_peaking_bkg->Get("fitresult_part_reco_bkg_data_bkg");
 
     if(constrain == 1){ // fit with Gaussian constraints
       /// create constrained PDF for RT mass
@@ -493,15 +502,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         shift = new RooRealVar("shift", "shift", 5.13, 4.7, 5.2);
         f_erf = new RooRealVar("f_erf", "f_erf", 0.5, 0., 1.);
 
-        if( ((q2Bin == 4) && (pdf_model != 3)) || ((q2Bin != 4) && (q2Bin != 6) && (pdf_model == 4))){
-          sigma_wt->setConstant();
-          alpha_wt1->setConstant();
-          alpha_wt2->setConstant();
-          n_wt1->setConstant();
-          n_wt2->setConstant();
-        }
-
-        if( (pdf_model == 3) && (q2Bin != 6) && (q2Bin != 4) ){
+        /*if( (pdf_model == 3) && (q2Bin != 6) && (q2Bin != 4) ){
           RooExponential* exp_bkg = new RooExponential(("exp_bkg_PDF_"+year).c_str(),
                                                        ("exp_bkg_PDF_"+year).c_str(),
                                                         *mass, *lambda);
@@ -515,26 +516,8 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
           final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
                                              ("final_PDF_extended_"+year).c_str(),
                                               RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
-        }
-        else if((pdf_model == 3) && (q2Bin == 6)){
-        
-          RooGenericPdf* erf_bkg = new RooGenericPdf(("erf_bkg_PDF_"+year).c_str(),
-                                                     ("erf_bkg_PDF_"+year).c_str(), 
-                                                     "TMath::Erfc((mass-shift)*scale)",RooArgList(*mass,*shift,*scale));
-
-          RooPolynomial* poly_bkg = new RooPolynomial(("poly_bkg_PDF_"+year).c_str(),
-                                                      ("poly_bkg_PDF_"+year).c_str(),
-                                                      *mass, *slope);
-
-          RooAddPdf* CB_bkg = new RooAddPdf(("CB_bkg_PDF_"+year).c_str(),
-                                            ("CB_bkg_PDF_"+year).c_str(),
-                                             RooArgList(*poly_bkg,*erf_bkg), *cofs);
-
-          final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                             ("final_PDF_extended_"+year).c_str(),
-                                              RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
-        }
-        else if((pdf_model == 4) && (q2Bin == 6)){
+        }*/
+        if((pdf_model == 3) && ((q2Bin == 6) || (q2Bin == 4))){
           RooExponential* exp_bkg = new RooExponential(("exp_bkg_PDF_"+year).c_str(),
                                                        ("exp_bkg_PDF_"+year).c_str(),
                                                         *mass, *lambda);
@@ -548,30 +531,6 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                              ("final_PDF_extended_"+year).c_str(),
                                               RooArgList(*final_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
         }
-        /*else if((q2Bin == 4) && (pdf_model == 0)){
-          
-          RooExponential* CB_bkg = new RooExponential(("CB_bkg_PDF_"+year).c_str(),
-                                                      ("CB_bkg_PDF_"+year).c_str(),
-                                                       *mass, *lambda);
-
-          fitresult_peaking_bkg->Print("v");
-
-          RooRealVar* shift_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("shift");
-          RooRealVar* scale_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("scale");
-	  RooRealVar* frac_fit = (RooRealVar*)f_peaking_bkg->Get("frac");
-
-          shift_fit->setConstant();
-          scale_fit->setConstant();
-
-          RooProduct* part_bkg_yield = new RooProduct("part_bkg_yield", "peaking_bkg_yield", RooArgList(*frac_fit,*signal_yield));
-
-          RooGenericPdf* erf_bkg = new RooGenericPdf("erf_bkg","erf_bkg","TMath::Erfc((mass-shift)*scale)",RooArgList(*mass,*shift_fit,*scale_fit));
-
-          final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                             ("final_PDF_extended_"+year).c_str(),
-                                              RooArgList(*final_PDF, *CB_bkg, *erf_bkg), RooArgList(*signal_yield, *CB_yield, *part_bkg_yield));
-          
-        }*/
         else{
           RooExponential* CB_bkg = new RooExponential(("CB_bkg_PDF_"+year).c_str(),
                                       ("CB_bkg_PDF_"+year).c_str(),
@@ -597,12 +556,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
     else if(constrain == 2){ // fit with values fixed to MC
       lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", -2., -10., 1.);
-      slope = new RooRealVar(Form("slope^{%i}",years[iy]), "slope", 1., -5., 5.);
-      mean_cb = new RooRealVar(Form("mean_cb^{%i}",years[iy]), "mean_cb", 5.05, 5., 5.15);
-      sigma_cb = new RooRealVar(Form("sigma_cb^{%i}",years[iy]), "sigma_cb", 1., 0., 5.);
       cofs = new RooRealVar(Form("cofs^{%i}",years[iy]), "cofs", 0.5, 0., 1.);
-      scale = new RooRealVar("scale", "scale", 12., 5., 15.);
-      shift = new RooRealVar("shift", "shift", 5.13, 5.0, 5.5);
 
       RooRealVar* constrained_yield_RT = (RooRealVar*)fitresult_RT->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
       RooRealVar* constrained_yield_WT = (RooRealVar*)fitresult_WT->floatParsFinal().find(Form("sig_yield^{%i}",years[iy]));
@@ -623,42 +577,9 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
                                                   ("CB_bkg_PDF_"+year).c_str(),
                                                    *mass, *lambda);
 
-      if(q2Bin == 4){
- 
-        fitresult_peaking_bkg->Print("v");
-
-        RooRealVar* shift_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("shift");
-        RooRealVar* scale_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("scale");
-        RooRealVar* f_erf_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("f_erf");
-        RooRealVar* lambda_fit = (RooRealVar*)fitresult_peaking_bkg->floatParsFinal().find("lambda");
-        RooRealVar* frac_fit = (RooRealVar*)f_peaking_bkg->Get("frac");
-
-        shift_fit->setConstant();
-        scale_fit->setConstant();
-        f_erf_fit->setConstant();
-        lambda_fit->setConstant();
-
-        cout << "scale = " << scale_fit->getVal() << endl;
-        cout << "shift = " << shift_fit->getVal() << endl;
-        cout << "f_erf = " << f_erf_fit->getVal() << endl;
-        cout << "lambda = " << lambda_fit->getVal() << endl;
-        cout << "frac = " << frac_fit->getVal() << endl;
-
-        RooProduct* part_bkg_yield = new RooProduct("part_bkg_yield", "peaking_bkg_yield", RooArgList(*frac_fit,*signal_yield));
-
-        RooGenericPdf* erf_bkg = new RooGenericPdf("erf_bkg","erf_bkg","TMath::Erfc((mass-shift)*scale)",RooArgList(*mass,*shift_fit,*scale_fit));
-        RooExponential* exp_bkg = new RooExponential("exp_bkg","exp_bkg",*mass,*lambda_fit);
-        RooAddPdf* part_bkg = new RooAddPdf("part_bkg","part_bkg",RooArgList(*erf_bkg,*exp_bkg),*f_erf_fit);
-
-        final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                           ("final_PDF_extended_"+year).c_str(),
-                                            RooArgList(*signal_PDF, *CB_bkg, *part_bkg), RooArgList(*signal_yield, *CB_yield, *part_bkg_yield));
-      }
-      else{
-        final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
-                                           ("final_PDF_extended_"+year).c_str(),
-                                            RooArgList(*signal_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
-      }
+      final_PDF_extended = new RooAddPdf(("final_PDF_extended_"+year).c_str(),
+                                         ("final_PDF_extended_"+year).c_str(),
+                                          RooArgList(*signal_PDF, *CB_bkg), RooArgList(*signal_yield, *CB_yield));
     }
 
     // insert sample in the category map, to be imported in the combined dataset
@@ -908,7 +829,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
           //c[confIndex]->cd(iy+1);
 
           p1->cd();
-          frames[fr]->SetTitle(Form("CMS             L = 139.5 fb^{-1}             #sqrt{s} = 13 TeV             Year %i",years[iy]));
+          frames[fr]->SetTitle(Form("CMS Preliminary            L = 139.5 fb^{-1}             #sqrt{s} = 13 TeV (pp)            Year %i",years[iy]));
           frames[fr]->SetXTitle("m(K^{+} #pi^{-} #mu^{+} #mu^{-}) (GeV)");
           frames[fr]->SetYTitle(TString::Format("Events / (%g)",(mass->getMax()-mass->getMin())/80));
           frames[fr]->GetYaxis()->SetTitleFont(43);
