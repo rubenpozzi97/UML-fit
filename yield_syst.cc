@@ -47,38 +47,26 @@ void yield_syst(){
   double yields_syst_2017[n_q2Bin];
   double yields_syst_2018[n_q2Bin];
 
-  cout << '|' << setw(15) << "Year" << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "PDF" << '|' << setw(15) << "Yield" << '|' << setw(15) << "Yield Error" << '|' << setw(15) << "Stat" << '|' << setw(15) << "Syst" << '|' << endl;
+  cout << '|' << setw(15) << "Year" << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "PDF" << '|' << setw(15) << "Yield" << '|' << setw(15) << "Yield Error" << '|' << setw(15) << "Rel. Stat. (%)" << '|' << setw(15) << "Rel. Diff. (%)" << '|' << endl;
 
   int n_pdf = 5;
 
-  float signal_yield_2016[n_q2Bin][n_pdf];
-  float signal_yield_2017[n_q2Bin][n_pdf];
-  float signal_yield_2018[n_q2Bin][n_pdf];
+  double signal_yield_2016[n_q2Bin][n_pdf];
+  double signal_yield_2017[n_q2Bin][n_pdf];
+  double signal_yield_2018[n_q2Bin][n_pdf];
 
-  float stat_yield_2016[n_q2Bin][n_pdf];
-  float stat_yield_2017[n_q2Bin][n_pdf];
-  float stat_yield_2018[n_q2Bin][n_pdf];
+  double stat_yield_2016[n_q2Bin][n_pdf];
+  double stat_yield_2017[n_q2Bin][n_pdf];
+  double stat_yield_2018[n_q2Bin][n_pdf];
 
-  float syst_yield_2016[n_q2Bin][n_pdf];
-  float syst_yield_2017[n_q2Bin][n_pdf];
-  float syst_yield_2018[n_q2Bin][n_pdf];
+  double syst_yield_2016[n_q2Bin][n_pdf];
+  double syst_yield_2017[n_q2Bin][n_pdf];
+  double syst_yield_2018[n_q2Bin][n_pdf];
 
   for(int q2Bin = 0; q2Bin < n_q2Bin; q2Bin++){
 
 
     for(int year = 6; year < 9; year++){
-
-      double sig_yield_2016[n_pdf];
-      double sig_yield_stat_2016[n_pdf];
-      double sig_yield_syst_2016[n_pdf];
-
-      double sig_yield_2017[n_pdf];
-      double sig_yield_stat_2017[n_pdf];
-      double sig_yield_syst_2017[n_pdf];
-
-      double sig_yield_2018[n_pdf];
-      double sig_yield_stat_2018[n_pdf];
-      double sig_yield_syst_2018[n_pdf];
 
       for(int pdf = 0; pdf < n_pdf; pdf++){   
         TFile* f; 
@@ -96,52 +84,56 @@ void yield_syst(){
         RooRealVar* signal_yield = (RooRealVar*)fitresult->floatParsFinal().find(Form("sig_yield^{201%i}",year));
 
         if(year == 6){
-          sig_yield_2016[pdf] = signal_yield->getVal();
-          sig_yield_stat_2016[pdf] = signal_yield->getError();
-          sig_yield_syst_2016[pdf] = abs(sig_yield_2016[0]-sig_yield_2016[pdf]);
-          cout << '|' << setw(15) << 2016 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf << '|' << setw(15) <<  sig_yield_stat_2016[pdf] << '|' << setw(15) << sig_yield_stat_2016[pdf]  << '|' << setw(15) << sig_yield_stat_2016[pdf]/sig_yield_2016[pdf] << '|' << setw(15) <<  sig_yield_syst_2016[pdf]/sig_yield_2016[pdf] << '|' << endl;
-          signal_yield_2016[q2Bin][pdf] = sig_yield_2016[pdf];
-          stat_yield_2016[q2Bin][pdf] = sig_yield_stat_2016[pdf];
-          syst_yield_2016[q2Bin][pdf] = sig_yield_syst_2016[pdf];
+          signal_yield_2016[q2Bin][pdf] = signal_yield->getVal();
+          stat_yield_2016[q2Bin][pdf] = signal_yield->getError();
+          syst_yield_2016[q2Bin][pdf] = abs(signal_yield_2016[q2Bin][0] - signal_yield_2016[q2Bin][pdf]);
+
+          cout << '|' << setw(15) << 2016 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf << '|' << setw(15) <<  signal_yield_2016[q2Bin][pdf]  << '|' << setw(15) << stat_yield_2016[q2Bin][pdf]  << '|' << setw(15) << (stat_yield_2016[q2Bin][pdf]/signal_yield_2016[q2Bin][pdf])*100 << '|' << setw(15) << (syst_yield_2016[q2Bin][pdf]/signal_yield_2016[q2Bin][0])*100 << '|' << endl;
         }
         else if(year == 7){
-          sig_yield_2017[pdf] = signal_yield->getVal();
-          sig_yield_stat_2017[pdf] = signal_yield->getError();
-          sig_yield_syst_2017[pdf] = abs(sig_yield_2017[0]-sig_yield_2017[pdf]);
-          cout << '|' << setw(15) << 2017 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf << '|' << setw(15) << sig_yield_2017[pdf] << '|' << setw(15) << sig_yield_stat_2017[pdf]  << '|' << setw(15) << sig_yield_stat_2017[pdf]/sig_yield_2017[pdf] << '|' << setw(15) <<  sig_yield_syst_2017[pdf]/sig_yield_2017[pdf] << '|' << endl;
-          signal_yield_2017[q2Bin][pdf] = sig_yield_2017[pdf];
-          stat_yield_2017[q2Bin][pdf] = sig_yield_stat_2017[pdf];
-          syst_yield_2017[q2Bin][pdf] = sig_yield_syst_2017[pdf];
+          signal_yield_2017[q2Bin][pdf] = signal_yield->getVal();
+          stat_yield_2017[q2Bin][pdf] = signal_yield->getError();
+          syst_yield_2017[q2Bin][pdf] = abs(signal_yield_2017[q2Bin][0] - signal_yield_2017[q2Bin][pdf]);
+
+          cout << '|' << setw(15) << 2017 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf << '|' << setw(15) << signal_yield_2017[q2Bin][pdf] << '|' << setw(15) << stat_yield_2017[q2Bin][pdf]  << '|' << setw(15) << (stat_yield_2017[q2Bin][pdf]/signal_yield_2017[q2Bin][pdf])*100 << '|' << setw(15) << (syst_yield_2017[q2Bin][pdf]/signal_yield_2017[q2Bin][0])*100 << '|' << endl;
         }
         else if(year == 8){
-          sig_yield_2018[pdf] = signal_yield->getVal();
-          sig_yield_stat_2018[pdf] = signal_yield->getError();
-          sig_yield_syst_2018[pdf] = abs(sig_yield_2018[0]-sig_yield_2018[pdf]);
-          cout << '|' << setw(15) << 2018 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf  << '|' << setw(15) << sig_yield_2018[pdf]  << '|' << setw(15) << sig_yield_stat_2018[pdf] << '|' << setw(15) << sig_yield_stat_2018[pdf]/sig_yield_2018[pdf] << '|' << setw(15) <<  sig_yield_syst_2018[pdf]/sig_yield_2018[pdf] << '|' << endl;
-          signal_yield_2018[q2Bin][pdf] = sig_yield_2018[pdf];
-          stat_yield_2018[q2Bin][pdf] = sig_yield_stat_2018[pdf];
-          syst_yield_2018[q2Bin][pdf] = sig_yield_syst_2018[pdf];
+          signal_yield_2018[q2Bin][pdf] = signal_yield->getVal();
+          stat_yield_2018[q2Bin][pdf] = signal_yield->getError();
+          syst_yield_2018[q2Bin][pdf] = abs(signal_yield_2018[q2Bin][0] - signal_yield_2018[q2Bin][pdf]);
+
+          cout << '|' << setw(15) << 2018 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf  << '|' << setw(15) << signal_yield_2018[q2Bin][pdf]  << '|' << setw(15) << stat_yield_2018[q2Bin][pdf] << '|' << setw(15) << (stat_yield_2018[q2Bin][pdf]/signal_yield_2018[q2Bin][pdf])*100 << '|' << setw(15) <<  (syst_yield_2018[q2Bin][pdf]/signal_yield_2018[q2Bin][0])*100 << '|' << endl;
         }        
         delete f;
       }       
  
       if(year == 6){// from nominal fit
-        yields_2016[q2Bin] = sig_yield_2016[0];
-        yields_stat_2016[q2Bin] = sig_yield_stat_2016[0];
-        yields_syst_2016[q2Bin] = getMax(sig_yield_syst_2016,n_pdf);
+        yields_2016[q2Bin] = signal_yield_2016[q2Bin][0];
+        yields_stat_2016[q2Bin] = stat_yield_2016[q2Bin][0];
+
+        yields_syst_2016[q2Bin] = getMax(syst_yield_2016[q2Bin],n_pdf);
       }
       else if(year == 7){
-        yields_2017[q2Bin] = sig_yield_2017[0];
-        yields_stat_2017[q2Bin] = sig_yield_stat_2017[0];
-        yields_syst_2017[q2Bin] = getMax(sig_yield_syst_2017,n_pdf);
+        yields_2017[q2Bin] = signal_yield_2017[q2Bin][0];
+        yields_stat_2017[q2Bin] = stat_yield_2017[q2Bin][0];
+        yields_syst_2017[q2Bin] = getMax(syst_yield_2017[q2Bin],n_pdf);
       } 
       else if(year == 8){
-        yields_2018[q2Bin] = sig_yield_2018[0];
-        yields_stat_2018[q2Bin] = sig_yield_stat_2018[0];
-        yields_syst_2018[q2Bin] = getMax(sig_yield_syst_2018,n_pdf);
+        yields_2018[q2Bin] = signal_yield_2018[q2Bin][0];
+        yields_stat_2018[q2Bin] = stat_yield_2018[q2Bin][0];
+        yields_syst_2018[q2Bin] = getMax(syst_yield_2018[q2Bin],n_pdf);
      }
     }//ends loop over years  
   }//ends loop over q2Bins
+
+
+  cout << '|' << setw(15) << "Year" << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "Yield (nominal)" << '|' << setw(15) << "Yield Error" << '|' << setw(15) << "Rel. Stat. (%)" << '|' << setw(15) << "Rel. Syst. (%)" << '|' << endl;
+
+  for(int q2Bin = 0; q2Bin < n_q2Bin; q2Bin++){
+    cout << '|' << setw(15) << 2016 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2016[q2Bin] << '|' << setw(15) << yields_stat_2016[q2Bin] << '|' << setw(15) << (yields_stat_2016[q2Bin]/yields_2016[q2Bin])*100 << '|' << setw(15) << (yields_syst_2016[q2Bin]/yields_2016[q2Bin])*100 << '|' << endl;
+    cout << '|' << setw(15) << 2017 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2017[q2Bin] << '|' << setw(15) << yields_stat_2017[q2Bin] << '|' << setw(15) << (yields_stat_2017[q2Bin]/yields_2017[q2Bin])*100 << '|' << setw(15) << (yields_syst_2017[q2Bin]/yields_2017[q2Bin])*100 << '|' << endl;
+    cout << '|' << setw(15) << 2018 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2018[q2Bin] << '|' << setw(15) << yields_stat_2018[q2Bin] << '|' << setw(15) << (yields_stat_2018[q2Bin]/yields_2018[q2Bin])*100 << '|' << setw(15) << (yields_syst_2018[q2Bin]/yields_2018[q2Bin])*100 << '|' << endl;
+  } 
 
   TFile* f_output_2016 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2016.root", "UPDATE");
   TFile* f_output_2017 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2017.root", "UPDATE");
@@ -260,15 +252,6 @@ void yield_syst(){
  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   cout << '|' << setw(15) << "Year" << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "Yield" << '|' << setw(15) << "Stat" << '|' << setw(15) << "Syst" << '|' << endl;
-
-  for(int i = 0; i < n_q2Bin; i++){
-   cout << '|' << setw(15) << 2016 << '|' << setw(15) << i << '|' << setw(15) << yields_2016[i]  << '|' << setw(15) << yields_stat_2016[i]/yields_2016[i] << '|' << setw(15) << yields_syst_2016[i]/yields_2016[i] << '|' << endl;
-   cout << '|' << setw(15) << 2017 << '|' << setw(15) << i << '|' << setw(15) << yields_2017[i]  << '|' << setw(15) << yields_stat_2017[i]/yields_2017[i] << '|' << setw(15) << yields_syst_2017[i]/yields_2017[i] << '|' << endl;
-   cout << '|' << setw(15) << 2018 << '|' << setw(15) << i << '|' << setw(15) << yields_2018[i]  << '|' << setw(15) << yields_stat_2018[i]/yields_2018[i] << '|' << setw(15) << yields_syst_2018[i]/yields_2018[i] << '|' << endl;
-  }
-
-
   // STAT TABLE
   std::string filename_stat = "/afs/cern.ch/user/m/mfaria/public/UML-fit/Systematics/tables/yield_stat_table.tex";
   file_stat.open(filename_stat);
@@ -283,7 +266,7 @@ void yield_syst(){
   file_stat << "\\begin{tabular}{|c|c|c|c|c|c|c|c|}" << std::endl;
   file_stat << "\\hline" << std::endl;
 
-  std::vector<std::string> col_name_stat = {"$q^2$ bin", "Year", "Nominal", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "Exp+poly/Exp+erf", "Scale factor"};
+  std::vector<std::string> col_name_stat = {"$q^2$ bin", "Year", "Nominal", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed/Exp+erf", "Scale factor"};
   for(int c = 0; c < 6; c++){
     file_stat << col_name_stat[c] << " & ";
   }
@@ -316,7 +299,7 @@ void yield_syst(){
   file_syst << "\\begin{tabular}{|c|c|c|c|c|c|c|c|}" << std::endl;
   file_syst << "\\hline" << std::endl;
 
-  std::vector<std::string> col_name_syst = {"$q^2$ bin", "Year", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "Exp+poly/Exp+erf", "Scale factor", "Total"};
+  std::vector<std::string> col_name_syst = {"$q^2$ bin", "Year", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed/Exp+erf", "Scale factor", "Total"};
   for(int c = 0; c < 6; c++){
     file_syst << col_name_syst[c] << " & ";
   }
@@ -324,11 +307,12 @@ void yield_syst(){
   file_syst << "\\hline" << std::endl;
 
   for(int i = 0; i < n_q2Bin; i++){
-    file_syst << " & " << " 2016 & " << Form("%.2lf & ", (syst_yield_2016[i][1]/signal_yield_2016[i][1])*100) << Form("%.2lf & ", (syst_yield_2016[i][2]/signal_yield_2016[i][2])*100) << Form("%.2lf & ", (syst_yield_2016[i][3]/signal_yield_2016[i][3])*100) << Form("%.2lf & ", (syst_yield_2016[i][4]/signal_yield_2016[i][4])*100) << Form("%.2lf ", (yields_syst_2016[i]/yields_2016[i])*100) << "\\\\" << std::endl;
 
-    file_syst << Form("%i & ",i) << " 2017 & " << Form("%.2lf & ", (syst_yield_2017[i][1]/signal_yield_2017[i][1])*100) << Form("%.2lf & ", (syst_yield_2017[i][2]/signal_yield_2017[i][2])*100) << Form("%.2lf & ", (syst_yield_2017[i][3]/signal_yield_2017[i][3])*100) << Form("%.2lf & ", (syst_yield_2017[i][4]/signal_yield_2017[i][4])*100) << Form("%.2lf ", (yields_syst_2017[i]/yields_2017[i])*100) << "\\\\" << std::endl;
+    file_syst << " & " << " 2016 & " << Form("%.2lf & ", (syst_yield_2016[i][1]/signal_yield_2016[i][1])*100.) << Form("%.2lf & ", (syst_yield_2016[i][2]/signal_yield_2016[i][2])*100.) << Form("%.2lf & ", (syst_yield_2016[i][3]/signal_yield_2016[i][3])*100.) << Form("%.2lf & ", (syst_yield_2016[i][4]/signal_yield_2016[i][4])*100.) << Form("%.2lf ", (yields_syst_2016[i]/yields_2016[i])*100.) << "\\\\" << std::endl;
 
-    file_syst << " & " << " 2018 & " << Form("%.2lf & ", (syst_yield_2018[i][1]/signal_yield_2018[i][1])*100) << Form("%.2lf & ", (syst_yield_2018[i][2]/signal_yield_2018[i][2])*100) << Form("%.2lf & ", (syst_yield_2018[i][3]/signal_yield_2018[i][3])*100) << Form("%.2lf & ", (syst_yield_2018[i][4]/signal_yield_2018[i][4])*100) << Form("%.2lf ", (yields_syst_2018[i]/yields_2018[i])*100) << "\\\\ \\hline" << std::endl;
+    file_syst << Form("%i & ",i) << " 2017 & " << Form("%.2lf & ", (syst_yield_2017[i][1]/signal_yield_2017[i][1])*100.) << Form("%.2lf & ", (syst_yield_2017[i][2]/signal_yield_2017[i][2])*100.) << Form("%.2lf & ", (syst_yield_2017[i][3]/signal_yield_2017[i][3])*100.) << Form("%.2lf & ", (syst_yield_2017[i][4]/signal_yield_2017[i][4])*100.) << Form("%.2lf ", (yields_syst_2017[i]/yields_2017[i])*100.) << "\\\\" << std::endl;
+
+    file_syst << " & " << " 2018 & " << Form("%.2lf & ", (syst_yield_2018[i][1]/signal_yield_2018[i][1])*100.) << Form("%.2lf & ", (syst_yield_2018[i][2]/signal_yield_2018[i][2])*100.) << Form("%.2lf & ", (syst_yield_2018[i][3]/signal_yield_2018[i][3])*100.) << Form("%.2lf & ", (syst_yield_2018[i][4]/signal_yield_2018[i][4])*100.) << Form("%.2lf ", (yields_syst_2018[i]/yields_2018[i])*100.) << "\\\\ \\hline" << std::endl;
   }
 
   file_syst << "\\end{tabular}" << std::endl;
@@ -341,15 +325,10 @@ double getMax(double list[5], int n_pdf){
 
   double max = list[0];
 
-  for(int i = 0; i < n_pdf; i++){
+  for(int i = 0; i <= n_pdf; i++){
     if(max < list[i]) {
       max = list[i];
     }   
   }
   return max; 
 }
-
-
-
-
-
