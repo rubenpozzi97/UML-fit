@@ -107,6 +107,9 @@ void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
   Long64_t eventN;
   t_num->SetBranchAddress( "eventN", &eventN     );
 
+  Long64_t runN;
+  t_num->SetBranchAddress("runN", &runN);
+
   // cut to remove B+->Psi(2S)K->Jpsi pi pi K
   // will be a boolean in ntuples in the future
   // keep it here for now since not finalized
@@ -169,6 +172,9 @@ void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
     counter=0;
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
+     
+      if( (year == 6) && (runN <= 277990) ){continue;} // removes problematic period of 2016
+
       // anti-radiation cut
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
@@ -380,6 +386,9 @@ void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
     counter=0;
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
+
+      if( (year == 6) && (runN <= 277990) ){continue;} // remove problematic year of 2016
+
       // anti-radiation cut
       if (isLMNR && passB0Psi_lmnr == 0) continue;
       else if (isJpsi && passB0Psi_jpsi == 0) continue;
