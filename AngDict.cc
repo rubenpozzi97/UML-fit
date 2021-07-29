@@ -45,7 +45,6 @@ namespace std {} using namespace std;
 #include "interface/Penalty.h"
 #include "interface/BoundDist.h"
 #include "interface/PdfSigAngMass.h"
-#include "interface/PdfSigMass.h"
 #include "interface/ShapeSigAng.h"
 #include "interface/Fitter.h"
 
@@ -321,40 +320,6 @@ namespace ROOT {
    }
    // Static variable to force the class initialization
    static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::PdfSigAngMass*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
-} // end of namespace ROOT
-
-namespace ROOT {
-   static void *new_PdfSigMass(void *p = 0);
-   static void *newArray_PdfSigMass(Long_t size, void *p);
-   static void delete_PdfSigMass(void *p);
-   static void deleteArray_PdfSigMass(void *p);
-   static void destruct_PdfSigMass(void *p);
-   static void streamer_PdfSigMass(TBuffer &buf, void *obj);
-
-   // Function generating the singleton type initializer
-   static TGenericClassInfo *GenerateInitInstanceLocal(const ::PdfSigMass*)
-   {
-      ::PdfSigMass *ptr = 0;
-      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::PdfSigMass >(0);
-      static ::ROOT::TGenericClassInfo 
-         instance("PdfSigMass", ::PdfSigMass::Class_Version(), "interface/PdfSigMass.h", 26,
-                  typeid(::PdfSigMass), ::ROOT::Internal::DefineBehavior(ptr, ptr),
-                  &::PdfSigMass::Dictionary, isa_proxy, 16,
-                  sizeof(::PdfSigMass) );
-      instance.SetNew(&new_PdfSigMass);
-      instance.SetNewArray(&newArray_PdfSigMass);
-      instance.SetDelete(&delete_PdfSigMass);
-      instance.SetDeleteArray(&deleteArray_PdfSigMass);
-      instance.SetDestructor(&destruct_PdfSigMass);
-      instance.SetStreamerFunc(&streamer_PdfSigMass);
-      return &instance;
-   }
-   TGenericClassInfo *GenerateInitInstance(const ::PdfSigMass*)
-   {
-      return GenerateInitInstanceLocal((::PdfSigMass*)0);
-   }
-   // Static variable to force the class initialization
-   static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::PdfSigMass*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
 } // end of namespace ROOT
 
 namespace ROOT {
@@ -702,41 +667,6 @@ TClass *PdfSigAngMass::Dictionary()
 TClass *PdfSigAngMass::Class()
 {
    if (!fgIsA.load()) { R__LOCKGUARD(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::PdfSigAngMass*)0x0)->GetClass(); }
-   return fgIsA;
-}
-
-//______________________________________________________________________________
-atomic_TClass_ptr PdfSigMass::fgIsA(0);  // static to hold class pointer
-
-//______________________________________________________________________________
-const char *PdfSigMass::Class_Name()
-{
-   return "PdfSigMass";
-}
-
-//______________________________________________________________________________
-const char *PdfSigMass::ImplFileName()
-{
-   return ::ROOT::GenerateInitInstanceLocal((const ::PdfSigMass*)0x0)->GetImplFileName();
-}
-
-//______________________________________________________________________________
-int PdfSigMass::ImplFileLine()
-{
-   return ::ROOT::GenerateInitInstanceLocal((const ::PdfSigMass*)0x0)->GetImplFileLine();
-}
-
-//______________________________________________________________________________
-TClass *PdfSigMass::Dictionary()
-{
-   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::PdfSigMass*)0x0)->GetClass();
-   return fgIsA;
-}
-
-//______________________________________________________________________________
-TClass *PdfSigMass::Class()
-{
-   if (!fgIsA.load()) { R__LOCKGUARD(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::PdfSigMass*)0x0)->GetClass(); }
    return fgIsA;
 }
 
@@ -1399,84 +1329,6 @@ namespace ROOT {
 } // end of namespace ROOT for class ::PdfSigAngMass
 
 //______________________________________________________________________________
-void PdfSigMass::Streamer(TBuffer &R__b)
-{
-   // Stream an object of class PdfSigMass.
-
-   UInt_t R__s, R__c;
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(&R__s, &R__c); if (R__v) { }
-      RooAbsPdf::Streamer(R__b);
-      m.Streamer(R__b);
-      mean_rt.Streamer(R__b);
-      sigma_rt1.Streamer(R__b);
-      sigma_rt2.Streamer(R__b);
-      alpha_rt1.Streamer(R__b);
-      alpha_rt2.Streamer(R__b);
-      n_rt1.Streamer(R__b);
-      n_rt2.Streamer(R__b);
-      f1rt.Streamer(R__b);
-      mean_wt.Streamer(R__b);
-      sigma_wt1.Streamer(R__b);
-      alpha_wt1.Streamer(R__b);
-      alpha_wt2.Streamer(R__b);
-      n_wt1.Streamer(R__b);
-      n_wt2.Streamer(R__b);
-      mFrac.Streamer(R__b);
-      rtMassTerm.Streamer(R__b);
-      wtMassTerm.Streamer(R__b);
-      R__b.CheckByteCount(R__s, R__c, PdfSigMass::IsA());
-   } else {
-      R__c = R__b.WriteVersion(PdfSigMass::IsA(), kTRUE);
-      RooAbsPdf::Streamer(R__b);
-      m.Streamer(R__b);
-      mean_rt.Streamer(R__b);
-      sigma_rt1.Streamer(R__b);
-      sigma_rt2.Streamer(R__b);
-      alpha_rt1.Streamer(R__b);
-      alpha_rt2.Streamer(R__b);
-      n_rt1.Streamer(R__b);
-      n_rt2.Streamer(R__b);
-      f1rt.Streamer(R__b);
-      mean_wt.Streamer(R__b);
-      sigma_wt1.Streamer(R__b);
-      alpha_wt1.Streamer(R__b);
-      alpha_wt2.Streamer(R__b);
-      n_wt1.Streamer(R__b);
-      n_wt2.Streamer(R__b);
-      mFrac.Streamer(R__b);
-      rtMassTerm.Streamer(R__b);
-      wtMassTerm.Streamer(R__b);
-      R__b.SetByteCount(R__c, kTRUE);
-   }
-}
-
-namespace ROOT {
-   // Wrappers around operator new
-   static void *new_PdfSigMass(void *p) {
-      return  p ? new(p) ::PdfSigMass : new ::PdfSigMass;
-   }
-   static void *newArray_PdfSigMass(Long_t nElements, void *p) {
-      return p ? new(p) ::PdfSigMass[nElements] : new ::PdfSigMass[nElements];
-   }
-   // Wrapper around operator delete
-   static void delete_PdfSigMass(void *p) {
-      delete ((::PdfSigMass*)p);
-   }
-   static void deleteArray_PdfSigMass(void *p) {
-      delete [] ((::PdfSigMass*)p);
-   }
-   static void destruct_PdfSigMass(void *p) {
-      typedef ::PdfSigMass current_t;
-      ((current_t*)p)->~current_t();
-   }
-   // Wrapper around a custom streamer member function.
-   static void streamer_PdfSigMass(TBuffer &buf, void *obj) {
-      ((::PdfSigMass*)obj)->::PdfSigMass::Streamer(buf);
-   }
-} // end of namespace ROOT for class ::PdfSigMass
-
-//______________________________________________________________________________
 void ShapeSigAng::Streamer(TBuffer &R__b)
 {
    // Stream an object of class ShapeSigAng.
@@ -1847,7 +1699,7 @@ namespace ROOT {
       vector<double> *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(vector<double>));
       static ::ROOT::TGenericClassInfo 
-         instance("vector<double>", -2, "vector", 339,
+         instance("vector<double>", -2, "vector", 210,
                   typeid(vector<double>), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &vectorlEdoublegR_Dictionary, isa_proxy, 0,
                   sizeof(vector<double>) );
@@ -1906,14 +1758,13 @@ namespace {
 "interface/Penalty.h",
 "interface/BoundDist.h",
 "interface/PdfSigAngMass.h",
-"interface/PdfSigMass.h",
 "interface/ShapeSigAng.h",
 "interface/Fitter.h",
 0
     };
     static const char* includePaths[] = {
-"/cvmfs/cms.cern.ch/slc7_amd64_gcc820/lcg/root/6.12.07-ikaegh4/include",
-"/afs/cern.ch/user/m/mfaria/public/UML-fit/",
+"/cvmfs/sw.el7/gcc48/root/6.12.06/b03/include",
+"/home/t3cms/u21rpozzi/fit-project/UML-fit/",
 0
     };
     static const char* fwdDeclCode = R"DICTFWDDCLS(
@@ -1930,7 +1781,6 @@ class __attribute__((annotate(R"ATTRDUMP(Step function: 0 inside physical region
 class __attribute__((annotate(R"ATTRDUMP(Penalty term in parameter space)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/Penalty.h")))  Penalty;
 class __attribute__((annotate(R"ATTRDUMP(Step function: 0 inside physical region, 1 outside it)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/BoundDist.h")))  BoundDist;
 class __attribute__((annotate(R"ATTRDUMP(PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/PdfSigAngMass.h")))  PdfSigAngMass;
-class __attribute__((annotate(R"ATTRDUMP(PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/PdfSigMass.h")))  PdfSigMass;
 class __attribute__((annotate(R"ATTRDUMP(PDF for (angular decay rate x efficiency) of both correctly-tagged and wrongly-tagged events)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/ShapeSigAng.h")))  ShapeSigAng;
 class __attribute__((annotate(R"ATTRDUMP(Code to run the fit and statistical uncertainty)ATTRDUMP"))) __attribute__((annotate("$clingAutoload$interface/Fitter.h")))  Fitter;
 )DICTFWDDCLS";
@@ -1950,7 +1800,6 @@ class __attribute__((annotate(R"ATTRDUMP(Code to run the fit and statistical unc
 #include "interface/Penalty.h"
 #include "interface/BoundDist.h"
 #include "interface/PdfSigAngMass.h"
-#include "interface/PdfSigMass.h"
 #include "interface/ShapeSigAng.h"
 #include "interface/Fitter.h"
 
@@ -1964,7 +1813,6 @@ class __attribute__((annotate(R"ATTRDUMP(Code to run the fit and statistical unc
 "PdfRT", payloadCode, "@",
 "PdfSigAng", payloadCode, "@",
 "PdfSigAngMass", payloadCode, "@",
-"PdfSigMass", payloadCode, "@",
 "PdfWT", payloadCode, "@",
 "Penalty", payloadCode, "@",
 "ShapeSigAng", payloadCode, "@",

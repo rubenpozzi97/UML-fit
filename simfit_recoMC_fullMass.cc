@@ -383,7 +383,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
     else if(constrain > 0){
       sigma_wt = new RooRealVar(Form("#sigma_{WT1}^{%i}",years[iy]), "sigmawt", MC_fit_result(input_file_WT, Form("#sigma_{WT1}^{%i}",years[iy]), q2Bin), 0, 1, "GeV");
       alpha_wt1 = new RooRealVar(Form("#alpha_{WT1}^{%i}",years[iy]), "alphawt1", MC_fit_result(input_file_WT, Form("#alpha_{WT1}^{%i}",years[iy]), q2Bin), 0, 10);
-      alpha_wt2 = new RooRealVar(Form("#alpha_{WT2}^{%i}",years[iy]), "alphawt2", MC_fit_result(input_file_WT, Form("#alpha_{WT1}^{%i}",years[iy]), q2Bin), 0, 10);
+      alpha_wt2 = new RooRealVar(Form("#alpha_{WT2}^{%i}",years[iy]), "alphawt2", MC_fit_result(input_file_WT, Form("#alpha_{WT2}^{%i}",years[iy]), q2Bin), 0, 10);
       n_wt1 = new RooRealVar(Form("n_{WT1}^{%i}",years[iy]), "nwt1", MC_fit_result(input_file_WT, Form("n_{WT1}^{%i}",years[iy]), q2Bin), 0., 100.);
       n_wt2 = new RooRealVar(Form("n_{WT2}^{%i}",years[iy]), "nwt2", MC_fit_result(input_file_WT, Form("n_{WT2}^{%i}",years[iy]), q2Bin), 0., 100.);
       mean_difference = new RooRealVar (Form("mean_difference^{%i}",years[iy]), "mean_difference", MC_fit_result(input_file_WT, Form("mean_{WT}^{%i}",years[iy]), q2Bin) - MC_fit_result(input_file_RT, Form("mean_{RT}^{%i}",years[iy]), q2Bin), -2, 2, "GeV");
