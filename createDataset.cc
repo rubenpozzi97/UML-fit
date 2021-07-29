@@ -173,7 +173,7 @@ void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
      
-      if( (year == 6) && (runN <= 277990) ){continue;} // removes problematic period of 2016
+      if( (year == 6) && (runN >= 272007) && (runN <= 277990) ){continue;} // remove problematic year of 2016
 
       // anti-radiation cut
       if (isLMNR && passB0Psi_lmnr == 0) continue;
@@ -387,7 +387,7 @@ void createDataset(int year, int q2Bin, int data = 0, bool plot = false)
     for (int iCand=0; iCand<numEntries; ++iCand) {
       t_num->GetEntry(iCand);
 
-      if( (year == 6) && (runN <= 277990) ){continue;} // remove problematic year of 2016
+      if( (year == 6) && (runN >= 272007) && (runN <= 277990) ){continue;} // remove problematic year of 2016
 
       // anti-radiation cut
       if (isLMNR && passB0Psi_lmnr == 0) continue;
