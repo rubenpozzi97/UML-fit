@@ -17,6 +17,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <TGraph.h>
+#include <TGraphPainter.h>
+#include <TStyle.h>
 
 std::ofstream file_stat;
 std::ofstream file_syst;
@@ -29,10 +32,12 @@ void yield_syst(){
   double q2Bins[] = {1, 2, 4.3, 6, 8.68, 10.09, 12.86, 14.18, 16};
   double q2Bins_half[n_q2Bin];
   double q2Bins_err[n_q2Bin];
+  double bin_width[n_q2Bin];
 
   for(int i = 0; i < n_q2Bin; i++){
     q2Bins_half[i] = q2Bins[i] + 0.5* (q2Bins[i+1]-q2Bins[i]);
     q2Bins_err[i] = 0.5* (q2Bins[i+1]-q2Bins[i]);
+    bin_width[i] = q2Bins[i+1]-q2Bins[i];
   }
 
   double yields_2016[n_q2Bin];
@@ -73,15 +78,19 @@ void yield_syst(){
         RooFitResult* fitresult;
 
         if(pdf == 4){
-          f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c2m0_subs0CT+WT.root",year,q2Bin));
+          if(year == 6){f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i1_DATA_b%ip2c2m0_subs0CT+WT.root",year,q2Bin));}
+          else{f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c2m0_subs0CT+WT.root",year,q2Bin));}
           fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c2m0subs0",q2Bin));
         }
         else{
-          f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c1m%i_subs0CT+WT.root",year,q2Bin,pdf));
+          if(year == 6){f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i1_DATA_b%ip2c1m%i_subs0CT+WT.root",year,q2Bin,pdf));}
+          else{f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c1m%i_subs0CT+WT.root",year,q2Bin,pdf));}
           fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c1m%isubs0",q2Bin,pdf));
         }
 
-        RooRealVar* signal_yield = (RooRealVar*)fitresult->floatParsFinal().find(Form("sig_yield^{201%i}",year));
+        RooRealVar* signal_yield;
+        if(year == 6){signal_yield = (RooRealVar*)fitresult->floatParsFinal().find(Form("sig_yield^{201%i1}",year));}
+        else{signal_yield = (RooRealVar*)fitresult->floatParsFinal().find(Form("sig_yield^{201%i}",year));}
 
         if(year == 6){
           signal_yield_2016[q2Bin][pdf] = signal_yield->getVal();
@@ -110,7 +119,6 @@ void yield_syst(){
       if(year == 6){// from nominal fit
         yields_2016[q2Bin] = signal_yield_2016[q2Bin][0];
         yields_stat_2016[q2Bin] = stat_yield_2016[q2Bin][0];
-
         yields_syst_2016[q2Bin] = getMax(syst_yield_2016[q2Bin],n_pdf);
       }
       else if(year == 7){
@@ -139,19 +147,66 @@ void yield_syst(){
   TFile* f_output_2017 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2017.root", "UPDATE");
   TFile* f_output_2018 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2018.root", "UPDATE");
 
+  // non-resonant channel
+  double sig_yield_2016[n_q2Bin];
+  double sig_yield_2017[n_q2Bin];
+  double sig_yield_2018[n_q2Bin];
+
+  double sig_yield_stat_2016[n_q2Bin];
+  double sig_yield_stat_2017[n_q2Bin];
+  double sig_yield_stat_2018[n_q2Bin];
+
+  double sig_yield_syst_2016[n_q2Bin];
+  double sig_yield_syst_2017[n_q2Bin];
+  double sig_yield_syst_2018[n_q2Bin];
+
+  for(int i = 0; i < n_q2Bin; i++){
+    if((i != 4) && (i != 6)){
+      sig_yield_2016[i] = yields_2016[i];
+      sig_yield_2017[i] = yields_2017[i];
+      sig_yield_2018[i] = yields_2018[i];
+
+      sig_yield_stat_2016[i] = yields_stat_2016[i];
+      sig_yield_stat_2017[i] = yields_stat_2017[i];
+      sig_yield_stat_2018[i] = yields_stat_2018[i];
+
+      sig_yield_syst_2016[i] = yields_syst_2016[i];
+
+    }
+    else{
+      sig_yield_2016[i] = 0.;
+      sig_yield_2017[i] = 0.;
+      sig_yield_2018[i] = 0.;
+
+      sig_yield_stat_2016[i] = 0.;
+      sig_yield_stat_2017[i] = 0.;
+      sig_yield_stat_2018[i] = 0.;
+
+      sig_yield_syst_2016[i] = 0.;
+      sig_yield_syst_2017[i] = 0.;
+      sig_yield_syst_2018[i] = 0.;
+    }
+  }
+
+  double JPsi_mean = (q2Bins[5]-q2Bins[4])/2 + q2Bins[4];
+  double Psi_mean = (q2Bins[7]-q2Bins[6])/2 + q2Bins[6];
+
+  double JPsi[5] = {JPsi_mean-bin_width[4]/2, JPsi_mean+bin_width[4]/2, JPsi_mean+bin_width[4]/2, JPsi_mean-bin_width[4]/2, JPsi_mean-bin_width[4]/2};
+  double Psi[5] = {Psi_mean-bin_width[6]/2, Psi_mean+bin_width[6]/2, Psi_mean+bin_width[6]/2, Psi_mean-bin_width[6]/2, Psi_mean-bin_width[6]/2};
+
   // 2016 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   TCanvas c_2016;
-  c_2016.SetLogy();
+  //c_2016.SetLogy();
   f_output_2016->cd();
   TMultiGraph* mg_2016 = new TMultiGraph();
 
-  TGraphErrors* g_stat_2016 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2016,q2Bins_err,yields_stat_2016);
+  TGraphErrors* g_stat_2016 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2016,q2Bins_err,sig_yield_stat_2016);
   g_stat_2016->SetMarkerColor(4);
   g_stat_2016->SetMarkerStyle(1);
   g_stat_2016->SetLineColor(1);
   g_stat_2016->Write();
 
-  TGraphErrors* g_syst_2016 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2016,q2Bins_err,yields_syst_2016);
+  TGraphErrors* g_syst_2016 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2016,q2Bins_err,sig_yield_syst_2016);
   g_syst_2016->SetMarkerColor(4);
   g_syst_2016->SetMarkerStyle(1);
   g_syst_2016->SetLineColor(2);
@@ -161,16 +216,28 @@ void yield_syst(){
   
   mg_2016->Add(g_syst_2016);
   mg_2016->Add(g_stat_2016);
+  mg_2016->Draw("AP");
 
-  TLegend *leg_2016 = new TLegend(0.7, 0.8, 0.9, 0.9);
+  double y_2016[5] = {mg_2016->GetYaxis()->GetXmin(), mg_2016->GetYaxis()->GetXmin(), mg_2016->GetYaxis()->GetXmax(), mg_2016->GetYaxis()->GetXmax(), mg_2016->GetYaxis()->GetXmin()};
+
+  TGraph* gr6J = new TGraph(5,JPsi, y_2016);
+  gr6J->SetLineColor(kBlack);
+  gr6J->SetFillColorAlpha(kBlack,0.25);
+
+  TGraph* gr6P = new TGraph(5,Psi, y_2016);
+  gr6P->SetLineColor(kBlack);
+  gr6P->SetFillColorAlpha(kBlack,0.25);
+
+  TLegend *leg_2016 = new TLegend(0.1, 0.8, 0.3, 0.9);
   leg_2016->SetFillColor(0);
   leg_2016->AddEntry(g_stat_2016, "Statistical Uncertainty", "lp");
   leg_2016->AddEntry(g_syst_2016, "Systematic Uncertainty", "lp");
 
-  mg_2016->Draw("AP");
   leg_2016->Draw("same");
-  mg_2016->SetTitle("Signal Yield - 2016");
+  mg_2016->GetYaxis()->SetTitle("Signal Yield - 2016");
   mg_2016->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
+  gr6J->Draw("F");
+  gr6P->Draw("F");
 
   c_2016.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2016.gif");
   c_2016.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2016.pdf");
@@ -178,17 +245,17 @@ void yield_syst(){
   // 2017 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   TCanvas c_2017;
-  c_2017.SetLogy();
+  //c_2017.SetLogy();
   f_output_2017->cd();
   TMultiGraph* mg_2017 = new TMultiGraph();
 
-  TGraphErrors* g_stat_2017 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2017,q2Bins_err,yields_stat_2017);
+  TGraphErrors* g_stat_2017 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2017,q2Bins_err,sig_yield_stat_2017);
   g_stat_2017->SetMarkerColor(4);
   g_stat_2017->SetMarkerStyle(1);
   g_stat_2017->SetLineColor(1);
   g_stat_2017->Write();
 
-  TGraphErrors* g_syst_2017 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2017,q2Bins_err,yields_syst_2017);
+  TGraphErrors* g_syst_2017 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2017,q2Bins_err,sig_yield_syst_2017);
   g_syst_2017->SetMarkerColor(4);
   g_syst_2017->SetMarkerStyle(1);
   g_syst_2017->SetLineColor(2);
@@ -198,16 +265,28 @@ void yield_syst(){
 
   mg_2017->Add(g_syst_2017);
   mg_2017->Add(g_stat_2017);
+  mg_2017->Draw("AP");
 
-  TLegend *leg_2017 = new TLegend(0.7, 0.8, 0.9, 0.9);
+  double y_2017[5] = {mg_2017->GetYaxis()->GetXmin(), mg_2017->GetYaxis()->GetXmin(), mg_2017->GetYaxis()->GetXmax(), mg_2017->GetYaxis()->GetXmax(), mg_2017->GetYaxis()->GetXmin()};
+
+  TGraph* gr7J = new TGraph(5,JPsi, y_2017);
+  gr7J->SetLineColor(kBlack);
+  gr7J->SetFillColorAlpha(kBlack,0.25);
+
+  TGraph* gr7P = new TGraph(5,Psi, y_2017);
+  gr7P->SetLineColor(kBlack);
+  gr7P->SetFillColorAlpha(kBlack,0.25);
+
+  TLegend *leg_2017 = new TLegend(0.1, 0.8, 0.3, 0.9);
   leg_2017->SetFillColor(0);
   leg_2017->AddEntry(g_stat_2017, "Statistical Uncertainty", "lp");
   leg_2017->AddEntry(g_syst_2017, "Systematic Uncertainty", "lp");
 
-  mg_2017->Draw("AP");
   leg_2017->Draw("same");
-  mg_2017->SetTitle("Signal Yield - 2017");
+  mg_2017->GetYaxis()->SetTitle("Signal Yield - 2017");
   mg_2017->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
+  gr7J->Draw("F");
+  gr7P->Draw("F");
 
   c_2017.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2017.gif");
   c_2017.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2017.pdf");
@@ -215,17 +294,17 @@ void yield_syst(){
   // 2018 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   TCanvas c_2018;
-  c_2018.SetLogy(); 
+  //c_2018.SetLogy(); 
   f_output_2018->cd();
   TMultiGraph* mg_2018 = new TMultiGraph();
 
-  TGraphErrors* g_stat_2018 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2018,q2Bins_err,yields_stat_2018);
+  TGraphErrors* g_stat_2018 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2018,q2Bins_err,sig_yield_stat_2018);
   g_stat_2018->SetMarkerColor(4);
   g_stat_2018->SetMarkerStyle(1);
   g_stat_2018->SetLineColor(1);
   g_stat_2018->Write();
 
-  TGraphErrors* g_syst_2018 = new TGraphErrors(n_q2Bin,q2Bins_half,yields_2018,q2Bins_err,yields_syst_2018);
+  TGraphErrors* g_syst_2018 = new TGraphErrors(n_q2Bin,q2Bins_half,sig_yield_2018,q2Bins_err,sig_yield_syst_2018);
   g_syst_2018->SetMarkerColor(4);
   g_syst_2018->SetMarkerStyle(1);
   g_syst_2018->SetLineColor(2);
@@ -235,16 +314,28 @@ void yield_syst(){
 
   mg_2018->Add(g_syst_2018);
   mg_2018->Add(g_stat_2018);
+  mg_2018->Draw("AP");
 
-  TLegend *leg_2018 = new TLegend(0.7, 0.8, 0.9, 0.9);
+  double y_2018[5] = {mg_2018->GetYaxis()->GetXmin(), mg_2018->GetYaxis()->GetXmin(), mg_2018->GetYaxis()->GetXmax(), mg_2018->GetYaxis()->GetXmax(), mg_2018->GetYaxis()->GetXmin()};
+
+  TGraph* gr8J = new TGraph(5,JPsi, y_2018);
+  gr8J->SetLineColor(kBlack);
+  gr8J->SetFillColorAlpha(kBlack,0.25);
+
+  TGraph* gr8P = new TGraph(5,Psi, y_2018);
+  gr8P->SetLineColor(kBlack);
+  gr8P->SetFillColorAlpha(kBlack,0.25);
+
+  TLegend *leg_2018 = new TLegend(0.1, 0.8, 0.3, 0.9);
   leg_2018->SetFillColor(0);
   leg_2018->AddEntry(g_stat_2018, "Statistical Uncertainty", "lp");
   leg_2018->AddEntry(g_syst_2018, "Systematic Uncertainty", "lp");
 
-  mg_2018->Draw("AP");
   leg_2018->Draw("same");
-  mg_2018->SetTitle("Signal Yield - 2018");
+  mg_2018->GetYaxis()->SetTitle("Signal Yield - 2018");
   mg_2018->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
+  gr8J->Draw("F");
+  gr8P->Draw("F");
 
   c_2018.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2018.gif");
   c_2018.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2018.pdf");
@@ -263,10 +354,10 @@ void yield_syst(){
   file_stat << "\\caption{Yields with respective statistical uncertainties for each fit variation.}" << std::endl;
   file_stat << "\\tiny" << std::endl;
   file_stat << "\\centering" << std::endl;
-  file_stat << "\\begin{tabular}{|c|c|c|c|c|c|c|c|}" << std::endl;
+  file_stat << "\\begin{tabular}{|c|c|c|c|c|c|c|}" << std::endl;
   file_stat << "\\hline" << std::endl;
 
-  std::vector<std::string> col_name_stat = {"$q^2$ bin", "Year", "Nominal", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed/Exp+erf", "Scale factor"};
+  std::vector<std::string> col_name_stat = {"$q^2$ bin", "Year", "Nominal", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed", "Scale factor"};
   for(int c = 0; c < 6; c++){
     file_stat << col_name_stat[c] << " & ";
   }
@@ -274,11 +365,11 @@ void yield_syst(){
   file_stat << "\\hline" << std::endl;
 
   for(int i = 0; i < n_q2Bin; i++){
-    file_stat << " & " << " 2016 & " << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][0], stat_yield_2016[i][0], stat_yield_2016[i][0]/signal_yield_2016[i][0]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][1], stat_yield_2016[i][1], stat_yield_2016[i][1]/signal_yield_2016[i][1]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][2], stat_yield_2016[i][2], stat_yield_2016[i][2]/signal_yield_2016[i][2]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][3], stat_yield_2016[i][3], stat_yield_2016[i][3]/signal_yield_2016[i][3]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][4], stat_yield_2016[i][4], stat_yield_2016[i][4]/signal_yield_2016[i][4]) << "\\\\" << std::endl;
+    file_stat << " & " << " 2016 & " << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2016[i][0], stat_yield_2016[i][0], (stat_yield_2016[i][0]/signal_yield_2016[i][0])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2016[i][1], stat_yield_2016[i][1], (stat_yield_2016[i][1]/signal_yield_2016[i][1])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2016[i][2], stat_yield_2016[i][2], (stat_yield_2016[i][2]/signal_yield_2016[i][2])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2016[i][3], stat_yield_2016[i][3], (stat_yield_2016[i][3]/signal_yield_2016[i][3])*100) << Form("%.0lf $\\pm$ %.0f (%.2lf) ", signal_yield_2016[i][4], stat_yield_2016[i][4], (stat_yield_2016[i][4]/signal_yield_2016[i][4])*100) << "\\\\" << std::endl;
 
-    file_stat << Form("%i & ",i) << " 2017 & " << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][0], stat_yield_2017[i][0], stat_yield_2017[i][0]/signal_yield_2017[i][0]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][1], stat_yield_2017[i][1], stat_yield_2017[i][1]/signal_yield_2017[i][1]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][2], stat_yield_2017[i][2], stat_yield_2017[i][2]/signal_yield_2017[i][2]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][3], stat_yield_2017[i][3], stat_yield_2017[i][3]/signal_yield_2017[i][3]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][4], stat_yield_2017[i][4], stat_yield_2017[i][4]/signal_yield_2017[i][4]) << "\\\\" << std::endl;
+    file_stat << Form("%i & ",i) << " 2017 & " << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2017[i][0], stat_yield_2017[i][0], (stat_yield_2017[i][0]/signal_yield_2017[i][0])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2017[i][1], stat_yield_2017[i][1], (stat_yield_2017[i][1]/signal_yield_2017[i][1])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2017[i][2], stat_yield_2017[i][2], (stat_yield_2017[i][2]/signal_yield_2017[i][2])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2017[i][3], stat_yield_2017[i][3], (stat_yield_2017[i][3]/signal_yield_2017[i][3])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) ", signal_yield_2017[i][4], stat_yield_2017[i][4], (stat_yield_2017[i][4]/signal_yield_2017[i][4])*100) << "\\\\" << std::endl;
 
-    file_stat << " & " << " 2018 & " << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][0], stat_yield_2018[i][0], stat_yield_2018[i][0]/signal_yield_2018[i][0]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][1], stat_yield_2018[i][1], stat_yield_2018[i][1]/signal_yield_2018[i][1]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][2], stat_yield_2018[i][2], stat_yield_2018[i][2]/signal_yield_2018[i][2]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][3], stat_yield_2018[i][3], stat_yield_2018[i][3]/signal_yield_2018[i][3]) << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][4], stat_yield_2018[i][4], stat_yield_2018[i][4]/signal_yield_2018[i][4]) << "\\\\ \\hline" << std::endl;
+    file_stat << " & " << " 2018 & " << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2018[i][0], stat_yield_2018[i][0], (stat_yield_2018[i][0]/signal_yield_2018[i][0])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2018[i][1], stat_yield_2018[i][1], (stat_yield_2018[i][1]/signal_yield_2018[i][1])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2018[i][2], stat_yield_2018[i][2], (stat_yield_2018[i][2]/signal_yield_2018[i][2])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) & ", signal_yield_2018[i][3], stat_yield_2018[i][3], (stat_yield_2018[i][3]/signal_yield_2018[i][3])*100) << Form("%.0lf $\\pm$ %.0lf (%.2lf) ", signal_yield_2018[i][4], stat_yield_2018[i][4], (stat_yield_2018[i][4]/signal_yield_2018[i][4])*100) << "\\\\ \\hline" << std::endl;
   }
 
   file_stat << "\\end{tabular}" << std::endl;
@@ -296,7 +387,7 @@ void yield_syst(){
   file_syst << "\\caption{Yields with respective systematic uncertainties for each fit variation.}" << std::endl;
   file_syst << "\\scriptsize" << std::endl;
   file_syst << "\\centering" << std::endl;
-  file_syst << "\\begin{tabular}{|c|c|c|c|c|c|c|c|}" << std::endl;
+  file_syst << "\\begin{tabular}{|c|c|c|c|c|c|c|}" << std::endl;
   file_syst << "\\hline" << std::endl;
 
   std::vector<std::string> col_name_syst = {"$q^2$ bin", "Year", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed/Exp+erf", "Scale factor", "Total"};
@@ -308,11 +399,11 @@ void yield_syst(){
 
   for(int i = 0; i < n_q2Bin; i++){
 
-    file_syst << " & " << " 2016 & " << Form("%.2lf & ", (syst_yield_2016[i][1]/signal_yield_2016[i][1])*100.) << Form("%.2lf & ", (syst_yield_2016[i][2]/signal_yield_2016[i][2])*100.) << Form("%.2lf & ", (syst_yield_2016[i][3]/signal_yield_2016[i][3])*100.) << Form("%.2lf & ", (syst_yield_2016[i][4]/signal_yield_2016[i][4])*100.) << Form("%.2lf ", (yields_syst_2016[i]/yields_2016[i])*100.) << "\\\\" << std::endl;
+    file_syst << " & " << " 2016 & " << Form("%.2lf & ", (syst_yield_2016[i][1]/yields_2016[i])*100.) << Form("%.2lf & ", (syst_yield_2016[i][2]/yields_2016[i])*100.) << Form("%.2lf & ", (syst_yield_2016[i][3]/yields_2016[i])*100.) << Form("%.2lf & ", (syst_yield_2016[i][4]/yields_2016[i])*100.) << Form("%.2lf ", (yields_syst_2016[i]/yields_2016[i])*100.) << "\\\\" << std::endl;
 
-    file_syst << Form("%i & ",i) << " 2017 & " << Form("%.2lf & ", (syst_yield_2017[i][1]/signal_yield_2017[i][1])*100.) << Form("%.2lf & ", (syst_yield_2017[i][2]/signal_yield_2017[i][2])*100.) << Form("%.2lf & ", (syst_yield_2017[i][3]/signal_yield_2017[i][3])*100.) << Form("%.2lf & ", (syst_yield_2017[i][4]/signal_yield_2017[i][4])*100.) << Form("%.2lf ", (yields_syst_2017[i]/yields_2017[i])*100.) << "\\\\" << std::endl;
+    file_syst << Form("%i & ",i) << " 2017 & " << Form("%.2lf & ", (syst_yield_2017[i][1]/yields_2017[i])*100.) << Form("%.2lf & ", (syst_yield_2017[i][2]/yields_2017[i])*100.) << Form("%.2lf & ", (syst_yield_2017[i][3]/yields_2017[i])*100.) << Form("%.2lf & ", (syst_yield_2017[i][4]/yields_2017[i])*100.) << Form("%.2lf ", (yields_syst_2017[i]/yields_2017[i])*100.) << "\\\\" << std::endl;
 
-    file_syst << " & " << " 2018 & " << Form("%.2lf & ", (syst_yield_2018[i][1]/signal_yield_2018[i][1])*100.) << Form("%.2lf & ", (syst_yield_2018[i][2]/signal_yield_2018[i][2])*100.) << Form("%.2lf & ", (syst_yield_2018[i][3]/signal_yield_2018[i][3])*100.) << Form("%.2lf & ", (syst_yield_2018[i][4]/signal_yield_2018[i][4])*100.) << Form("%.2lf ", (yields_syst_2018[i]/yields_2018[i])*100.) << "\\\\ \\hline" << std::endl;
+    file_syst << " & " << " 2018 & " << Form("%.2lf & ", (syst_yield_2018[i][1]/yields_2018[i])*100.) << Form("%.2lf & ", (syst_yield_2018[i][2]/yields_2018[i])*100.) << Form("%.2lf & ", (syst_yield_2018[i][3]/yields_2018[i])*100.) << Form("%.2lf & ", (syst_yield_2018[i][4]/yields_2018[i])*100.) << Form("%.2lf ", (yields_syst_2018[i]/yields_2018[i])*100.) << "\\\\ \\hline" << std::endl;
   }
 
   file_syst << "\\end{tabular}" << std::endl;
@@ -325,10 +416,10 @@ double getMax(double list[5], int n_pdf){
 
   double max = list[0];
 
-  for(int i = 0; i <= n_pdf; i++){
+  for(int i = 0; i < n_pdf; i++){
     if(max < list[i]) {
       max = list[i];
-    }   
+    }
   }
   return max; 
 }
