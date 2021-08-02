@@ -163,3 +163,50 @@ RooAddPdf* createRTMassShape4(int q2Bin,
 
     return dcb_rt;
 }
+
+//Ruben's config
+RooAddPdf* createRTMassShape5(int q2Bin,
+                              RooAbsReal* x,
+                              RooAbsReal* mean_rt,
+                              RooAbsReal* sigma_rt,
+                              RooAbsReal* sigma_rt2,
+                              RooAbsReal* alpha_rt1,
+                              RooAbsReal* alpha_rt2,
+                              RooAbsReal* n_rt1,
+                              RooAbsReal* n_rt2,
+                              RooAbsReal* f1rt,
+                              TString input_file,
+                              int year,
+                              bool constrainVars,
+                              RooArgSet &c_vars,
+                              RooArgSet &c_pdfs
+                              ){
+
+    RooCBShape* cbshape_rt1 = new RooCBShape (Form("cbshape_rt1_%i", year),
+                                              Form("cbshape_rt1_%i", year),
+                                              *x,
+                                              *mean_rt, *sigma_rt , *alpha_rt1, *n_rt1
+                                              );
+    RooCBShape* cbshape_rt2 = new RooCBShape (Form("cbshape_rt2_%i", year),
+                                              Form("cbshape_rt2_%i", year),
+                                              *x,
+                                              *mean_rt, *sigma_rt2, *alpha_rt2, *n_rt2
+                                              );
+
+    RooAddPdf* dcb_rt = new RooAddPdf (Form("dcb_rt_%i", year) ,
+                                       Form("dcb_rt_%i", year) ,
+                                       RooArgList(*cbshape_rt1,*cbshape_rt2),
+                                       RooArgList(*f1rt));
+
+    if (constrainVars){
+        constrainVar3(input_file, Form("#sigma_{RT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#alpha_{RT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#alpha_{RT2}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("n_{RT1}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("n_{RT2}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#sigma_{RT2}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("f^{RT%i}"         ,year) , year, q2Bin, true, c_vars, c_pdfs);
+    }
+
+    return dcb_rt;
+}
