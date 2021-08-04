@@ -298,7 +298,12 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       alpha_rt2->setRange(-10,0);
 
       if(constrain == 1){//constrained fit
-        dcb_rt = createRTMassShape2(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2, f1rt, input_file_RT, years[iy], true, c_vars_rt, c_pdfs_rt);
+        if (pdf_model == 5){
+          dcb_rt = createRTMassShape5(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2, f1rt, input_file_RT, years[iy], true, c_vars_rt, c_pdfs_rt);
+        }
+        else {
+          dcb_rt = createRTMassShape2(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2, f1rt, input_file_RT, years[iy], true, c_vars_rt, c_pdfs_rt);
+        }
       }
       else if(constrain == 0){//unconstrained fit
         dcb_rt = createRTMassShape2(q2Bin, mass, mean_rt, sigma_rt, sigma_rt2, alpha_rt1, alpha_rt2, n_rt1, n_rt2, f1rt, input_file_RT, years[iy], false, c_vars_rt, c_pdfs_rt);
@@ -405,6 +410,10 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 
       if( ((pdf_model != 0) && (q2Bin == 4)) || ((pdf_model == 3) && (q2Bin != 4) && (q2Bin != 6))){ // fix WT shape of MC to compute systematics
 
+        if (pdf_model == 5){
+          dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], true, c_vars_wt, c_pdfs_wt);
+        }
+        else {
         sigma_wt->setConstant();
         alpha_wt1->setConstant();
         alpha_wt2->setConstant();
@@ -412,6 +421,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
         n_wt2->setConstant();
 
         dcb_wt = createWTMassShape(q2Bin, mass, mass_wt, sigma_wt, alpha_wt1, alpha_wt2, n_wt1, n_wt2, input_file_WT, years[iy], false, c_vars_wt, c_pdfs_wt);
+        }
       }
 
       else{
