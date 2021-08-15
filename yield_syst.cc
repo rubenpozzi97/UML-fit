@@ -49,7 +49,7 @@ void yield_syst(){
 
   cout << '|' << setw(15) << "Year" << '|' << setw(15) << "q2Bin" << '|' << setw(15) << "PDF" << '|' << setw(15) << "Yield" << '|' << setw(15) << "Yield Error" << '|' << setw(15) << "Rel. Stat. (%)" << '|' << setw(15) << "Rel. Diff. (%)" << '|' << endl;
 
-  int n_pdf = 5;
+  int n_pdf = 6;
 
   double signal_yield_2016[n_q2Bin][n_pdf];
   double signal_yield_2017[n_q2Bin][n_pdf];
@@ -68,16 +68,16 @@ void yield_syst(){
 
     for(int year = 6; year < 9; year++){
 
-      for(int pdf = 0; pdf < n_pdf; pdf++){   
-        TFile* f; 
+      for(int pdf = 0; pdf < n_pdf; pdf++){
+        TFile* f;
         RooFitResult* fitresult;
 
         if(pdf == 4){
-          f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c2m0_subs0CT+WT.root",year,q2Bin));
+          f = new TFile(Form("~/fit-project/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c2m0_subs0CT+WT.root",year,q2Bin));
           fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c2m0subs0",q2Bin));
         }
         else{
-          f = new TFile(Form("~/public/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c1m%i_subs0CT+WT.root",year,q2Bin,pdf));
+          f = new TFile(Form("~/fit-project/UML-fit/simFitMassResults/simFitResult_recoMC_fullMass201%i_DATA_b%ip2c1m%i_subs0CT+WT.root",year,q2Bin,pdf));
           fitresult = (RooFitResult*)f->Get(Form("simFitResult_b%ip2c1m%isubs0",q2Bin,pdf));
         }
 
@@ -103,10 +103,10 @@ void yield_syst(){
           syst_yield_2018[q2Bin][pdf] = abs(signal_yield_2018[q2Bin][0] - signal_yield_2018[q2Bin][pdf]);
 
           cout << '|' << setw(15) << 2018 << '|' << setw(15) << q2Bin << '|' << setw(15) << pdf  << '|' << setw(15) << signal_yield_2018[q2Bin][pdf]  << '|' << setw(15) << stat_yield_2018[q2Bin][pdf] << '|' << setw(15) << (stat_yield_2018[q2Bin][pdf]/signal_yield_2018[q2Bin][pdf])*100 << '|' << setw(15) <<  (syst_yield_2018[q2Bin][pdf]/signal_yield_2018[q2Bin][0])*100 << '|' << endl;
-        }        
+        }
         delete f;
-      }       
- 
+      }
+
       if(year == 6){// from nominal fit
         yields_2016[q2Bin] = signal_yield_2016[q2Bin][0];
         yields_stat_2016[q2Bin] = stat_yield_2016[q2Bin][0];
@@ -117,13 +117,13 @@ void yield_syst(){
         yields_2017[q2Bin] = signal_yield_2017[q2Bin][0];
         yields_stat_2017[q2Bin] = stat_yield_2017[q2Bin][0];
         yields_syst_2017[q2Bin] = getMax(syst_yield_2017[q2Bin],n_pdf);
-      } 
+      }
       else if(year == 8){
         yields_2018[q2Bin] = signal_yield_2018[q2Bin][0];
         yields_stat_2018[q2Bin] = stat_yield_2018[q2Bin][0];
         yields_syst_2018[q2Bin] = getMax(syst_yield_2018[q2Bin],n_pdf);
      }
-    }//ends loop over years  
+    }//ends loop over years
   }//ends loop over q2Bins
 
 
@@ -133,11 +133,11 @@ void yield_syst(){
     cout << '|' << setw(15) << 2016 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2016[q2Bin] << '|' << setw(15) << yields_stat_2016[q2Bin] << '|' << setw(15) << (yields_stat_2016[q2Bin]/yields_2016[q2Bin])*100 << '|' << setw(15) << (yields_syst_2016[q2Bin]/yields_2016[q2Bin])*100 << '|' << endl;
     cout << '|' << setw(15) << 2017 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2017[q2Bin] << '|' << setw(15) << yields_stat_2017[q2Bin] << '|' << setw(15) << (yields_stat_2017[q2Bin]/yields_2017[q2Bin])*100 << '|' << setw(15) << (yields_syst_2017[q2Bin]/yields_2017[q2Bin])*100 << '|' << endl;
     cout << '|' << setw(15) << 2018 << '|' << setw(15) << q2Bin << '|' << setw(15) << yields_2018[q2Bin] << '|' << setw(15) << yields_stat_2018[q2Bin] << '|' << setw(15) << (yields_stat_2018[q2Bin]/yields_2018[q2Bin])*100 << '|' << setw(15) << (yields_syst_2018[q2Bin]/yields_2018[q2Bin])*100 << '|' << endl;
-  } 
+  }
 
-  TFile* f_output_2016 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2016.root", "UPDATE");
-  TFile* f_output_2017 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2017.root", "UPDATE");
-  TFile* f_output_2018 = new TFile("~/public/UML-fit/Systematics/root_files/yield_syst_2018.root", "UPDATE");
+  TFile* f_output_2016 = new TFile("~/fit-project/UML-fit/Systematics/root_files/yield_syst_2016.root", "UPDATE");
+  TFile* f_output_2017 = new TFile("~/fit-project/UML-fit/Systematics/root_files/yield_syst_2017.root", "UPDATE");
+  TFile* f_output_2018 = new TFile("~/fit-project/UML-fit/Systematics/root_files/yield_syst_2018.root", "UPDATE");
 
   // 2016 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   TCanvas c_2016;
@@ -156,9 +156,9 @@ void yield_syst(){
   g_syst_2016->SetMarkerStyle(1);
   g_syst_2016->SetLineColor(2);
   g_syst_2016->Write();
-  
+
   f_output_2016->Close();
-  
+
   mg_2016->Add(g_syst_2016);
   mg_2016->Add(g_stat_2016);
 
@@ -172,8 +172,8 @@ void yield_syst(){
   mg_2016->SetTitle("Signal Yield - 2016");
   mg_2016->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
 
-  c_2016.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2016.gif");
-  c_2016.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2016.pdf");
+  c_2016.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2016.gif");
+  c_2016.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2016.pdf");
 
   // 2017 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -209,13 +209,13 @@ void yield_syst(){
   mg_2017->SetTitle("Signal Yield - 2017");
   mg_2017->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
 
-  c_2017.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2017.gif");
-  c_2017.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2017.pdf");
+  c_2017.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2017.gif");
+  c_2017.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2017.pdf");
 
   // 2018 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   TCanvas c_2018;
-  c_2018.SetLogy(); 
+  c_2018.SetLogy();
   f_output_2018->cd();
   TMultiGraph* mg_2018 = new TMultiGraph();
 
@@ -246,14 +246,14 @@ void yield_syst(){
   mg_2018->SetTitle("Signal Yield - 2018");
   mg_2018->GetXaxis()->SetTitle("q^{2} [GeV^{2}]");
 
-  c_2018.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2018.gif");
-  c_2018.SaveAs("~/public/UML-fit/Systematics/plots/yield_syst_2018.pdf");
+  c_2018.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2018.gif");
+  c_2018.SaveAs("~/fit-project/UML-fit/Systematics/plots/yield_syst_2018.pdf");
 
- 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // STAT TABLE
-  std::string filename_stat = "/afs/cern.ch/user/m/mfaria/public/UML-fit/Systematics/tables/yield_stat_table.tex";
+  std::string filename_stat = "/home/t3cms/u21rpozzi/fit-project/UML-fit/Systematics/tables/yield_stat_table.tex";
   file_stat.open(filename_stat);
 
   if(!file_stat.is_open())
@@ -286,7 +286,7 @@ void yield_syst(){
   file_stat.close();
 
   //SYST TABLE
-  std::string filename_syst = "/afs/cern.ch/user/m/mfaria/public/UML-fit/Systematics/tables/yield_syst_table.tex";
+  std::string filename_syst = "/home/t3cms/u21rpozzi/fit-project/UML-fit/Systematics/tables/yield_syst_table.tex";
   file_syst.open(filename_syst);
 
   if(!file_syst.is_open())
@@ -328,7 +328,7 @@ double getMax(double list[5], int n_pdf){
   for(int i = 0; i <= n_pdf; i++){
     if(max < list[i]) {
       max = list[i];
-    }   
+    }
   }
-  return max; 
+  return max;
 }

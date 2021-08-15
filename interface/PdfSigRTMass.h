@@ -199,7 +199,7 @@ RooAddPdf* createRTMassShape5(int q2Bin,
                                        RooArgList(*f1rt));
 
     if (constrainVars){
-        constrainVar3(input_file, Form("#sigma_{RT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
+        constrainVar3(input_file, Form("#sigma_{RT1}^{%i}",year) , year, q2Bin, false, c_vars, c_pdfs);
         constrainVar3(input_file, Form("#alpha_{RT1}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
         constrainVar3(input_file, Form("#alpha_{RT2}^{%i}",year) , year, q2Bin, true, c_vars, c_pdfs);
         constrainVar3(input_file, Form("n_{RT1}^{%i}",year)      , year, q2Bin, true, c_vars, c_pdfs);

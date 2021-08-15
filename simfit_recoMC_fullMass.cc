@@ -509,7 +509,7 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
 					    *final_PDF, *signal_yield);
       }
       else if(dat == 1){
-        lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", 1., -15., 15.);
+        lambda = new RooRealVar(Form("lambda^{%i}",years[iy]), "lambda", -2., -10., 1.);
         slope = new RooRealVar(Form("slope^{%i}",years[iy]), "slope", 1., -5., 5.);
         mean_cb = new RooRealVar(Form("mean_cb^{%i}",years[iy]), "mean_cb", 5.05, 5., 5.15);
         sigma_cb = new RooRealVar(Form("sigma_cb^{%i}",years[iy]), "sigma_cb", 1., 0., 5.);
@@ -658,15 +658,15 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       nll = ws_pars->pdf("simPdf")->createNLL(*combData,
                                                RooFit::Extended(kTRUE),
                                                RooFit::Constrain(c_vars),
-                                               //RooFit::NumCPU(1)
-                                               RooFit::NumCPU(6)
+                                               RooFit::NumCPU(1)
+                                               //RooFit::NumCPU(6)
                                                );
     }
     else if( (constrain == 0) || (constrain == 2) ){
       nll = ws_pars->pdf("simPdf")->createNLL(*combData,
                                               RooFit::Extended(kTRUE),
-                                              //RooFit::NumCPU(1)
-                                              RooFit::NumCPU(6)
+                                              RooFit::NumCPU(1)
+                                              //RooFit::NumCPU(6)
                                               );
     }
 
