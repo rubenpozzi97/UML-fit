@@ -296,7 +296,7 @@ void yield_syst(){
   file_syst << "\\caption{Yields with respective systematic uncertainties for each fit variation.}" << std::endl;
   file_syst << "\\scriptsize" << std::endl;
   file_syst << "\\centering" << std::endl;
-  file_syst << "\\begin{tabular}{|c|c|c|c|c|c|c|c|}" << std::endl;
+  file_syst << "\\begin{tabular}{|c|c|c|c|c|c|}" << std::endl;
   file_syst << "\\hline" << std::endl;
 
   std::vector<std::string> col_name_syst = {"$q^2$ bin", "Year", "Exp($5.1<m<5.6$)", "Exp($5.0<m<5.5$)", "WT fixed/Exp+erf", "Scale factor", "No SigmaRT1", "Total"};
@@ -308,11 +308,11 @@ void yield_syst(){
 
   for(int i = 0; i < n_q2Bin; i++){
 
-    file_syst << " & " << " 2016 & " << Form("%.2lf & ", (syst_yield_2016[i][1]/signal_yield_2016[i][1])*100.) << Form("%.2lf & ", (syst_yield_2016[i][2]/signal_yield_2016[i][2])*100.) << Form("%.2lf & ", (syst_yield_2016[i][3]/signal_yield_2016[i][3])*100.) << Form("%.2lf & ", (syst_yield_2016[i][4]/signal_yield_2016[i][4])*100.) << Form("%.2lf & ", (syst_yield_2016[i][5]/signal_yield_2016[i][5])*100.) << Form("%.2lf ", (yields_syst_2016[i]/yields_2016[i])*100.) << "\\\\" << std::endl;
+    file_syst << " & " << " 2016 & " << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][0], stat_yield_2016[i][0], stat_yield_2016[i][0]/signal_yield_2016[i][0])  << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2016[i][5], stat_yield_2016[i][5], stat_yield_2016[i][5]/signal_yield_2016[i][5])  << Form("%.3lf  ", (abs(signal_yield_2016[i][5]-signal_yield_2016[i][0]))/signal_yield_2016[i][0]) << "\\\\" << std::endl;
 
-    file_syst << Form("%i & ",i) << " 2017 & " << Form("%.2lf & ", (syst_yield_2017[i][1]/signal_yield_2017[i][1])*100.) << Form("%.2lf & ", (syst_yield_2017[i][2]/signal_yield_2017[i][2])*100.) << Form("%.2lf & ", (syst_yield_2017[i][3]/signal_yield_2017[i][3])*100.) << Form("%.2lf & ", (syst_yield_2017[i][4]/signal_yield_2017[i][4])*100.) << Form("%.2lf & ", (syst_yield_2017[i][5]/signal_yield_2017[i][5])*100.) << Form("%.2lf ", (yields_syst_2017[i]/yields_2017[i])*100.) << "\\\\" << std::endl;
+    file_syst << Form("%i & ",i) << " 2017 & "<< Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][0], stat_yield_2017[i][0], stat_yield_2017[i][0]/signal_yield_2017[i][0])  << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2017[i][5], stat_yield_2017[i][5], stat_yield_2017[i][5]/signal_yield_2017[i][5])  << Form("%.3lf  ", (abs(signal_yield_2017[i][5]-signal_yield_2017[i][0]))/signal_yield_2017[i][0]) << "\\\\" << std::endl;
 
-    file_syst << " & " << " 2018 & " << Form("%.2lf & ", (syst_yield_2018[i][1]/signal_yield_2018[i][1])*100.) << Form("%.2lf & ", (syst_yield_2018[i][2]/signal_yield_2018[i][2])*100.) << Form("%.2lf & ", (syst_yield_2018[i][3]/signal_yield_2018[i][3])*100.) << Form("%.2lf & ", (syst_yield_2018[i][4]/signal_yield_2018[i][4])*100.) << Form("%.2lf & ", (syst_yield_2018[i][5]/signal_yield_2018[i][5])*100.) << Form("%.2lf ", (yields_syst_2018[i]/yields_2018[i])*100.) << "\\\\ \\hline" << std::endl;
+    file_syst << " & " << " 2018 & " << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][0], stat_yield_2018[i][0], stat_yield_2018[i][0]/signal_yield_2018[i][0])  << Form("%.0lf $\\pm$ %.0lf (%.3lf) & ", signal_yield_2018[i][5], stat_yield_2018[i][5], stat_yield_2018[i][5]/signal_yield_2018[i][5])  << Form("%.3lf  ", (abs(signal_yield_2018[i][5] -signal_yield_2018[i][0]))/signal_yield_2018[i][0]) << "\\\\ \\hline" << std::endl;
   }
 
   file_syst << "\\end{tabular}" << std::endl;

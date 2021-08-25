@@ -658,15 +658,15 @@ void simfit_recoMC_fullMassBin(int q2Bin, int parity, bool multiSample, uint nSa
       nll = ws_pars->pdf("simPdf")->createNLL(*combData,
                                                RooFit::Extended(kTRUE),
                                                RooFit::Constrain(c_vars),
-                                               RooFit::NumCPU(1)
-                                               //RooFit::NumCPU(6)
+                                               //RooFit::NumCPU(1)
+                                               RooFit::NumCPU(6)
                                                );
     }
     else if( (constrain == 0) || (constrain == 2) ){
       nll = ws_pars->pdf("simPdf")->createNLL(*combData,
                                               RooFit::Extended(kTRUE),
-                                              RooFit::NumCPU(1)
-                                              //RooFit::NumCPU(6)
+                                              //RooFit::NumCPU(1)
+                                              RooFit::NumCPU(6)
                                               );
     }
 

@@ -3,7 +3,7 @@
 par=2 # par = 0 (even efficiency) , par = 1 (odd efficiency) , par > 1 (both parity datasets)
 multi=0
 nsam=0
-constrain=2 # constrain = 0 (unconstrained) , constrain = 1 (cosntrained), constrain = 2 (fixed to MC)
+constrain=1 # constrain = 0 (unconstrained) , constrain = 1 (cosntrained), constrain = 2 (fixed to MC)
 comp=2 # comp = 0 (CT) , comp = 1 (WT) , comp > 1 (both)
 dat=1 # dat = 0 (MC) , dat = 1 (data)
 pdf_model=5 # pdf_model = 0 (nominal fit);
@@ -40,8 +40,8 @@ if [ ! -d plotSimMassFit_DATA ]; then mkdir plotSimMassFit_DATA; fi
 # make AngDict
 if make simfit_recoMC_fullMass; then
      #for comp in {0,1}; do
-         for bin in {0..7}; do
-      #for bin in 4; do #J/Psi resonant normalization channel
+         #for bin in {0..7}; do
+      for bin in 4; do #J/Psi resonant normalization channel
 
             #for year in 2016; do
               for year in {2016,2017,2018}; do
